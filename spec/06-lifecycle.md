@@ -1,7 +1,7 @@
 ---
 title: Component lifecycle
 section: 6
-version: 0.17
+version: 0.18
 status: draft
 normative: true
 depends_on: [05-checkpoints.md, 08-steady-state.md, 09-abi.md]
@@ -14,41 +14,38 @@ The **Driveline Component Model (DCM)** is a C-ABI ([§9](09-abi.md)). Native co
 ## 6.1 Component Lifecycle State Machine
 
 ```text
-                  ┌──────────────────────┐
-                  │   1. Uninstantiated  │◄──────────────────────────┐
-                  └──────────┬───────────┘                           │
-                             │ dl_instantiate(abi, name, cb, &inst)  │
-                             ▼                                       │
-                  ┌──────────────────────┐                           │
-                  │   2. Instantiated    │ dl_set_parameters(...)    │
-                  └──────────┬───────────┘                           │
-                             │ dl_configure_structure(inst, &cfg)    │
-                             ▼                                       │
-                  ┌──────────────────────┐                           │
-                  │ 3. StructuralConfig  │                           │
-                  └──────────┬───────────┘                           │
-        ┌────────────────────┴────────────────────┐                  │
-        │ At t = 0                                │ At t > 0         │
-        │ dl_enter_cold_init(inst, M, ctx[])      │ dl_enter_warm_start(inst, M, ctx[])
-        ▼                                         ▼                  │
-┌──────────────────────┐                 ┌──────────────────────┐    │
-│ 4a. ColdInitMode     │                 │ 4b. WarmStartMode    │◄─┐ │
-│  (Coupled Trim)      │                 │ (Bumpless Transfer)  │  │ │
-└───────┬──────────────┘                 └────────┬─────────────┘  │ │
-        └────────────────────┬────────────────────┘                │ │
-                             │ dl_exit_init_mode(inst)             │ │
-                             ▼                                     │ │
-                  ┌──────────────────────┐   re-trim (§6.2.4)      │ │
-              ┌──►│     5. StepMode      │─────────────────────────┘ │
-              │   └────┬────────────┬────┘◄──┐                       │
- dl_do_step() │        │            │        │ dl_on_membership_change(inst, &change)
-   (Clocked)  └────────┘            └────────┘ (Actor Join / Leave on 1:N or N:N)
-                             │                                       │
-                             │ dl_terminate(inst)                    │
-                             ▼                                       │
-                  ┌──────────────────────┐                           │
-                  │    6. Terminated     │───────────────────────────┘
-                  └──────────────────────┘   dl_free_instance(inst)
+                 ┌──────────────────────┐
+                 │  1. Uninstantiated   │◄───────────────────────────┐
+                 └──────────┬───────────┘                            │
+                            │ dl_instantiate                         │
+                            ▼                                        │
+                 ┌──────────────────────┐                            │
+                 │   2. Instantiated    │ dl_set_parameters          │
+                 └──────────┬───────────┘                            │
+                            │ dl_configure_structure                 │
+                            ▼                                        │
+                 ┌──────────────────────┐                            │
+                 │ 3. StructuralConfig  │ dl_set_parameters          │
+                 └──────────┬───────────┘                            │
+             t = 0          │          t > 0                         │
+           ┌────────────────┴────────────────┐                       │
+           │ dl_enter_cold_init              │ dl_enter_warm_start   │
+           ▼                                 ▼                       │
+┌──────────────────────┐          ┌──────────────────────┐           │
+│   4a. ColdInitMode   │          │  4b. WarmStartMode   │◄──────┐   │
+└──────────┬───────────┘          └──────────┬───────────┘       │   │
+           └────────────────┬────────────────┘                   │   │
+                            │ dl_exit_init_mode                  │   │
+                            ▼                                    │   │
+                 ┌──────────────────────┐     re-trim:           │   │
+                 │     5. StepMode      │────────────────────────┘   │
+                 └──────────┬───────────┘     dl_enter_warm_start    │
+                            │ dl_do_step repeats in StepMode         │
+                            │ dl_terminate                           │
+                            ▼                                        │
+                 ┌──────────────────────┐                            │
+                 │    6. Terminated     │────────────────────────────┘
+                 └──────────────────────┘     dl_free_instance
 ```
 
 ## 6.2 Detailed Lifecycle Transition Rules
@@ -75,4 +72,3 @@ The **Driveline Component Model (DCM)** is a C-ABI ([§9](09-abi.md)). Native co
    * **Contexts per Actor:** `dl_enter_cold_init` and `dl_enter_warm_start` take one `dl_init_context_t` per actor, and the component matches each context to its actor slot by `chassis_state.actor_id`. Cold init and a splice pass a context for every bound actor. A re-trim passes contexts only for the actors whose physics changed, and the component keeps the state of every other actor.
    * **Size of the Change:** For linear tires, $\delta_{\text{ss}} - \delta_{\text{KS}} \approx K_{\text{us}}\, v_{\text{lon}} \dot{\psi}$, where $K_{\text{us}} = \frac{m}{L}\left(\frac{l_r}{C_{\alpha f}} - \frac{l_f}{C_{\alpha r}}\right)$ is the understeer gradient. [§8](08-steady-state.md) gives a test vector.
    * **Full-Stack Bridge (`SensorBundle -> KinematicState`):** Allowed only as a static $t = 0$ actor binding, for replay actors or external HiL ego bridges. Splicing a `SensorBundle -> KinematicState` component at $t > 0$ is a compile-time error unless the scenario declares `allow_pose_override = true;`.
-5. **Membership Mutation (`dl_on_membership_change`):** Actors can join or leave a $1\text{:}N$ or $N\text{:}N$ component at $t > 0$. `dl_membership_change_t` lists the full active actor set after the change and the init contexts of the added actors. An actor absent from the new active set has left. The component warm-starts each added actor's slot and does not reset the other members.

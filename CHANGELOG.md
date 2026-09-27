@@ -6,6 +6,12 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.18
+
+* Removed `dl_on_membership_change` and `dl_membership_change_t`, because no scenario statement can change a group's members.
+* Redrew the lifecycle diagram.
+* ABI version 0.7.
+
 ## 0.17
 
 * Warm start and re-trim pass one init context per affected actor. Components match contexts to slots by `actor_id` and keep the other actors' state.

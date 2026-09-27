@@ -9,7 +9,7 @@ extern "C" {
 
 #pragma pack(push, 8)
 
-#define DL_ABI_VERSION_0_6 0x00000600U
+#define DL_ABI_VERSION_0_7 0x00000700U
 
 typedef enum {
     DL_STATUS_OK                    = 0,
@@ -258,7 +258,7 @@ typedef struct {
 } dl_powertrain_state_t;
 
 typedef struct {
-    uint32_t abi_version;                        /* Must equal DL_ABI_VERSION_0_6 */
+    uint32_t abi_version;                        /* Must equal DL_ABI_VERSION_0_7 */
     uint32_t struct_size;                        /* sizeof(dl_init_context_t) */
     uint64_t sim_time_ns;                        /* [ns] */
     uint8_t  is_warm_start;                      /* 0:ColdInit, 1:WarmStart */
@@ -297,15 +297,6 @@ typedef struct {
     uint32_t            output_stride;
     uint32_t            _pad;
 } dl_batch_step_io_t;
-
-/* Membership Mutation Descriptor (Supports both Join and Leave at t > 0) */
-typedef struct {
-    uint64_t                sim_time_ns;
-    uint32_t                active_actor_count;
-    uint32_t                added_actor_count;
-    const uint64_t*         active_actor_ids;    /* Array [active_actor_count] */
-    const dl_init_context_t* added_init_contexts;/* Array [added_actor_count] for warm join */
-} dl_membership_change_t;
 
 /* ==========================================================================
  * 5. HOST MAP CALLBACKS & COMPONENT FUNCTION PROTOTYPES
@@ -357,7 +348,6 @@ dl_status_t dl_enter_cold_init(dl_component_handle_t inst, uint32_t actor_count,
 dl_status_t dl_enter_warm_start(dl_component_handle_t inst, uint32_t actor_count, const dl_init_context_t* init_contexts);
 dl_status_t dl_exit_init_mode(dl_component_handle_t inst);
 dl_status_t dl_do_step(dl_component_handle_t inst, const dl_batch_step_io_t* io);
-dl_status_t dl_on_membership_change(dl_component_handle_t inst, const dl_membership_change_t* change);
 dl_status_t dl_terminate(dl_component_handle_t inst);
 void        dl_free_instance(dl_component_handle_t inst);
 
