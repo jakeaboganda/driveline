@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.48
+
+* `sim_time` and `actor.state` mean the same in `on` conditions as in `terminate when`. Instances within a group run in `bind` order.
+
 ## 0.47
 
 * Defined the latched frames in splice and re-trim contexts. A re-trim replaces only the steering fields, so longitudinal control continues without a step.

@@ -1,7 +1,7 @@
 ---
 title: Execution model and determinism
 section: 11
-version: 0.43
+version: 0.48
 status: draft
 normative: true
 depends_on: [06-lifecycle.md]
@@ -20,10 +20,10 @@ depends_on: [06-lifecycle.md]
    1. **Phase 1 (Sensor Projection):** Scheduled sensors project World state $X(t)$ into each actor's `SliceBuffer`s. Tick 0 skips Phase 1 because cold initialization Pass 1 has done it ([§6.2.3](06-lifecycle.md)).
    2. **Phase 2 (Intent, Control, & Arbitration):** Scheduled Stage 1, Stage 2, and Arbiter components step.
    3. **Phase 3 (Physics):** Scheduled Stage 3 components compute $X(t + \Delta t)$.
-   4. **Phase 4 (World Commit & Termination Check):** The runtime commits $X(t + \Delta t)$, updates cached Frenet coordinates, and evaluates `terminate when`. Inside the predicate, `sim_time` is $t + \Delta t$ and `actor.state` is the committed `KinematicState`. If the predicate is true, the run ends successfully after this phase, and no `on` statement fires on this tick. Otherwise the runtime evaluates `on` statements ([§10.4](10-composition.md)).
+   4. **Phase 4 (World Commit & Termination Check):** The runtime commits $X(t + \Delta t)$, updates cached Frenet coordinates, and evaluates `terminate when`. Inside the predicate, and inside `on` conditions, `sim_time` is $t + \Delta t$ and `actor.state` is the committed `KinematicState`. If the predicate is true, the run ends successfully after this phase, and no `on` statement fires on this tick. Otherwise the runtime evaluates `on` statements ([§10.4](10-composition.md)).
    * **No Contact Model:** The runtime does not model contact between actors. Actors can overlap. `collision(...)` is a predicate on committed state that a scenario can use to end the run.
 3. **Deterministic Intra-Phase Ordering & Seeding:**
-   * Within Phase 1, Phase 2, and Phase 3, actors and $1\text{:}N$ groups are evaluated in ascending order of `actor_id` (and topological chain order within each actor). A group sorts by its smallest member `actor_id`. Because Phase 2 components only read Phase 1 `SliceBuffer` snapshots from $X(t)$ and write to actor-local checkpoint buffers, Phase 2 is data-race-free and parallelizable across actors.
+   * Within Phase 1, Phase 2, and Phase 3, actors and groups are evaluated in ascending order of `actor_id` (and topological chain order within each actor). A group sorts by its smallest member `actor_id`, and within a group, per-actor instances run in `bind` order. Because Phase 2 components only read Phase 1 `SliceBuffer` snapshots from $X(t)$ and write to actor-local checkpoint buffers, Phase 2 is data-race-free and parallelizable across actors.
    * Each stochastic sensor gets a 64-bit seed per tick: `SipHash-2-4(key, msg)`. The 128-bit `key` is `scenario_seed` as a little-endian `uint64` followed by 8 zero bytes. The 24-byte `msg` is `actor_id` (little-endian `uint64`), `sensor_port_index` (little-endian `uint32`), 4 zero bytes, and `k_tick` (little-endian `uint64`). `sensor_port_index` is the zero-based position of the sensor in its actor's `sensors` block, in source order. `scenario_seed` is the value of the scenario's `seed` statement, or 0 if the scenario has none. The sensor's random generator algorithm is part of the sensor's versioned implementation. Test vectors: `scenario_seed = 42`, `actor_id = 1`, `sensor_port_index = 0`, `k_tick = 0` gives `0x5cc6f959467d3eca`. `scenario_seed = 42`, `actor_id = 3`, `sensor_port_index = 1`, `k_tick = 25` gives `0xb818879e7dfe5b11`.
 4. **Determinism Guarantee & Scope:**
    * **Same Build, Same Platform:** A conforming runtime produces bit-identical results for the same scenario, seed, runtime build, component binaries, and platform.
