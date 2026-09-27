@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.57
+
+* Phase 4 updates each actor's map cache with `world_to_frenet` and a defined hint, so actors in junctions resolve to the same road in every runtime.
+
 ## 0.56
 
 * Defined the typing of `bind_inputs` expressions, `fmu.out`, and `bind_outputs` assignments. Pin names must exist in the FMU's model description.

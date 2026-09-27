@@ -1,10 +1,10 @@
 ---
 title: Execution model and determinism
 section: 11
-version: 0.53
+version: 0.57
 status: draft
 normative: true
-depends_on: [06-lifecycle.md, 10-composition.md]
+depends_on: [06-lifecycle.md, 09-abi.md, 10-composition.md]
 ---
 
 # 11. Deterministic Integer-Tick Execution Model
@@ -20,7 +20,7 @@ depends_on: [06-lifecycle.md, 10-composition.md]
    1. **Phase 1 (Sensor Projection):** Scheduled sensors project World state $X(t)$ into each actor's `SliceBuffer`s. Tick 0 skips Phase 1 because cold initialization Pass 1 has done it ([§6.2.3](06-lifecycle.md)).
    2. **Phase 2 (Intent, Control, & Arbitration):** Scheduled Stage 1, Stage 2, and Arbiter components step.
    3. **Phase 3 (Physics):** Scheduled Stage 3 components compute $X(t + \Delta t)$.
-   4. **Phase 4 (World Commit & Termination Check):** The runtime commits $X(t + \Delta t)$, updates cached Frenet coordinates, and evaluates `terminate when`. Inside the predicate, and inside `on` conditions, `sim_time` is $t + \Delta t$ and `actor.state` is the committed `KinematicState`. If the predicate is true, the run ends successfully after this phase, and no `on` statement fires on this tick. Otherwise the runtime evaluates `on` statements ([§10.4](10-composition.md)).
+   4. **Phase 4 (World Commit & Termination Check):** The runtime commits $X(t + \Delta t)$ and updates each actor's map cache (`road_id`, `lane_id`, `frenet_s`, `frenet_d`) with `world_to_frenet` at the new pose, passing the actor's yaw as `psi` and its previous `road_id` as `hint_road_id` ([§9.2](09-abi.md)). Then it evaluates `terminate when`. Inside the predicate, and inside `on` conditions, `sim_time` is $t + \Delta t$ and `actor.state` is the committed `KinematicState`. If the predicate is true, the run ends successfully after this phase, and no `on` statement fires on this tick. Otherwise the runtime evaluates `on` statements ([§10.4](10-composition.md)).
    * **No Contact Model:** The runtime does not model contact between actors. Actors can overlap. `collision(...)` is a predicate on committed state that a scenario can use to end the run.
 3. **Deterministic Intra-Phase Ordering & Seeding:**
    * Within Phase 1, Phase 2, and Phase 3, actors and groups are evaluated in ascending order of `actor_id` (and topological chain order within each actor). A group sorts by its smallest member `actor_id`, and within a group, per-actor instances run in `bind` order. Because Phase 2 components only read Phase 1 `SliceBuffer` snapshots from $X(t)$ and write to actor-local checkpoint buffers, Phase 2 is data-race-free and parallelizable across actors.
