@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.19
+
+* Added a table of legal lifecycle calls. `dl_terminate` is legal from every live state, which the error handling in section 14 needs.
+
 ## 0.18
 
 * Removed `dl_on_membership_change` and `dl_membership_change_t`, because no scenario statement can change a group's members.

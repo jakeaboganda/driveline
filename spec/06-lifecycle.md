@@ -1,7 +1,7 @@
 ---
 title: Component lifecycle
 section: 6
-version: 0.18
+version: 0.19
 status: draft
 normative: true
 depends_on: [05-checkpoints.md, 08-steady-state.md, 09-abi.md]
@@ -47,6 +47,20 @@ The **Driveline Component Model (DCM)** is a C-ABI ([§9](09-abi.md)). Native co
                  │    6. Terminated     │────────────────────────────┘
                  └──────────────────────┘     dl_free_instance
 ```
+
+**Allowed Calls:** This table is the complete list of legal calls. Any other call returns `DL_STATUS_ERR_STATE` and leaves the state unchanged. A call that returns an error also leaves the state unchanged.
+
+| Function | Allowed In | Next State |
+| :--- | :--- | :--- |
+| `dl_instantiate` | Uninstantiated | Instantiated |
+| `dl_set_parameters` | Instantiated, StructuralConfig | unchanged |
+| `dl_configure_structure` | Instantiated | StructuralConfig |
+| `dl_enter_cold_init` | StructuralConfig, at $t = 0$ only | ColdInitMode |
+| `dl_enter_warm_start` | StructuralConfig at $t > 0$ (splice), or StepMode (re-trim) | WarmStartMode |
+| `dl_exit_init_mode` | ColdInitMode, WarmStartMode | StepMode |
+| `dl_do_step` | StepMode | StepMode |
+| `dl_terminate` | Instantiated, StructuralConfig, ColdInitMode, WarmStartMode, StepMode | Terminated |
+| `dl_free_instance` | every state except Uninstantiated | Uninstantiated; the handle becomes invalid |
 
 ## 6.2 Detailed Lifecycle Transition Rules
 
