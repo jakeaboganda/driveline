@@ -1,7 +1,7 @@
 ---
 title: Component lifecycle
 section: 6
-version: 0.47
+version: 0.49
 status: draft
 normative: true
 depends_on: [05-checkpoints.md, 08-steady-state.md, 09-abi.md]
@@ -86,4 +86,3 @@ The **Driveline Component Model (DCM)** is a C-ABI ([§9](09-abi.md)). Native co
    * **Latched Frames at $t > 0$:** For a splice or a re-trim, each latched frame in the context is the last frame of that type that reached the component's input or left its output before the splice, whichever the component consumes or produces. The chassis state is the committed state. A re-trim then replaces only the steering fields with the new `front_wheel_angle`: `latched_kinematic_ctrl.steer_angle_cmd`, and `latched_actuator_ctrl.steering_wheel_norm` $= $ `front_wheel_angle` $/\, \delta_{\max}$. Longitudinal fields keep their last values, so a re-trimmed speed controller continues without a step.
    * **Contexts per Actor:** `dl_enter_cold_init` and `dl_enter_warm_start` take one `dl_init_context_t` per actor, and the component matches each context to its actor slot by `chassis_state.actor_id`. Cold init and a splice pass a context for every bound actor. A re-trim passes contexts only for the actors whose physics changed, and the component keeps the state of every other actor.
    * **Size of the Change:** For linear tires, $\delta_{\text{ss}} - \delta_{\text{KS}} \approx K_{\text{us}}\, v_{\text{lon}} \dot{\psi}$, where $K_{\text{us}} = \frac{m}{L}\left(\frac{l_r}{C_{\alpha f}} - \frac{l_f}{C_{\alpha r}}\right)$ is the understeer gradient. [§8](08-steady-state.md) gives a test vector.
-   * **Full-Stack Bridge (`SensorBundle -> KinematicState`):** Allowed only as a static $t = 0$ actor binding, for replay actors or external HiL ego bridges. Splicing a `SensorBundle -> KinematicState` component at $t > 0$ is a compile-time error unless the scenario declares `allow_pose_override = true;`.

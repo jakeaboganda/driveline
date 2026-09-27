@@ -1,7 +1,7 @@
 ---
 title: Priors, sensors, and SliceBuffer
 section: 4
-version: 0.22
+version: 0.49
 status: draft
 normative: true
 depends_on: [02-conventions.md]
@@ -40,7 +40,7 @@ All `SliceBuffer<T, N>` ports enforce deterministic edge-case semantics across f
      * **Target Track Arrays (`TargetTrack[32]`):** Matched across $s[k+1]$ and $s[k]$ by `target_actor_id`. Tracks present in both samples interpolate field by field under the rules above. Tracks present in only one sample are taken from $s[k+1]$, or dropped if absent from $s[k+1]$.
 
 ## 4.3 Normative Sensor Slice Schemas (and ASAM OSI Mapping)
-Driveline defines four standard sensor slice payloads, one track element type (`TargetTrack`), and one composite (`SensorBundle`). All are defined in `driveline_abi.h` ([§9](09-abi.md)). Conforming runtimes may also fill them from **ASAM OSI** `osi3::SensorView` / `osi3::SensorData` messages. [Open items](open-items.md) lists the OSI mappings that still need checking against the OSI release.
+Driveline defines four standard sensor slice payloads and one track element type (`TargetTrack`). All are defined in `driveline_abi.h` ([§9](09-abi.md)). Conforming runtimes may also fill them from **ASAM OSI** `osi3::SensorView` / `osi3::SensorData` messages. [Open items](open-items.md) lists the OSI mappings that still need checking against the OSI release.
 
 | Slice Type | C-ABI Struct | Fields & Semantics | ASAM OSI Equivalent |
 | :--- | :--- | :--- | :--- |
@@ -49,7 +49,6 @@ Driveline defines four standard sensor slice payloads, one track element type (`
 | **`RadarSlice`** | `dl_radar_slice_t` | `has_primary_target` (`uint8`), `primary_range` ($\text{m}$), `primary_azimuth` ($\text{rad}$), `primary_rcs` ($\text{dBsm}$), `num_tracks` (`uint32`), `tracks[32]` (`dl_target_track_t`). | `osi3::RadarSensorView` / `osi3::DetectedMovingObject` |
 | **`CameraSlice`** | `dl_camera_slice_t` | `obstacle_confidence` ($[0,1]$), `lane_line_confidence` ($[0,1]$), `d_lane_center_est` ($\text{m}$), `heading_error_est` ($\text{rad}$), `num_tracks` (`uint32`), `tracks[32]` (`dl_target_track_t`). | `osi3::CameraSensorView` / `osi3::DetectedLaneBoundary` |
 | **`SurfaceSlice`** | `dl_surface_slice_t` | `mu_fl`, `mu_fr`, `mu_rl`, `mu_rr` (per-corner friction $\mu \in [0, 2]$), `mu_mean` (dimensionless), `road_grade` $\theta_{\text{road}}$ ($\text{rad}$), `road_bank` $\phi_{\text{road}}$ ($\text{rad}$), `elevation_z` ($\text{m}$). | No single OSI field. Derived from OpenDRIVE elevation and superelevation and the runtime friction field. |
-| **`SensorBundle`** | `dl_sensor_bundle_t` | Composite struct containing one `VisualSlice`, one `RadarSlice`, one `CameraSlice`, and one `SurfaceSlice` for full-stack bridges. | Complete `osi3::SensorView` |
 
 **Track Lists:** Within one slice, each `target_actor_id` appears at most once. Tracks are sorted by ascending `range`, with ties broken by ascending `target_actor_id`. If a sensor detects more than 32 targets, the slice keeps the first 32 in this order. `num_tracks` is at most 32, and entries beyond `num_tracks` are zero-filled.
 

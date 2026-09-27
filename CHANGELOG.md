@@ -6,6 +6,11 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.49
+
+* Removed `SensorBundle`, the full-stack bridge rule, and `allow_pose_override`. No sensor produced a `SensorBundle`. A replay actor needs no special rule: it is a source physics chain.
+* ABI version 0.11.
+
 ## 0.48
 
 * `sim_time` and `actor.state` mean the same in `on` conditions as in `terminate when`. Instances within a group run in `bind` order.

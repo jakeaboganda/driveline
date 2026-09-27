@@ -9,7 +9,7 @@ extern "C" {
 
 #pragma pack(push, 8)
 
-#define DL_ABI_VERSION_0_10 0x00000A00U
+#define DL_ABI_VERSION_0_11 0x00000B00U
 
 typedef enum {
     DL_STATUS_OK                    = 0,
@@ -142,13 +142,6 @@ typedef struct {
     double   road_grade, road_bank, elevation_z; /* [rad, rad, m] */
 } dl_surface_slice_t;
 
-typedef struct {
-    dl_visual_slice_t  visual;
-    dl_radar_slice_t   radar;
-    dl_camera_slice_t  camera;
-    dl_surface_slice_t surface;
-} dl_sensor_bundle_t;
-
 /* Serialized SliceBuffer prefix. Followed by count entries, newest first.
  * Each entry is uint64_t t_ns followed by the slice struct. */
 typedef struct {
@@ -257,7 +250,7 @@ typedef struct {
 } dl_powertrain_state_t;
 
 typedef struct {
-    uint32_t abi_version;                        /* Must equal DL_ABI_VERSION_0_10 */
+    uint32_t abi_version;                        /* Must equal DL_ABI_VERSION_0_11 */
     uint32_t struct_size;                        /* sizeof(dl_init_context_t) */
     uint64_t sim_time_ns;                        /* [ns] */
     uint8_t  is_warm_start;                      /* 0:ColdInit, 1:WarmStart */

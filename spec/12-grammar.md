@@ -1,7 +1,7 @@
 ---
 title: DSL grammar
 section: 12
-version: 0.43
+version: 0.49
 status: draft
 normative: true
 depends_on: []
@@ -31,8 +31,7 @@ BindOutputsBlock ::= "bind_outputs" "->" TypeSpec "{" (Ident "=" Expr ";")* "}"
 StepBlock        ::= "step" "(" PortList ")" "->" TypeSpec "{" Stmt* "}"
 
 ScenarioDecl     ::= "scenario" Ident "{" WorldStmt* ActorDecl* BindStmt* EventStmt* TerminateStmt "}"
-WorldStmt        ::= ("map" "=" Expr ";") | ("timestep" "=" TimeLit ";") | ("seed" "=" IntLit ";")
-                   | ("allow_pose_override" "=" BoolLit ";") | EnvBlock
+WorldStmt        ::= ("map" "=" Expr ";") | ("timestep" "=" TimeLit ";") | ("seed" "=" IntLit ";") | EnvBlock
 EnvBlock         ::= "environment" "{" (Ident "=" Expr ";" | CallExpr ";")* "}"
 
 ActorDecl        ::= "actor" Ident "=" CallExpr ("with" ActorBody)? ";"
