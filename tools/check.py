@@ -236,6 +236,27 @@ STRINGLIT: /"(?:\\\\.|[^"\\\\])*"/
             fail(f"grammar: {path.name} does not parse\n{e}")
 
 
+def check_vehicle_spec_fields():
+    header = HEADER.read_text()
+    scenario = (EXAMPLES / "kanagawa_pinch_test.dline").read_text()
+    for tier, struct in (("tier0", "dl_kinematic_params_t"), ("tier1", "dl_single_track_params_t"),
+                         ("tier2", "dl_multibody_params_t")):
+        body = re.search(r"typedef struct \{([^{}]*)\} " + struct + ";", header).group(1)
+        body = re.sub(r"/\*.*?\*/", "", body)
+        members = set()
+        for decl in body.split(";"):
+            names = decl.split()[1:] if decl.split() else []
+            for n in " ".join(names).split(","):
+                n = re.sub(r"\[.*\]", "", n).strip()
+                if n and not n.startswith("_") and n != "num_gears":
+                    members.add(n)
+        block = re.search(tier + r"\s*=\s*\{(.*?)\};", scenario, re.S).group(1)
+        fields = set(re.findall(r"(\w+)\s*:", block))
+        if fields != members:
+            fail(f"vehicle_spec {tier}: missing {sorted(members - fields)}, unknown {sorted(fields - members)}")
+    notes.append("vehicle_spec: example tier records match the header structs")
+
+
 def check_test_vector(docs):
     scenario = (EXAMPLES / "kanagawa_pinch_test.dline").read_text()
 
@@ -301,6 +322,7 @@ def main():
     readme_meta, docs = check_docs()
     check_abi(readme_meta)
     check_grammar(docs)
+    check_vehicle_spec_fields()
     check_test_vector(docs)
     check_siphash(docs)
     for n in notes:

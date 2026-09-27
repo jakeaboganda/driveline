@@ -1,7 +1,7 @@
 ---
 title: DSL static semantics
 section: 16
-version: 0.34
+version: 0.44
 status: draft
 normative: true
 depends_on: [02-conventions.md, 04-perception.md, 05-checkpoints.md, 10-composition.md, 12-grammar.md, 15-manifest.md]
@@ -18,7 +18,8 @@ depends_on: [02-conventions.md, 04-perception.md, 05-checkpoints.md, 10-composit
 * **`Time`:** A signed 64-bit count of nanoseconds ([§2](02-conventions.md)). It has dimension s but is an integer type.
 * **Other scalar types:** `Int` (signed 64-bit), `Bool`, and `String`.
 * **Structured types:** The checkpoint frames of [§5](05-checkpoints.md), the slice types of [§4.3](04-perception.md), `Timestamped<T>`, `SliceBuffer<T, N>`, `Rate`, and `RouteNodes`. A struct field has the type its table gives. A `float64` field is a quantity with the dimension of its unit column, an integer field is `Int`, a `char[]` field is `String`, and an enum field has its enum type.
-* **Enum types:** `LonMode`, `LatMode`, `TurnSignal`, `GearMode`, and `InterpMode` (`Interpolate`, `Floor`), with the constants listed in [§4](04-perception.md) and [§5](05-checkpoints.md).
+* **Enum types:** `LonMode`, `LatMode`, `TurnSignal`, `GearMode`, `InterpMode` (`Interpolate`, `Floor`), and `Mount` (`FrontBumper`, `Windshield`, `Center`), with the constants listed in [§4](04-perception.md), [§5](05-checkpoints.md), and [§17](17-standard-library.md).
+* **`VehicleSpec`:** The type of a `vehicle_spec` name ([§16.6](16-static-semantics.md)). **`OpenDriveMap`:** The type of `load_xodr`, a world-truth type ([§0](00-conformance.md)).
 * **`Chain<A, B>`:** A chain whose pipe input has type `A` and whose output has type `B`. A chain whose head binds every input port by name is a source chain, with type `Chain<(), B>`.
 * **Actor:** An actor name has the members `id` (`Int`), `state` (`KinematicState`), and `sensors.<name>` (the sensor's `SliceBuffer<T, N>`).
 
@@ -46,7 +47,7 @@ Names resolve from the innermost scope outward. A name declared twice in one sco
 | File | Imported components, `vehicle_spec` names, `component` names, and `fn` names. |
 | Scenario | Actor names. In `terminate when` and `on` conditions only: `sim_time` (`Time`, [§11](11-execution.md)). |
 | Actor body | `sensors.<name>`, `priors.<name>`, and the actor's chain names. |
-| Component body | Input port names, `param` names, inside `bind_inputs`, `own_state`, and inside `step`, its parameters, `let` names, and `own_state` (`KinematicState`, the actor's own committed state, [§9.1](09-abi.md)). |
+| Component body | Input port names and `param` names. Inside `bind_inputs` and `step`, also `own_state` (`KinematicState`, the actor's own committed state, [§9.1](09-abi.md)). Inside `step`, also its parameters and `let` names. |
 
 * **World Separation:** `actor.state` and `sim_time` are allowed only in `terminate when` and `on` conditions. Using them anywhere else, including as a component argument, is a compile-time error. Components see the World only through sensors, priors, host map callbacks, and their own actor's `own_state` ([§1.1](01-scope.md)).
 * **Field Selectors:** The first argument of `rate_of` is a field name of the buffer's slice type, resolved in that type's scope.
@@ -62,3 +63,11 @@ Names resolve from the innermost scope outward. A name declared twice in one sco
 * **`fn`:** A call to a `fn` substitutes its body chain. `fn` parameters bind by name to values, such as sensor buffers. The body's type must equal the declared `Chain<A, B>`. A `fn` must not call itself, directly or through other `fn`s.
 * **Physics and groups:** An actor's `physics` declaration, and the chain in a `bind` statement, must have type `Chain<(), KinematicState>`.
 * **`step`:** A `step` block must return a value of the component's output type on every path. `let` names are immutable.
+
+## 16.6 Scenario and Vehicle Specification Rules
+
+* **World statements:** A scenario has exactly one `map`, exactly one `timestep` with a value above zero, at most one `seed` (an `Int` from 0 to $2^{63} - 1$), at most one `environment`, and at most one `allow_pose_override`.
+* **Actor bodies:** Names in one actor's `sensors` block are unique, and so are names in its `priors` block.
+* **`vehicle_spec` keys:** The only keys are `tier0`, `tier1`, `tier2`, and `tier3`. `tier0` is required. A present key populates that tier, and the tier rules of [§3](03-vehicle-parameters.md) apply.
+* **Tier 0–2 records:** Each value is a record literal. Its field names must be exactly the member names of `dl_kinematic_params_t`, `dl_single_track_params_t`, or `dl_multibody_params_t` in [`abi/driveline_abi.h`](../abi/driveline_abi.h). Padding members and `num_gears` are excluded. Each value must have the dimension of the unit in that member's header comment. `gear_ratios` is an array literal of 1 to 10 dimensionless values, and `num_gears` is its length.
+* **Tier 3 record:** Fields `deck_type` (`"PACEJKA_TIR"` or `"SOLVER_URI"`), `precedence_mode` (`"SUPPLEMENT_ONLY"` or `"OVERRIDE_TIER1_2"`), and `uri` (a `String` of at most 255 bytes).

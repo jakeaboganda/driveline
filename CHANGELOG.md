@@ -6,6 +6,11 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.44
+
+* Added section 16.6: multiplicity of world statements, uniqueness of sensor and prior names, and `vehicle_spec` keys and record fields, taken from the header structs. Added the `VehicleSpec`, `OpenDriveMap`, and `Mount` types.
+* `tools/check.py` checks that the example's tier records name exactly the header's fields.
+
 ## 0.43
 
 * Removed `static_object`. No section defined its geometry, detection, or collision, and no scenario used it.
