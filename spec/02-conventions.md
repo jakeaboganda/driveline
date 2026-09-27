@@ -1,7 +1,7 @@
 ---
 title: Units and coordinate conventions
 section: 2
-version: 0.7
+version: 0.38
 status: draft
 normative: true
 depends_on: []
@@ -11,10 +11,10 @@ depends_on: []
 
 All conforming runtimes and components must enforce the following mathematical conventions at every port boundary:
 
-* **Strict SI Units:** Distance in meters ($\text{m}$), time in seconds ($\text{s}$), mass in kilograms ($\text{kg}$), force in newtons ($\text{N}$), pressure in pascals ($\text{Pa}$), torque in newton-meters ($\text{N}\cdot\text{m}$), angles in radians ($\text{rad}$), angular velocity in radians per second ($\text{rad/s}$), velocity in meters per second ($\text{m/s}$), acceleration in meters per second squared ($\text{m/s}^2$), and jerk in meters per second cubed ($\text{m/s}^3$). Non-SI units in the DSL (such as `deg` or `Hz`) are syntactic sugar converted to SI (`rad`, $\text{s}^{-1}$) at compile time.
+* **Strict SI Units:** Distance in meters ($\text{m}$), time in seconds ($\text{s}$), mass in kilograms ($\text{kg}$), force in newtons ($\text{N}$), pressure in pascals ($\text{Pa}$), torque in newton-meters ($\text{N}\cdot\text{m}$), angles in radians ($\text{rad}$), angular velocity in radians per second ($\text{rad/s}$), velocity in meters per second ($\text{m/s}$), acceleration in meters per second squared ($\text{m/s}^2$), and jerk in meters per second cubed ($\text{m/s}^3$). Non-SI units in the DSL (such as `deg` or `Hz`) are syntactic sugar converted to SI (`rad`, $\text{s}^{-1}$) at compile time. Three kinds of port field are not SI quantities, and their tables say so: normalized commands in $[0, 1]$ or $[-1, 1]$, confidences in $[0, 1]$, and radar cross-section in dBsm.
 * **Time Representation:** Every timestamp in a frame, buffer, or ABI struct is an unsigned 64-bit count of nanoseconds since $t = 0$. Every value of the DSL type `Time` is a signed 64-bit count of nanoseconds, so time arithmetic can go below zero: at $t = 0.05\text{ s}$, `t - 0.18s` is $-130{,}000{,}000\text{ ns}$. Overflow in `Time` arithmetic is `DL_STATUS_ERR_NUMERIC`. The compiler converts time literals such as `0.18s` to nanoseconds exactly. Components convert to seconds only inside their own arithmetic.
 * **Inertial World Frame (ISO 8855):** Right-handed Cartesian coordinate system $(X, Y, Z)$ aligned with the OpenDRIVE inertial frame ($+X$ East, $+Y$ North, $+Z$ Up).
-* **Vehicle Body Frame & Euler Sequence (ISO 8855):** Orthogonal right-handed frame anchored to the vehicle with $+x$ longitudinal forward, $+y$ lateral left, and $+z$ vertical up. World orientation $(\text{roll } \phi, \text{pitch } \theta, \text{yaw } \psi)$ follows the **ISO 8855 intrinsic $Z\text{-}Y'\text{-}X''$ (yaw $\psi \rightarrow$ pitch $\theta \rightarrow$ roll $\phi$) rotation sequence**. All angles are counter-clockwise positive and normalized to $(-\pi, \pi]$.
+* **Vehicle Body Frame & Euler Sequence (ISO 8855):** Orthogonal right-handed frame anchored to the vehicle with $+x$ longitudinal forward, $+y$ lateral left, and $+z$ vertical up. World orientation $(\text{roll } \phi, \text{pitch } \theta, \text{yaw } \psi)$ follows the **ISO 8855 intrinsic $Z\text{-}Y'\text{-}X''$ (yaw $\psi \rightarrow$ pitch $\theta \rightarrow$ roll $\phi$) rotation sequence**. All angles are counter-clockwise positive by the right-hand rule. Roll, yaw, and every heading are normalized to $(-\pi, \pi]$. Pitch lies in $[-\pi/2, \pi/2]$, the range where the $Z\text{-}Y'\text{-}X''$ angles are unique.
 * **Actor Reference Origin:** Standardized at the **center of the rear axle projected onto the ground plane** $(x_{\text{ra}}, y_{\text{ra}}, z_{\text{ra}})$. The Center of Gravity (CG) is located at longitudinal distance $l_r$ forward of the rear axle, $l_f$ behind the front axle, and height $h_{\text{cg}}$ above the ground plane.
 * **OpenDRIVE Road & Lane Referencing `(road_id, lane_id, s, d)`:**
   * `road_id` (`char[64]`): Null-terminated OpenDRIVE `<road id="...">` identifier.
