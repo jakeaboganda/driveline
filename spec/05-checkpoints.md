@@ -1,7 +1,7 @@
 ---
 title: Checkpoint data contracts
 section: 5
-version: 0.53
+version: 0.54
 status: draft
 normative: true
 depends_on: [02-conventions.md, 06-lifecycle.md, 10-composition.md, 15-manifest.md]
@@ -19,7 +19,15 @@ Every checkpoint frame carries `timestamp_ns` (`uint64`, simulation time in nano
 | `KinematicControlFrame` | `0x01`, `0x02` | `0x04`, `0x08` | none |
 | `ActuatorControlFrame` | `0x01`, `0x02`, `0x10` | `0x04`, `0x08` | none |
 
-**Cleared Bits Downstream (Hold Rule):** A cleared bit means that the producer makes no new request for that field in this frame. Arbiters read the raw bits ([§10.3](10-composition.md)). Every other consumer uses the last value that it received with the bit set. Before it receives such a value, the consumer uses the value from the latched frame in its init context ([§6.2](06-lifecycle.md)). For example, if an intent component emits only a longitudinal deceleration, the downstream controller keeps tracking the last lateral target.
+**Hold Units:** Bits are held or replaced together in hold units:
+
+| Frame | Hold Units |
+| :--- | :--- |
+| `IntentFrame` | `LON` $\{$`0x01`, `0x04`$\}$, `LAT` $\{$`0x02`, `0x10`$\}$, `COUPLED` $\{$`0x08`$\}$ |
+| `KinematicControlFrame` | `LON` $\{$`0x01`, `0x02`$\}$, `LAT` $\{$`0x04`, `0x08`$\}$ |
+| `ActuatorControlFrame` | `PEDALS` $\{$`0x01`, `0x02`$\}$, `STEER` $\{$`0x04`, `0x08`$\}$, `GEAR` $\{$`0x10`$\}$ |
+
+**Hold Rule (applied by the runtime):** A frame asserts a unit if it sets any bit of that unit. Before the runtime delivers a frame to a consumer that is not an Arbiter, it fills the frame unit by unit. For a unit that the frame asserts, the unit's bits and fields come from the frame, and a clear bit inside that unit stays clear. For a unit that the frame does not assert, the unit's bits and fields come from the last frame on that input that asserted it. Before any frame has, they come from the latched frame of the consumer's init context ([§6.2](06-lifecycle.md)). In `IntentFrame`, asserting `COUPLED` discards the held `LON` and `LAT` units, and asserting `LON` or `LAT` discards the held `COUPLED` unit, so a filled frame always meets the trajectory exclusivity rule below. Arbiters receive raw frames ([§10.3](10-composition.md)). Consumers read a field whose bit is clear after filling as not requested. For example, if an intent component emits only a longitudinal deceleration, the controller receives the last lateral target with it.
 
 ## 5.1 Checkpoint 1: `IntentFrame`
 Produced by Stage 1 (Intent) components.
@@ -44,7 +52,7 @@ Produced by Stage 1 (Intent) components.
 | **Coupled Horizon** | `trajectory` | `TrajPoint[64]` | $\text{s}, \text{m}, \text{m/s}$ | Time-indexed array $(t_k, X_k, Y_k, \psi_k, v_k, a_k, \kappa_k)$. |
 | **Auxiliary** | `turn_signal` | `enum` | — | `NONE` ($0$), `LEFT` ($1$), `RIGHT` ($2$), `HAZARD` ($3$). |
 
-**Bit Coverage:** Each `valid_mask` bit covers these fields. The hold rule applies to all fields that a bit covers, as one unit.
+**Bit Coverage:** Each `valid_mask` bit covers these fields. The hold rule moves a bit and its fields together.
 
 | Bit | Group | Fields |
 | :--- | :--- | :--- |

@@ -6,6 +6,11 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.54
+
+* The runtime now applies the hold rule, by hold unit instead of per bit. A per-bit hold could revive a stale steering angle after a switch to rate commands, and could break trajectory exclusivity. Arbiters still see raw frames.
+* Latched actuator frames assert pedals, steering, and gear, so every consumer starts with complete frames.
+
 ## 0.53
 
 * Derived every `depends_on` from the document's links with `tools/sync_deps.py`. `tools/check.py` requires them to match.
