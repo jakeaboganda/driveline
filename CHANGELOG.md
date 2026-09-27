@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.15
+
+* Added a bit coverage table for `IntentFrame`, rules making `trajectory` exclusive of the `LON` and `LAT` bits, array count limits, the time base for `trajectory`, and the reference point for `s_stop`.
+
 ## 0.14
 
 * Defined Tier 3 deck semantics: which components read a deck, what the two precedence modes mean, how a relative `uri` resolves, and which values a deck never overrides.

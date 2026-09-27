@@ -1,7 +1,7 @@
 ---
 title: Checkpoint data contracts
 section: 5
-version: 0.9
+version: 0.15
 status: draft
 normative: true
 depends_on: [02-conventions.md]
@@ -44,6 +44,22 @@ Produced by Stage 1 (Intent) components.
 | **Coupled Horizon** | `trajectory` | `TrajPoint[64]` | $\text{s}, \text{m}, \text{m/s}$ | Time-indexed array $(t_k, X_k, Y_k, \psi_k, v_k, a_k, \kappa_k)$. |
 | **Auxiliary** | `turn_signal` | `enum` | — | `NONE` ($0$), `LEFT` ($1$), `RIGHT` ($2$), `HAZARD` ($3$). |
 
+**Bit Coverage:** Each `valid_mask` bit covers these fields. The hold rule applies to all fields that a bit covers, as one unit.
+
+| Bit | Group | Fields |
+| :--- | :--- | :--- |
+| `0x01` | `LON` | `lon_mode`, `a_ref`, `v_ref`, `gap_target_actor_id`, `time_gap_ref`, `distance_gap_min` |
+| `0x04` | `LON` | `s_stop` |
+| `0x02` | `LAT` | `lat_mode`, `target_road_id`, `target_lane_id`, `d_ref`, `num_waypoints`, `path_points` |
+| `0x10` | `LAT` | `turn_signal` |
+| `0x08` | `COUPLED` | `num_traj_points`, `trajectory` |
+
+**Trajectory Exclusivity:** If `0x08` is set, `trajectory` governs both longitudinal and lateral motion. Then `lat_mode` must be `SPATIOTEMPORAL_TRAJECTORY`, and `0x01` and `0x02` must be clear. If `0x08` is clear, `lat_mode` must not be `SPATIOTEMPORAL_TRAJECTORY`. Any other combination is invalid, and the consumer returns `DL_STATUS_ERR_INVALID_ARG`.
+
+**Array Semantics:** `path_points` holds `num_waypoints` entries and `trajectory` holds `num_traj_points` entries, each at most 64. Entries beyond the count are ignored. A count above 64 is invalid. Both arrays are in the World frame and ordered along the direction of travel. Each `trajectory` time $t_k$ is in seconds after the frame's `timestamp_ns`, starts at $t_0 \ge 0$, and strictly increases.
+
+**Stop Distance:** `s_stop` is the distance along the actor's intended path from its rear-axle origin to the point where the rear-axle origin must stop.
+
 **Measured Gap for `GAP_PROFILE`:** `IntentFrame` carries the gap target and the desired gap. It does not carry the measured gap. A Stage 2 component that tracks `GAP_PROFILE` must declare a `SliceBuffer` input port whose slice type contains `tracks[]`. It reads the measured gap from the track whose `target_actor_id` equals `gap_target_actor_id`.
 
 **Unsupported Modes:** If a Stage 2 component receives a `lon_mode` or `lat_mode` that it does not implement, `dl_do_step` returns `DL_STATUS_ERR_UNSUPPORTED_MODE`, and the runtime stops the scenario.
@@ -72,7 +88,7 @@ Produced by Stage 1 (Intent) components.
 | `steering_wheel_norm` | `float64` | $[-1.0, 1.0]$ | Steering wheel angle normalized against $(\delta_{\max} \cdot i_s)$. |
 | `steering_torque_nm` | `float64` | $\text{N}\cdot\text{m}$ | Optional column steering torque (used when `valid_mask & 0x08` is set). Setting both `0x04` and `0x08` is invalid. The consumer returns `DL_STATUS_ERR_INVALID_ARG`. |
 | `gear_mode` | `enum` | — | `PARK` ($0$), `REVERSE` ($1$), `NEUTRAL` ($2$), `DRIVE` ($3$). |
-| `manual_gear_index` | `int8` | — | Explicit gear index ($1..10$, or $0$ for automatic selection in `DRIVE`). |
+| `manual_gear_index` | `int8` | — | Explicit gear index ($1..$`num_gears`, or $0$ for automatic selection in `DRIVE`). Bit `0x10` covers both `gear_mode` and `manual_gear_index`. |
 
 ## 5.3 Checkpoint 3: `KinematicState` & Reference-Point Continuity
 Produced by Stage 3 (Physical Compute) at the end of every simulation step $t + \Delta t$.
