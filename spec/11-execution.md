@@ -1,7 +1,7 @@
 ---
 title: Execution model and determinism
 section: 11
-version: 0.5
+version: 0.28
 status: draft
 normative: true
 depends_on: [06-lifecycle.md]
@@ -13,6 +13,9 @@ depends_on: [06-lifecycle.md]
    * **Exact Rate Divisibility Rule:** A sensor or component rate $f_{\text{comp}}$ is valid only if some positive integer $k_{\text{div}}$ satisfies $k_{\text{div}} \cdot \Delta t_{\text{base\_ns}} \cdot f_{\text{comp}} = 10^9$ exactly. The compiler checks this rule with exact rational arithmetic. Any other rate (such as `30Hz` on a `500Hz` base clock) is a **compile-time error**.
    * **Default Component Rate:** Any component that omits a `(rate: ...)` clause inherits the base clock rate ($k_{\text{div}} = 1$).
    * **Scheduling Rule:** A component with divisor $k_{\text{div}}$ executes on tick $k_{\text{tick}}$ if and only if $(k_{\text{tick}} \bmod k_{\text{div}}) == 0$, and holds its output constant via Zero-Order Hold (ZOH) on intermediate ticks.
+   * **Physics Rate:** Stage 3 components run on every tick ($k_{\text{div}} = 1$). A `rate` clause on a Stage 3 component is a compile-time error.
+   * **Same-Tick Dataflow:** In Phase 2, a component reads each upstream output as it stands after the upstream's most recent step at or before the current tick. That includes a step earlier in the same Phase 2, because components run in topological order. So within one tick, an intent change reaches the controller and then physics with no added delay.
+   * **Step Arguments:** A scenario-declared component's `step(t, dt)` receives $t$, the tick time, and $dt = k_{\text{div}} \cdot \Delta t_{\text{base}}$, its own period.
 2. **Phases Within a Tick:** Each tick runs four phases in this order:
    1. **Phase 1 (Sensor Projection):** Scheduled sensors project World state $X(t)$ into each actor's `SliceBuffer`s. Tick 0 skips Phase 1 because cold initialization Pass 1 has done it ([§6.2.3](06-lifecycle.md)).
    2. **Phase 2 (Intent, Control, & Arbitration):** Scheduled Stage 1, Stage 2, and Arbiter components step.

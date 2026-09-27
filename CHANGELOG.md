@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.28
+
+* Physics runs on every tick. Defined same-tick dataflow in Phase 2 and the values of `t` and `dt` passed to `step`.
+
 ## 0.27
 
 * Defined the three cardinalities by instance count and data dependence, the instances in a group chain, and per-actor arrays of arguments.
