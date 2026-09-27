@@ -1,7 +1,7 @@
 ---
 title: Priors, sensors, and SliceBuffer
 section: 4
-version: 0.5
+version: 0.7
 status: draft
 normative: true
 depends_on: [02-conventions.md]
@@ -29,7 +29,7 @@ All `SliceBuffer<T, N>` ports enforce deterministic edge-case semantics across f
    $$\text{rate\_of}(f, k) = \begin{cases} \{0.0, \text{false}\} & \text{if } \text{count} < 2 \\ \left\{\dfrac{s[0].f - s[m].f}{s[0].t - s[m].t}, \text{true}\right\} & \text{otherwise} \end{cases}$$
    The timestamp invariant makes the denominator positive whenever $\text{count} \ge 2$. Consumers must check `valid`. A `value` of $0.0$ with `valid = false` means "no estimate", not "no motion".
 4. `buffer.at(t_query, mode: Interpolate | Floor) -> Timestamped<T>`:
-   * **Clamping:** If $t_{\text{query}} \ge s[0].t$, returns $s[0]$. If $t_{\text{query}} \le s[\text{count}-1].t$, returns $s[\text{count}-1]$.
+   * **Clamping:** If $t_{\text{query}} \ge s[0].t$, returns $s[0]$. If $t_{\text{query}} \le s[\text{count}-1].t$, returns $s[\text{count}-1]$. `t_query` is a signed `Time` and may be negative. A negative query returns the oldest sample.
    * **`Floor` Mode:** Returns the newest sample $s[k]$ where $s[k].t \le t_{\text{query}}$.
    * **`Interpolate` Mode:** For bracket $s[k+1].t \le t_{\text{query}} < s[k].t$ with $\alpha = \frac{t_{\text{query}} - s[k+1].t}{s[k].t - s[k+1].t} \in [0, 1)$, each field follows its interpolation class from [§4.3](04-perception.md):
      * **`LINEAR`:** $(1 - \alpha) v_{k+1} + \alpha v_k$.

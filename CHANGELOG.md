@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.7
+
+* Made the DSL type `Time` signed so that `t - reaction_delay` near $t = 0$ does not wrap. Stored timestamps stay unsigned.
+
 ## 0.6
 
 * Added section 14: status code table, runtime handling of warnings and errors, output validation, and report fields.
