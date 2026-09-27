@@ -6,6 +6,11 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.27
+
+* Defined the three cardinalities by instance count and data dependence, the instances in a group chain, and per-actor arrays of arguments.
+* Removed the grammar's `cardinality:` clause: scenario-declared components are always `OneToOne`, and library components get their cardinality from their manifest.
+
 ## 0.26
 
 * Defined FMU stepping order and the resulting delay of one period, the Mode A splice and re-trim paths, the defaults for unassigned `bind_outputs` fields, and FMU parameter passing.

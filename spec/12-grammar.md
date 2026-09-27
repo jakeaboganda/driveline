@@ -1,7 +1,7 @@
 ---
 title: DSL grammar
 section: 12
-version: 0.20
+version: 0.27
 status: draft
 normative: true
 depends_on: []
@@ -13,11 +13,10 @@ ScenarioFile     ::= ImportDecl* VehicleSpecDecl* (ComponentDecl | FnDecl)* Scen
 ImportDecl       ::= "use" ScopedIdent "::" "{" IdentList "}" ";"
 VehicleSpecDecl  ::= "vehicle_spec" Ident "{" (Ident "=" Expr ";")* "}"
 
-ComponentDecl    ::= "component" Ident FmuClause? RateClause? TierClause? CardinalityClause? ":" "(" PortList? ")" "->" TypeSpec (Block | ";")
+ComponentDecl    ::= "component" Ident FmuClause? RateClause? TierClause? ":" "(" PortList? ")" "->" TypeSpec (Block | ";")
 FmuClause        ::= "from_fmu" "(" StringLit ")"
 RateClause       ::= "(" "rate" ":" FreqLit ")"
 TierClause       ::= "(" "required_tier" ":" IntLit ")"
-CardinalityClause::= "(" "cardinality" ":" ("OneToOne" | "OneToMany" | "ManyToMany") ")"
 PortList         ::= PortDecl ("," PortDecl)*
 PortDecl         ::= (Ident ":")? TypeSpec
 TypeSpec         ::= Ident ("<" TypeSpec ("," (TypeSpec | IntLit))* ">")?
