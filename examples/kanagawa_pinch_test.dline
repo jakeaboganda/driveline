@@ -1,0 +1,164 @@
+use std::sensors::{HumanVisualSensor, SurroundVisualSensor, MillimeterRadar, MonoCamera, SurfaceContactSensor};
+use std::intent::{PincerHiveMind};
+use std::control::{PIDSpeedController, JerkLimiter, StanleyLat, LinearPedalMapper, BrakeOverrideArbiter};
+use std::physics::{SimpleDrivetrain, DynamicSingleTrack, KinematicBicycle};
+
+// ============================================================================
+// 1. STRATIFIED VEHICLE SPECIFICATION (Satisfies all Tier 0, 1, 2 invariants)
+// ============================================================================
+vehicle_spec Sedan_2026 {
+    // Tier 0: L_bbox (4.75m) == wheelbase (2.80m) + overhang_f (0.95m) + overhang_r (1.00m)
+    tier0 = {
+        bbox_length: 4.75m, bbox_width: 1.85m, bbox_height: 1.45m,
+        wheelbase: 2.80m, overhang_front: 0.95m, overhang_rear: 1.00m,
+        max_steer_angle: 0.62rad, max_steer_rate: 0.45rad/s, steering_ratio: 14.5
+    };
+
+    // Tier 1: l_f (1.25m) + l_r (1.55m) == wheelbase (2.80m)
+    tier1 = {
+        mass: 1750.0kg, cg_dist_front: 1.25m, cg_dist_rear: 1.55m, cg_height: 0.52m,
+        inertia_zz: 2850.0kg*m^2, cornering_stiffness_f: 85000.0N/rad, cornering_stiffness_r: 92000.0N/rad,
+        aero_cd: 0.28, aero_area: 2.25m^2, rolling_resistance_coeff: 0.012
+    };
+
+    // Tier 2: m_s (1510kg) + m_uf (120kg) + m_ur (120kg) == mass (1750kg)
+    tier2 = {
+        sprung_mass: 1510.0kg, unsprung_mass_f: 120.0kg, unsprung_mass_r: 120.0kg,
+        inertia_xx: 580.0kg*m^2, inertia_yy: 2650.0kg*m^2, inertia_xz: 110.0kg*m^2,
+        track_width_f: 1.58m, track_width_r: 1.59m,
+        susp_stiffness_f: 32000.0N/m, susp_stiffness_r: 36000.0N/m,
+        susp_damping_f: 2800.0N*s/m, susp_damping_r: 3100.0N*s/m,
+        arb_stiffness_f: 18000.0N*m/rad, arb_stiffness_r: 15000.0N*m/rad,
+        tire_effective_radius: 0.33m, wheel_polar_inertia: 1.15kg*m^2,
+        max_drive_torque: 320.0N*m, max_brake_torque: 6500.0N*m,
+        final_drive_ratio: 3.90, gear_ratios: [3.60, 2.19, 1.41, 1.00, 0.83]
+    };
+
+    // Tier 3: Optional Pacejka Tire Deck (Supplements Tier 1/2 when solver supports .tir)
+    tier3 = {
+        deck_type: "PACEJKA_TIR", precedence_mode: "SUPPLEMENT_ONLY",
+        uri: "tires/pacejka_235_45_R18.tir"
+    };
+}
+
+// ============================================================================
+// 2. COMPONENT DECLARATIONS & REUSABLE CONTROL CHAINS
+// ============================================================================
+
+// Native DSL Intent Component with explicit compile-time SliceBuffer capacity N=10
+component HumanIntent (rate: 20Hz) (required_tier: 0): (
+    eyes:  SliceBuffer<VisualSlice, 10>,
+    route: RouteNodes
+) -> IntentFrame {
+    param reaction_delay: Time = 0.18s;
+    param desired_speed: Velocity = 28.0m/s;
+
+    step(t: Time, dt: Time) -> IntentFrame {
+        let perceived = eyes.at(t - reaction_delay, mode: Interpolate);
+        if perceived.lead_ttc < 2.2s {
+            // Sets LON bits only. Downstream keeps the last lateral target (hold rule, §5).
+            return IntentFrame::decelerate(a_ref: -5.5m/s^2);
+        } else {
+            return IntentFrame::follow_route(route: route, v_ref: desired_speed);
+        }
+    }
+}
+
+// Mode A FMU (ships the org.driveline.dcm manifest, no bind blocks)
+component HumanControl from_fmu("fmus/HumanDriverControl.fmu") (rate: 100Hz) (required_tier: 0): (
+    intent: IntentFrame
+) -> ActuatorControlFrame;
+
+// Mode B scalar-pin FMU. Target and range-rate validity go to the FMU as pins.
+// Brake normalization assumes 120 bar corresponds to max_brake_torque.
+component BoschPCS_v4 from_fmu("fmus/BoschPCS_v4.fmu") (rate: 50Hz) (required_tier: 0): (
+    radar:  SliceBuffer<RadarSlice, 8>,
+    camera: SliceBuffer<CameraSlice, 5>
+) -> ActuatorControlFrame {
+    bind_inputs {
+        "Radar_TargetValid" = select(radar.latest().has_primary_target == 1, 1.0, 0.0);
+        "Radar_Range_m"     = radar.latest().primary_range;
+        "Radar_RangeRate"   = radar.rate_of(primary_range, window: 1).value;
+        "Radar_RateValid"   = select(radar.rate_of(primary_range, window: 1).valid, 1.0, 0.0);
+        "Cam_ObstacleConf"  = camera.latest().obstacle_confidence;
+    }
+    bind_outputs -> ActuatorControlFrame {
+        valid_mask          = select(fmu.out("AEB_Active") > 0.5, 0x03, 0x00);
+        throttle            = 0.0;
+        brake               = clamp(fmu.out("AEB_BrakePressure_Pa") / 12000000.0, 0.0, 1.0);
+        steering_wheel_norm = 0.0;
+        gear_mode           = GearMode::DRIVE;
+    }
+}
+
+// Tier A control chain for the Tier 0 KinematicBicycle challengers.
+// Lon branch: PIDSpeedController (VELOCITY_TARGET only) >> JerkLimiter, both Lon<KinematicControlFrame>.
+// Lat branch: StanleyLat, Lat<KinematicControlFrame>.
+fn kinematic_coupled_control() -> Chain<IntentFrame, KinematicControlFrame> {
+    return ((PIDSpeedController(kp: 1.8, ki: 0.1, kd: 0.05) >> JerkLimiter(max_jerk: 4.0m/s^3))
+          + StanleyLat(k: 2.5, sample_step: 1.0m));
+}
+
+// ============================================================================
+// 3. SCENARIO DEFINITION
+// ============================================================================
+scenario KanagawaExpresswayPinchTest {
+    map = load_xodr("maps/kanagawa_expressway.xodr");
+    timestep = 0.002s; // 500 Hz base clock (dt_base_ns = 2,000,000 ns)
+    seed = 42;
+
+    environment {
+        default_friction = 0.85;
+        friction_zone(road: "road_10", s_start: 150.0m, s_end: 250.0m, mu: 0.25);
+    }
+
+    // --- Actor 1: Ego Vehicle (Tier-B Actuators -> SimpleDrivetrain -> Tier-1 Single-Track) ---
+    actor ego = spawn(id: 1, spec: Sedan_2026, road: "road_10", lane: 2, s: 15.0m, v: 28.0m/s) with {
+        priors {
+            nav_route = RouteNodes(["road_10:2", "road_40:1", "road_11:2"]); // road_40: junction connecting road
+        }
+        sensors {
+            // All sensor rates (20Hz, 50Hz, 25Hz, 500Hz) divide 500Hz evenly (divisors: 25, 10, 20, 1)
+            eyes        = HumanVisualSensor(fov: 140deg, range: 180.0m, rate: 20Hz, history: 10);
+            front_radar = MillimeterRadar(mount: FrontBumper, fov: 45deg, rate: 50Hz, history: 8);
+            front_cam   = MonoCamera(mount: Windshield, fov: 60deg, rate: 25Hz, history: 5);
+            tire_patch  = SurfaceContactSensor(rate: 500Hz, history: 1);
+        }
+
+        chain human_driver  = HumanIntent(eyes: sensors.eyes, route: priors.nav_route)
+                           >> HumanControl();
+
+        chain active_safety = BoschPCS_v4(radar: sensors.front_radar, camera: sensors.front_cam);
+
+        // BrakeOverrideArbiter outputs ActuatorControlFrame; SimpleDrivetrain converts pedals
+        // to axle forces/angles using Tier-2 powertrain parameters before DynamicSingleTrack
+        physics = Arbitrate(human_driver, active_safety, via: BrakeOverrideArbiter())
+               >> SimpleDrivetrain()
+               >> DynamicSingleTrack(surface: sensors.tire_patch);
+    };
+
+    // --- Actors 2 & 3: Challengers with Mounted Sensors & 1:N Hive-Mind Coordination ---
+    actor blocker = spawn(id: 2, spec: Sedan_2026, road: "road_10", lane: 1, s: 30.0m, v: 26.0m/s) with {
+        sensors {
+            surround = SurroundVisualSensor(range: 150.0m, rate: 25Hz, history: 5);
+        }
+    };
+
+    actor challenger = spawn(id: 3, spec: Sedan_2026, road: "road_10", lane: 3, s: 35.0m, v: 25.0m/s) with {
+        sensors {
+            surround = SurroundVisualSensor(range: 150.0m, rate: 25Hz, history: 5);
+        }
+    };
+
+    // PincerHiveMind is OneToMany (library manifest). Its vision port gets one buffer
+    // per bound actor. It emits VELOCITY_TARGET + LANE_OFFSET intents only.
+    bind [blocker, challenger] -> PincerHiveMind(
+                                      vision: [blocker.sensors.surround, challenger.sensors.surround],
+                                      target_actor_id: ego.id,
+                                      pinch_gap: 12.0m
+                                  )
+                               >> kinematic_coupled_control()
+                               >> KinematicBicycle();
+
+    terminate when (sim_time > 25.0s or collision(ego, any) or ego.state.v_lon < 0.1m/s);
+}

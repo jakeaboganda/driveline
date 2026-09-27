@@ -1,0 +1,27 @@
+---
+title: Execution model and determinism
+section: 11
+version: 0.4
+status: draft
+normative: true
+depends_on: [06-lifecycle.md]
+---
+
+# 11. Deterministic Integer-Tick Execution Model
+
+1. **Integer Nanosecond Base Clock & Tick Divisors:** The simulation clock advances by integer tick index $k_{\text{tick}} \in \{0, 1, 2, \dots\}$ with base period $\Delta t_{\text{base\_ns}} \in \mathbb{Z}^+$ nanoseconds ($t_{\text{ns}} = k_{\text{tick}} \cdot \Delta t_{\text{base\_ns}}$).
+   * **Exact Rate Divisibility Rule:** A sensor or component rate $f_{\text{comp}}$ is valid only if some positive integer $k_{\text{div}}$ satisfies $k_{\text{div}} \cdot \Delta t_{\text{base\_ns}} \cdot f_{\text{comp}} = 10^9$ exactly. The compiler checks this rule with exact rational arithmetic. Any other rate (such as `30Hz` on a `500Hz` base clock) is a **compile-time error**.
+   * **Default Component Rate:** Any component that omits a `(rate: ...)` clause inherits the base clock rate ($k_{\text{div}} = 1$).
+   * **Scheduling Rule:** A component with divisor $k_{\text{div}}$ executes on tick $k_{\text{tick}}$ if and only if $(k_{\text{tick}} \bmod k_{\text{div}}) == 0$, and holds its output constant via Zero-Order Hold (ZOH) on intermediate ticks.
+2. **Phases Within a Tick:** Each tick runs four phases in this order:
+   1. **Phase 1 (Sensor Projection):** Scheduled sensors project World state $X(t)$ into each actor's `SliceBuffer`s. Tick 0 skips Phase 1 because cold initialization Pass 1 has done it ([§6.2.3](06-lifecycle.md)).
+   2. **Phase 2 (Intent, Control, & Arbitration):** Scheduled Stage 1, Stage 2, and Arbiter components step.
+   3. **Phase 3 (Physics):** Scheduled Stage 3 components compute $X(t + \Delta t)$.
+   4. **Phase 4 (World Commit & Termination Check):** The runtime commits $X(t + \Delta t)$, updates cached Frenet coordinates, and evaluates `terminate when`.
+3. **Deterministic Intra-Phase Ordering & Seeding:**
+   * Within Phase 1, Phase 2, and Phase 3, actors and $1\text{:}N$ groups are evaluated in ascending order of `actor_id` (and topological chain order within each actor). A group sorts by its smallest member `actor_id`. Because Phase 2 components only read Phase 1 `SliceBuffer` snapshots from $X(t)$ and write to actor-local checkpoint buffers, Phase 2 is data-race-free and parallelizable across actors.
+   * Each stochastic sensor gets a 64-bit seed per tick: `SipHash-2-4(key, msg)`. The 128-bit `key` is `scenario_seed` as a little-endian `uint64` followed by 8 zero bytes. The 24-byte `msg` is `actor_id` (little-endian `uint64`), `sensor_port_index` (little-endian `uint32`), 4 zero bytes, and `k_tick` (little-endian `uint64`). The sensor's random generator algorithm is part of the sensor's versioned implementation.
+4. **Determinism Guarantee & Scope:**
+   * **Same Build, Same Platform:** A compliant runtime produces bit-identical results for the same scenario, seed, runtime build, component binaries, and platform.
+   * **Across Platforms:** Bit-identical results across platforms or compilers are guaranteed only if the runtime and every component meet three conditions. They use one correctly rounded math library for transcendental functions (`sin`, `atan`, `exp`, and the rest), because platform `libm` implementations differ in the last bit. They are compiled without fast-math and without floating-point contraction (`-ffp-contract=off`), so no compiler fuses operations into FMA. They use IEEE 754 binary64 arithmetic with round-to-nearest-even.
+   * **External Components:** FMUs and ONNX models must run single-threaded. ONNX Runtime components run on the CPU execution provider with `ORT_SEQUENTIAL` and one intra-op thread. GPU inference is not compliant in this version.
