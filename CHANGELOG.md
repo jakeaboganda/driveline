@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.22
+
+* Track lists have unique IDs, a fixed sort order (range, then ID), truncation to 32, and zero-filled unused entries.
+
 ## 0.21
 
 * Replaced the `buffer.underflow` flag with a read-only `buffer.count`. Removed `DL_STATUS_WARN_UNDERFLOW`.
