@@ -9,7 +9,7 @@ extern "C" {
 
 #pragma pack(push, 8)
 
-#define DL_ABI_VERSION_0_5 0x00000500U
+#define DL_ABI_VERSION_0_6 0x00000600U
 
 typedef enum {
     DL_STATUS_OK                    = 0,
@@ -63,6 +63,7 @@ typedef struct {
     double max_brake_torque;                     /* Sum over wheels, at wheels [N*m] */
     double final_drive_ratio;                    /* i_fd [-] */
     double gear_ratios[10];                      /* Forward gears 1..10 [-] */
+    double reverse_gear_ratio;                   /* Positive magnitude [-] */
     uint32_t num_gears, _pad;
 } dl_multibody_params_t;
 
@@ -257,7 +258,7 @@ typedef struct {
 } dl_powertrain_state_t;
 
 typedef struct {
-    uint32_t abi_version;                        /* Must equal DL_ABI_VERSION_0_5 */
+    uint32_t abi_version;                        /* Must equal DL_ABI_VERSION_0_6 */
     uint32_t struct_size;                        /* sizeof(dl_init_context_t) */
     uint64_t sim_time_ns;                        /* [ns] */
     uint8_t  is_warm_start;                      /* 0:ColdInit, 1:WarmStart */

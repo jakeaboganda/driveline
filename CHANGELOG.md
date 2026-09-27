@@ -6,6 +6,11 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.13
+
+* Added `reverse_gear_ratio` to Tier 2 and to the reference vehicle.
+* ABI version 0.6.
+
 ## 0.12
 
 * Tiers 0–2 describe two-axle, four-wheel vehicles. Tier 3 requires Tier 0. `num_wheels` is 0 or 4.

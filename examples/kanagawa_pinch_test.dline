@@ -31,7 +31,7 @@ vehicle_spec Sedan_2026 {
         arb_stiffness_f: 18000.0N*m/rad, arb_stiffness_r: 15000.0N*m/rad,
         tire_effective_radius: 0.33m, wheel_polar_inertia: 1.15kg*m^2,
         max_drive_torque: 320.0N*m, max_brake_torque: 6500.0N*m,
-        final_drive_ratio: 3.90, gear_ratios: [3.60, 2.19, 1.41, 1.00, 0.83]
+        final_drive_ratio: 3.90, gear_ratios: [3.60, 2.19, 1.41, 1.00, 0.83], reverse_gear_ratio: 3.30
     };
 
     // Tier 3: Optional Pacejka Tire Deck (Supplements Tier 1/2 when solver supports .tir)
