@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.40
+
+* Fixed the order of a standard physics step: actuators first, then derivatives at the old state with the new actuator values, then Euler, then the speed clamp and the planar Z. Defined physics initialization from `chassis_state` and the symbol `dt`.
+
 ## 0.39
 
 * Fixed a stale comment in the reference scenario about what `SimpleDrivetrain` outputs.

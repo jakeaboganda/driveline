@@ -1,7 +1,7 @@
 ---
 title: Standard library
 section: 17
-version: 0.37
+version: 0.40
 status: draft
 normative: true
 depends_on: [02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 08-steady-state.md, 09-abi.md, 15-manifest.md, 16-static-semantics.md]
@@ -11,7 +11,7 @@ depends_on: [02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-c
 
 Every conforming runtime provides the names in this section. Builtins and constructors need no import. Components are imported from `std::sensors` (17.2), `std::intent` (17.3), `std::control` (17.4), and `std::physics` (17.5). Each component's signature here is its manifest ([§15](15-manifest.md)). The behavior is normative: two conforming runtimes produce the same outputs from the same inputs, within the determinism scope of [§11](11-execution.md).
 
-Common notation: $\Delta t = \Delta t_{\text{base}}$, $g = 9.80665\text{ m/s}^2$, and $\rho_{\text{air}} = 1.225\text{ kg/m}^3$. `own` is the actor's `own_state` ([§9.1](09-abi.md)). $\sigma$ is $+1$ if the actor's current lane drives toward increasing $s$ and $-1$ otherwise ([§2](02-conventions.md)).
+Common notation: $\Delta t = \Delta t_{\text{base}}$, $dt$ is the component's own period $k_{\text{div}} \cdot \Delta t_{\text{base}}$ ([§11](11-execution.md)), $g = 9.80665\text{ m/s}^2$, and $\rho_{\text{air}} = 1.225\text{ kg/m}^3$. `own` is the actor's `own_state` ([§9.1](09-abi.md)). $\sigma$ is $+1$ if the actor's current lane drives toward increasing $s$ and $-1$ otherwise ([§2](02-conventions.md)).
 
 ## 17.1 Builtins and Constructors
 
@@ -86,7 +86,15 @@ Output `steer_angle_cmd` $= \delta$ with `valid_mask = 0x04`. The curvature term
 
 ## 17.5 Stage 3 Components
 
-Both physics components are `OneToOne` and integrate with explicit Euler over $\Delta t$. They evaluate derivatives at the state and commands of tick $t$ and produce the state at $t + \Delta t$. They are planar: $Z$ is the map elevation at the new position, and roll and pitch are 0. $v_{\text{lon}}$ never goes below 0: the standard physics does not drive in reverse.
+Both physics components are `OneToOne` and run every tick ([§11](11-execution.md)). Each step from $t$ to $t + \Delta t$ runs in this order:
+
+1. Update the actuator states $\delta$ and $a$ from the command frame, as below.
+2. Evaluate the derivatives at the state of tick $t$, using the updated $\delta$ and $a$.
+3. Apply one explicit Euler step of length $\Delta t$ to every integrated state.
+4. Clamp $v_{\text{lon}} \leftarrow \max(0, v_{\text{lon}})$. The standard physics does not drive in reverse.
+5. Set $Z$ to the map elevation at the new $(X, Y)$, and roll and pitch to 0. The standard physics is planar.
+
+**Initialization:** On cold init or warm start, each component sets its internal state from `chassis_state` in its init context: the pose, $v_{\text{lon}}$, $\dot{\psi}$, $\delta$ from `front_wheel_angle`, $a$ from `a_lon`, and, for `DynamicSingleTrack`, $v_y = v_{\text{lat}} + l_r \dot{\psi}$.
 
 **Actuator dynamics (both):**
 * **Steering:** If `0x04` is set, $\delta \leftarrow \delta + \operatorname{clamp}(\delta_{\text{cmd}} - \delta, \pm \rho\, \Delta t)$, where $\rho = \dot{\delta}_{\max}$, or $\min(\dot{\delta}_{\max}, |\dot{\delta}_{\text{cmd}}|)$ if `0x08` is also set. If only `0x08` is set, $\delta \leftarrow \delta + \operatorname{clamp}(\dot{\delta}_{\text{cmd}}, \pm\dot{\delta}_{\max})\, \Delta t$. Then $|\delta| \le \delta_{\max}$.
