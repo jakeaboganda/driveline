@@ -1,7 +1,7 @@
 ---
 title: C-ABI
 section: 9
-version: 0.34
+version: 0.35
 status: draft
 normative: true
 depends_on: [05-checkpoints.md, 04-perception.md]
@@ -23,3 +23,12 @@ The normative header is [`abi/driveline_abi.h`](../abi/driveline_abi.h). This se
 6. **Step Times:** `sim_time_ns` is the tick time $t$. `dt_step_ns` is $k_{\text{div}} \cdot \Delta t_{\text{base\_ns}}$, the component's period ([§11](11-execution.md)), including on the first step.
 7. **Own State:** `own_states[i]` is the committed `KinematicState` of actor `actor_ids[i]` at tick time $t$, as Phase 4 of the previous tick left it. On Tick 0 it is the `chassis_state` from cold init Pass 1 ([§6.2](06-lifecycle.md)). Every component receives it, because controllers and planners need their own vehicle's speed, pose, and lane. It is the only World state that a component receives outside its sensors and the map.
 8. **Threads:** The runtime never calls one instance from two threads at the same time. It may call different instances at the same time. Host callbacks must be thread-safe and deterministic. A component calls host callbacks only during a `dl_*` call and on the thread that made it.
+
+## 9.2 Host Map Callbacks
+
+The runtime implements these callbacks over the scenario's OpenDRIVE map. Every heading and curvature is measured in the direction of increasing $s$ unless a rule says otherwise, and positive curvature turns left. An argument outside the map returns `DL_STATUS_ERR_INVALID_ARG` and leaves the outputs unchanged.
+
+* **`world_to_frenet(X, Y, psi, hint_road_id)`:** Returns the lane whose area contains $(X, Y)$, with `s` on that road's reference line, `d` from that lane's centerline, and `psi_lane`, the lane heading at `s`. If several lanes contain the point, as in a junction, the callback prefers `hint_road_id`, then the lane whose heading is closest to `psi`, then the smallest `(road_id, lane_id)` in byte order. If no lane contains the point, it returns the lane with the nearest centerline, using the same tie-breaks.
+* **`frenet_to_world(road_id, lane_id, s, d)`:** Returns the point at offset `d` from the lane centerline at `s`, `Z` as the road elevation there, and `psi_lane` and `kappa_lane` of the lane centerline at `s`. An `s` outside $[0, \text{road length}]$ is invalid.
+* **`sample_lane_path(road_id, lane_id, s_start, d_offset, ds, count, out)`:** Writes `count` points at $s = s_{\text{start}} + k \cdot ds$. A negative `ds` samples toward decreasing $s$. Each point's heading and curvature are in the sampling direction. When sampling leaves the road, it continues on the successor lane in the sampling direction, choosing the smallest `(road_id, lane_id)` if there are several. If there is no successor, the remaining points repeat the last point.
+* **`query_lane_topology(road_id, lane_id, s, ...)`:** Returns the neighboring lanes in the lane section that contains `s`. `out_left_lane_id` is the neighbor on the side of increasing lane ID and `out_right_lane_id` the neighbor on the side of decreasing lane ID, skipping lane 0, with 0 meaning none. Successors are the lanes that this lane connects to at its end in its driving direction, through road links or junction connections, sorted by `(road_id, lane_id)`.

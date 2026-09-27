@@ -6,6 +6,12 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.35
+
+* Added section 9.2: semantics, tie-breaking, and out-of-map behavior for the four host map callbacks.
+* `query_lane_topology` takes `s`, because OpenDRIVE lane IDs change between lane sections.
+* ABI version 0.10.
+
 ## 0.34
 
 * Every component now receives its own actor's committed `KinematicState`: `own_states` in `dl_batch_step_io_t`, `own_state` in the DSL, and an `own_state` input on Mode A FMUs. Before this, controllers could not read their own speed.

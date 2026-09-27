@@ -9,7 +9,7 @@ extern "C" {
 
 #pragma pack(push, 8)
 
-#define DL_ABI_VERSION_0_9 0x00000900U
+#define DL_ABI_VERSION_0_10 0x00000A00U
 
 typedef enum {
     DL_STATUS_OK                    = 0,
@@ -257,7 +257,7 @@ typedef struct {
 } dl_powertrain_state_t;
 
 typedef struct {
-    uint32_t abi_version;                        /* Must equal DL_ABI_VERSION_0_9 */
+    uint32_t abi_version;                        /* Must equal DL_ABI_VERSION_0_10 */
     uint32_t struct_size;                        /* sizeof(dl_init_context_t) */
     uint64_t sim_time_ns;                        /* [ns] */
     uint8_t  is_warm_start;                      /* 0:ColdInit, 1:WarmStart */
@@ -320,7 +320,7 @@ typedef struct {
 
     /* Writes up to max_successors successors; *out_num_successors is the total. */
     dl_status_t (*query_lane_topology)(void* host_ctx,
-        const char* road_id, int32_t lane_id,
+        const char* road_id, int32_t lane_id, double s,
         int32_t* out_left_lane_id, int32_t* out_right_lane_id,
         uint32_t max_successors, dl_lane_ref_t* out_successors,
         uint32_t* out_num_successors);
