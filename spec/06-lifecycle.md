@@ -1,10 +1,10 @@
 ---
 title: Component lifecycle
 section: 6
-version: 0.49
+version: 0.53
 status: draft
 normative: true
-depends_on: [05-checkpoints.md, 08-steady-state.md, 09-abi.md]
+depends_on: [02-conventions.md, 07-fmu-packaging.md, 08-steady-state.md, 09-abi.md, 14-diagnostics.md]
 ---
 
 # 6. Driveline Component Model (DCM) & Lifecycle

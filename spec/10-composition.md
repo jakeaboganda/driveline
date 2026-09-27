@@ -1,10 +1,10 @@
 ---
 title: Composition, arbitration, and splicing
 section: 10
-version: 0.34
+version: 0.53
 status: draft
 normative: true
-depends_on: [05-checkpoints.md]
+depends_on: [03-vehicle-parameters.md, 05-checkpoints.md, 06-lifecycle.md, 12-grammar.md, 15-manifest.md]
 ---
 
 # 10. Composition, Fan-Out (`+`), Arbitration, & Splicing

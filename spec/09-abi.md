@@ -1,10 +1,10 @@
 ---
 title: C-ABI
 section: 9
-version: 0.35
+version: 0.53
 status: draft
 normative: true
-depends_on: [05-checkpoints.md, 04-perception.md]
+depends_on: [05-checkpoints.md, 06-lifecycle.md, 07-fmu-packaging.md, 11-execution.md]
 ---
 
 # 9. Normative C-ABI Header (`driveline_abi.h`)

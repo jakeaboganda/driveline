@@ -1,10 +1,10 @@
 ---
 title: DSL grammar
 section: 12
-version: 0.49
+version: 0.53
 status: draft
 normative: true
-depends_on: []
+depends_on: [16-static-semantics.md]
 ---
 
 # 12. Grammar

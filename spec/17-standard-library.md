@@ -1,10 +1,10 @@
 ---
 title: Standard library
 section: 17
-version: 0.45
+version: 0.53
 status: draft
 normative: true
-depends_on: [02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 08-steady-state.md, 09-abi.md, 15-manifest.md, 16-static-semantics.md]
+depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 06-lifecycle.md, 08-steady-state.md, 09-abi.md, 11-execution.md, 15-manifest.md]
 ---
 
 # 17. Standard Library

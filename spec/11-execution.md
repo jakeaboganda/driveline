@@ -1,10 +1,10 @@
 ---
 title: Execution model and determinism
 section: 11
-version: 0.48
+version: 0.53
 status: draft
 normative: true
-depends_on: [06-lifecycle.md]
+depends_on: [06-lifecycle.md, 10-composition.md]
 ---
 
 # 11. Deterministic Integer-Tick Execution Model

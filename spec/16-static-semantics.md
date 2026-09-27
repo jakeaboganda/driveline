@@ -1,10 +1,10 @@
 ---
 title: DSL static semantics
 section: 16
-version: 0.49
+version: 0.53
 status: draft
 normative: true
-depends_on: [02-conventions.md, 04-perception.md, 05-checkpoints.md, 10-composition.md, 12-grammar.md, 15-manifest.md]
+depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 09-abi.md, 10-composition.md, 11-execution.md, 12-grammar.md, 15-manifest.md, 17-standard-library.md]
 ---
 
 # 16. DSL Static Semantics

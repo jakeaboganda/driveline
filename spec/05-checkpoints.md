@@ -1,10 +1,10 @@
 ---
 title: Checkpoint data contracts
 section: 5
-version: 0.41
+version: 0.53
 status: draft
 normative: true
-depends_on: [02-conventions.md]
+depends_on: [02-conventions.md, 06-lifecycle.md, 10-composition.md, 15-manifest.md]
 ---
 
 # 5. Canonical Checkpoint Data Contracts

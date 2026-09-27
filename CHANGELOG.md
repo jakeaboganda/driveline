@@ -6,6 +6,11 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.53
+
+* Derived every `depends_on` from the document's links with `tools/sync_deps.py`. `tools/check.py` requires them to match.
+* `tools/check.py` also checks the example's rate divisibility, actor IDs, and sensor history against port capacity.
+
 ## 0.52
 
 * Replaced a stale section range in the reference scenario text. `tools/check.py` rejects section numbers written without a link.

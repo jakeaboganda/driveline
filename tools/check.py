@@ -115,6 +115,12 @@ def check_docs():
             fail(f"spec/{name}: cites sections by bare number; use linked § references")
         if re.search(r"\bAppendix [A-Z]\b", text):
             fail(f"spec/{name}: refers to an appendix; the suite has none")
+        deps = set(meta.get("depends_on", []))
+        linked = {t for t in re.findall(r"\]\((\d\d-[\w-]+\.md)\)", text)
+                  if t != name and docs[t][0].get("normative") == "true"}
+        expected = linked if meta.get("normative") == "true" else set()
+        if deps != expected:
+            fail(f"spec/{name}: depends_on differs from its links; run tools/sync_deps.py")
         bare = re.findall(r"(?<!\[)§\d+(?:\.\d+)*", text)
         if bare:
             fail(f"spec/{name}: unlinked section references {sorted(set(bare))}")
@@ -261,6 +267,38 @@ def check_vehicle_spec_fields():
     notes.append("vehicle_spec: example tier records match the header structs")
 
 
+def check_scenario_rules():
+    from fractions import Fraction
+
+    scenario = (EXAMPLES / "kanagawa_pinch_test.dline").read_text()
+    scenario = re.sub(r"//[^\n]*", "", scenario)
+    step = re.search(r"timestep\s*=\s*([0-9.]+)s\b", scenario).group(1)
+    base_ns = Fraction(step) * 10**9
+    for hz in re.findall(r"rate:\s*([0-9.]+)Hz", scenario):
+        k = Fraction(10**9) / (base_ns * Fraction(hz))
+        if k.denominator != 1 or k < 1:
+            fail(f"scenario: {hz}Hz does not divide the base clock ({step}s)")
+    ids = [int(i) for i in re.findall(r"spawn\(id:\s*(\d+)", scenario)]
+    if len(ids) != len(set(ids)) or min(ids) < 1:
+        fail(f"scenario: actor ids {ids} are not unique and >= 1")
+    history = {}
+    for actor, body in re.findall(r"actor (\w+) = spawn\(.*?\) with \{(.*?)\n    \};", scenario, re.S):
+        for name, n in re.findall(r"(\w+)\s*=\s*\w+\([^;]*history:\s*(\d+)", body):
+            history[(actor, name)] = int(n)
+    ports = {}
+    for comp, portlist in re.findall(r"component (\w+)[^:]*:\s*\((.*?)\)\s*->", scenario, re.S):
+        for port, n in re.findall(r"(\w+):\s*SliceBuffer<\w+,\s*(\d+)>", portlist):
+            ports[(comp, port)] = int(n)
+    for actor, body in re.findall(r"actor (\w+) = spawn\(.*?\) with \{(.*?)\n    \};", scenario, re.S):
+        for comp, args in re.findall(r"(\w+)\(([^()]*sensors\.[^()]*)\)", body):
+            for port, sensor in re.findall(r"(\w+):\s*sensors\.(\w+)", args):
+                need = ports.get((comp, port))
+                have = history.get((actor, sensor))
+                if need is not None and (have is None or have < need):
+                    fail(f"scenario: {actor}.{sensor} history {have} < {comp}.{port} capacity {need}")
+    notes.append(f"scenario: rates divide the base clock, ids {sorted(ids)} unique, buffer capacities fit")
+
+
 def check_test_vector(docs):
     scenario = (EXAMPLES / "kanagawa_pinch_test.dline").read_text()
 
@@ -327,6 +365,7 @@ def main():
     check_abi(readme_meta)
     check_grammar(docs)
     check_vehicle_spec_fields()
+    check_scenario_rules()
     check_test_vector(docs)
     check_siphash(docs)
     for n in notes:

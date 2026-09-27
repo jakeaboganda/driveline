@@ -1,10 +1,10 @@
 ---
 title: Steady-state cornering solution
 section: 8
-version: 0.11
+version: 0.53
 status: draft
 normative: true
-depends_on: [03-vehicle-parameters.md, 14-diagnostics.md]
+depends_on: [06-lifecycle.md, 13-reference-scenario.md, 14-diagnostics.md]
 ---
 
 # 8. Steady-State Cornering Solution

@@ -1,10 +1,10 @@
 ---
 title: Reference scenario
 section: 13
-version: 0.52
+version: 0.53
 status: draft
 normative: true
-depends_on: [12-grammar.md]
+depends_on: [02-conventions.md, 12-grammar.md]
 ---
 
 # 13. Normative Reference Scenario (`kanagawa_pinch_test.dline`)

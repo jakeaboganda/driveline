@@ -1,10 +1,10 @@
 ---
 title: Conformance and terminology
 section: 0
-version: 0.43
+version: 0.53
 status: draft
 normative: true
-depends_on: []
+depends_on: [04-perception.md, 05-checkpoints.md, 06-lifecycle.md, 07-fmu-packaging.md, 09-abi.md, 10-composition.md, 11-execution.md, 12-grammar.md]
 ---
 
 # 0. Conformance and Terminology

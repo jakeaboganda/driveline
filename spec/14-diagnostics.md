@@ -1,10 +1,10 @@
 ---
 title: Status codes and error handling
 section: 14
-version: 0.51
+version: 0.53
 status: draft
 normative: true
-depends_on: [06-lifecycle.md, 09-abi.md]
+depends_on: [06-lifecycle.md, 07-fmu-packaging.md]
 ---
 
 # 14. Status Codes and Error Handling

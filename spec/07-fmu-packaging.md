@@ -1,10 +1,10 @@
 ---
 title: FMU packaging
 section: 7
-version: 0.51
+version: 0.53
 status: draft
 normative: true
-depends_on: [06-lifecycle.md, 09-abi.md]
+depends_on: [05-checkpoints.md, 06-lifecycle.md, 09-abi.md, 11-execution.md, 15-manifest.md]
 ---
 
 # 7. FMU Packaging (`org.driveline.dcm`)

@@ -1,10 +1,10 @@
 ---
 title: Priors, sensors, and SliceBuffer
 section: 4
-version: 0.49
+version: 0.53
 status: draft
 normative: true
-depends_on: [02-conventions.md]
+depends_on: [02-conventions.md, 06-lifecycle.md, 09-abi.md]
 ---
 
 # 4. Actor Perception: Priors, Sensors, & `SliceBuffer<T, N>`

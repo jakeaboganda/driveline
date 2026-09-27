@@ -1,10 +1,10 @@
 ---
 title: Vehicle parameter tiers
 section: 3
-version: 0.37
+version: 0.53
 status: draft
 normative: true
-depends_on: [02-conventions.md]
+depends_on: [06-lifecycle.md, 08-steady-state.md, 15-manifest.md]
 ---
 
 # 3. Stratified Vehicle Parameter Specification (`vehicle_spec`)

@@ -1,10 +1,10 @@
 ---
 title: Component manifests and packaging
 section: 15
-version: 0.36
+version: 0.53
 status: draft
 normative: true
-depends_on: [00-conformance.md, 05-checkpoints.md, 07-fmu-packaging.md, 09-abi.md, 12-grammar.md]
+depends_on: [00-conformance.md, 03-vehicle-parameters.md, 07-fmu-packaging.md, 10-composition.md, 12-grammar.md, 17-standard-library.md]
 ---
 
 # 15. Component Manifests and Packaging
