@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.10
+
+* Cold init now takes spawn heading and curvature relative to the lane's driving direction. Before this, actors on lanes that drive toward decreasing $s$ started with a yaw rate of the wrong sign.
+
 ## 0.9
 
 * Defined `slip_angle_beta_cg` with atan2 so it stays finite at a standstill and in reverse.
