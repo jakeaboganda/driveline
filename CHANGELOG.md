@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.46
+
+* Cold init instantiates and configures every component before Pass 1, physics exits init mode in Pass 3, and Pass 1 fills every `chassis_state` field, including the map cache.
+
 ## 0.45
 
 * `PIDSpeedController` initialization computes the integrator from the latched intent and state. Stated `JerkLimiter`'s output mask. `follow_route` takes the first matching route node.
