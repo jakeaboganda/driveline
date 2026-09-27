@@ -1,7 +1,7 @@
 ---
 title: Priors, sensors, and SliceBuffer
 section: 4
-version: 0.53
+version: 0.58
 status: draft
 normative: true
 depends_on: [02-conventions.md, 06-lifecycle.md, 09-abi.md]
@@ -27,7 +27,7 @@ All `SliceBuffer<T, N>` ports enforce deterministic edge-case semantics across f
    * **Early-Tick Clamp ($k \ge \text{count}$):** Before $k+1$ samples have been recorded (e.g., on Tick 0 when $\text{count} == 1$), `buffer[k]` returns the oldest available sample `buffer[count - 1]`. `buffer.count` is the number of valid samples, from $1$ to $N$. A component that must not use clamped samples checks `k < buffer.count` first. Queries do not change the buffer.
 3. `buffer.rate_of(field_selector, window: k = 1) -> Rate`: Finite-difference derivative helper. `Rate` is `{ float64 value; bool valid; }`. With $m = \min(k, \text{count}-1)$:
    $$\text{rate\_of}(f, k) = \begin{cases} \{0.0, \text{false}\} & \text{if } \text{count} < 2 \\ \left\{\dfrac{s[0].f - s[m].f}{s[0].t - s[m].t}, \text{true}\right\} & \text{otherwise} \end{cases}$$
-   The timestamp invariant makes the denominator positive whenever $\text{count} \ge 2$. Consumers must check `valid`. A `value` of $0.0$ with `valid = false` means "no estimate", not "no motion".
+   `valid` is also false if $f$ has a dependency field ([§4.3](04-perception.md)) whose value differs between $s[0]$ and $s[m]$, because the difference would then span two targets or two roads. The timestamp invariant makes the denominator positive whenever $\text{count} \ge 2$. Consumers must check `valid`. A `value` of $0.0$ with `valid = false` means "no estimate", not "no motion".
 4. `buffer.at(t_query, mode: Interpolate | Floor) -> Timestamped<T>`:
    * **Clamping:** If $t_{\text{query}} \ge s[0].t$, returns $s[0]$. If $t_{\text{query}} \le s[\text{count}-1].t$, returns $s[\text{count}-1]$. `t_query` is a signed `Time` and may be negative. A negative query returns the oldest sample.
    * **`Floor` Mode:** Returns the newest sample $s[k]$ where $s[k].t \le t_{\text{query}}$.
@@ -46,7 +46,7 @@ Driveline defines four standard sensor slice payloads and one track element type
 | :--- | :--- | :--- | :--- |
 | **`TargetTrack`** *(Element)* | `dl_target_track_t` | `target_actor_id` (`uint64`), `rel_x`, `rel_y`, `rel_z` ($\text{m}$, sensor frame), `rel_vx`, `rel_vy` ($\text{m/s}$), `rel_yaw` ($\text{rad}$), `range` $r$ ($\text{m}$), `bearing` ($\text{rad}$), `ttc_lon` ($\text{s}$, `+INFINITY` when the gap is not closing), `road_id` (`char[64]`), `lane_id` (`int32`), `object_class` (`uint32`), `confidence` ($[0,1]$). | `osi3::DetectedMovingObject` / `osi3::MovingObject` |
 | **`VisualSlice`** | `dl_visual_slice_t` | `ego_road_id` (`char[64]`), `ego_lane_id` (`int32`), `ego_s`, `ego_d` ($\text{m}$), `left_lane_free`, `right_lane_free` (`uint8`), `lead_ttc` ($\text{s}$, `+INFINITY` when there is no lead vehicle or the gap is not closing), `num_tracks` (`uint32`), `tracks[32]` (`dl_target_track_t`). | `osi3::SensorView` (Host + MovingObjects + LaneBoundary) |
-| **`RadarSlice`** | `dl_radar_slice_t` | `has_primary_target` (`uint8`), `primary_range` ($\text{m}$), `primary_azimuth` ($\text{rad}$), `primary_rcs` ($\text{dBsm}$), `num_tracks` (`uint32`), `tracks[32]` (`dl_target_track_t`). | `osi3::RadarSensorView` / `osi3::DetectedMovingObject` |
+| **`RadarSlice`** | `dl_radar_slice_t` | `has_primary_target` (`uint8`), `primary_target_id` (`uint64`, 0 when there is none), `primary_range` ($\text{m}$), `primary_azimuth` ($\text{rad}$), `primary_rcs` ($\text{dBsm}$), `num_tracks` (`uint32`), `tracks[32]` (`dl_target_track_t`). | `osi3::RadarSensorView` / `osi3::DetectedMovingObject` |
 | **`CameraSlice`** | `dl_camera_slice_t` | `obstacle_confidence` ($[0,1]$), `lane_line_confidence` ($[0,1]$), `d_lane_center_est` ($\text{m}$), `heading_error_est` ($\text{rad}$), `num_tracks` (`uint32`), `tracks[32]` (`dl_target_track_t`). | `osi3::CameraSensorView` / `osi3::DetectedLaneBoundary` |
 | **`SurfaceSlice`** | `dl_surface_slice_t` | `mu_fl`, `mu_fr`, `mu_rl`, `mu_rr` (per-corner friction $\mu \in [0, 2]$), `mu_mean` (dimensionless), `road_grade` $\theta_{\text{road}}$ ($\text{rad}$), `road_bank` $\phi_{\text{road}}$ ($\text{rad}$), `elevation_z` ($\text{m}$). | No single OSI field. Derived from OpenDRIVE elevation and superelevation and the runtime friction field. |
 
@@ -54,4 +54,4 @@ Driveline defines four standard sensor slice payloads and one track element type
 
 **Interpolation Classes:** Every `float64` field is `LINEAR` unless listed here. Integer, enum, flag, and `char[]` fields are `HOLD`.
 * `ANGLE`: `rel_yaw`, `bearing`, `primary_azimuth`, `heading_error_est`.
-* Road-relative `LINEAR` fields: `ego_s` depends on `ego_road_id`. `ego_d` depends on `ego_road_id` and `ego_lane_id`. `primary_range`, `primary_azimuth`, and `primary_rcs` depend on `has_primary_target` being `1` in both samples.
+* Road-relative `LINEAR` fields: `ego_s` depends on `ego_road_id`. `ego_d` depends on `ego_road_id` and `ego_lane_id`. `primary_range`, `primary_azimuth`, and `primary_rcs` depend on `primary_target_id`, which must be nonzero and equal in both samples.

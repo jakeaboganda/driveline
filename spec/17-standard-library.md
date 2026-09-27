@@ -1,7 +1,7 @@
 ---
 title: Standard library
 section: 17
-version: 0.53
+version: 0.58
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 06-lifecycle.md, 08-steady-state.md, 09-abi.md, 11-execution.md, 15-manifest.md]
@@ -48,7 +48,7 @@ Sensors are part of the runtime ([§0](00-conformance.md)). Every standard senso
 | :--- | :--- | :--- | :--- | :--- |
 | `HumanVisualSensor` | `fov: Angle`, `range: Length` | `VisualSlice` | `Windshield` | See below. |
 | `SurroundVisualSensor` | `range: Length` | `VisualSlice` | `Center` | `fov` is $2\pi$. See below. |
-| `MillimeterRadar` | `mount`, `fov: Angle`, `range: Length = 200m` | `RadarSlice` | `mount` | The primary target is the nearest track, by `range`, with $x > 0$ and $|y| \le W_{\text{bbox}}/2 + 0.5\text{ m}$. `primary_rcs` is $10\text{ dBsm}$. |
+| `MillimeterRadar` | `mount`, `fov: Angle`, `range: Length = 200m` | `RadarSlice` | `mount` | The primary target is the nearest track, by `range`, with $x > 0$ and $|y| \le W_{\text{bbox}}/2 + 0.5\text{ m}$. `primary_target_id` is its `target_actor_id`. `primary_rcs` is $10\text{ dBsm}$. |
 | `MonoCamera` | `mount`, `fov: Angle`, `range: Length = 120m` | `CameraSlice` | `mount` | `obstacle_confidence` is 1 if a primary target, defined as for the radar, exists and 0 otherwise. `lane_line_confidence` is 1. `d_lane_center_est` is $\sigma \cdot$ `own.frenet_d`. `heading_error_est` is the actor's yaw minus the lane heading in its driving direction, wrapped. |
 | `SurfaceContactSensor` | none | `SurfaceSlice` | none | `mu_fl` through `mu_rr` are $\mu$ at the four contact points: $x \in \{L, 0\}$ and $y = \pm t/2$, with $t$ the Tier 2 track width if present, else $0.85\, W_{\text{bbox}}$. `mu_mean` is their mean. `road_grade`, `road_bank`, and `elevation_z` are map values at the rear-axle origin. |
 

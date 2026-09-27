@@ -6,6 +6,11 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.58
+
+* Added `primary_target_id` to `RadarSlice`. Primary fields interpolate only within one target, and `rate_of` is invalid across a target or road change.
+* ABI version 0.12.
+
 ## 0.57
 
 * Phase 4 updates each actor's map cache with `world_to_frenet` and a defined hint, so actors in junctions resolve to the same road in every runtime.

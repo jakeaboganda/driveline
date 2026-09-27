@@ -9,7 +9,7 @@ extern "C" {
 
 #pragma pack(push, 8)
 
-#define DL_ABI_VERSION_0_11 0x00000B00U
+#define DL_ABI_VERSION_0_12 0x00000C00U
 
 typedef enum {
     DL_STATUS_OK                    = 0,
@@ -125,6 +125,7 @@ typedef struct {
     uint8_t  has_primary_target;
     uint8_t  _pad[3];
     uint32_t num_tracks;
+    uint64_t primary_target_id;                  /* 0 when there is no primary target */
     double   primary_range, primary_azimuth, primary_rcs; /* [m, rad, dBsm] */
     dl_target_track_t tracks[32];
 } dl_radar_slice_t;
@@ -250,7 +251,7 @@ typedef struct {
 } dl_powertrain_state_t;
 
 typedef struct {
-    uint32_t abi_version;                        /* Must equal DL_ABI_VERSION_0_11 */
+    uint32_t abi_version;                        /* Must equal DL_ABI_VERSION_0_12 */
     uint32_t struct_size;                        /* sizeof(dl_init_context_t) */
     uint64_t sim_time_ns;                        /* [ns] */
     uint8_t  is_warm_start;                      /* 0:ColdInit, 1:WarmStart */

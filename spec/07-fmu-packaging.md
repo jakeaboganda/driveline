@@ -1,7 +1,7 @@
 ---
 title: FMU packaging
 section: 7
-version: 0.53
+version: 0.58
 status: draft
 normative: true
 depends_on: [05-checkpoints.md, 06-lifecycle.md, 09-abi.md, 11-execution.md, 15-manifest.md]
@@ -12,11 +12,11 @@ depends_on: [05-checkpoints.md, 06-lifecycle.md, 09-abi.md, 11-execution.md, 15-
 A `component ... from_fmu("...")` declaration uses one of two modes. The compiler picks the mode from the declaration. A declaration with `bind_inputs` or `bind_outputs` blocks is Mode B. A declaration without them is Mode A.
 
 * **Mode A (Driveline-Aware FMU):** The FMU implements the FMI 3.0 layered standard `org.driveline.dcm`. It ships a manifest at `extra/org.driveline.dcm/manifest.json` in the format of [§15](15-manifest.md). A Mode A declaration whose FMU has no manifest is a compile-time error.
-  * Each checkpoint port is an `fmi3Binary` variable with MIME type `application/x-driveline.<checkpoint-type>;version=0.11`. The value is the [§9](09-abi.md) struct, byte for byte.
-  * Each `SliceBuffer` port is an `fmi3Binary` variable with MIME type `application/x-driveline.slice-buffer.<slice-type>;version=0.11`. The value is a `dl_slice_buffer_header_t` followed by `count` entries, newest first. Each entry is a `uint64_t t_ns` followed by the slice struct.
-  * Initialization uses the `fmi3Binary` input `dl_init_context` (MIME type `application/x-driveline.init-context;version=0.11`). The runtime sets it in initialization mode, at $t = 0$ for cold init and at $t = t_{\text{splice}}$ for warm start. `is_warm_start` tells the two apart. For a splice, the runtime creates a new FMU instance. For a re-trim ([§6.2.4](06-lifecycle.md)), it calls `fmi3Reset` and initializes again with the re-trim context.
+  * Each checkpoint port is an `fmi3Binary` variable with MIME type `application/x-driveline.<checkpoint-type>;version=0.12`. The value is the [§9](09-abi.md) struct, byte for byte.
+  * Each `SliceBuffer` port is an `fmi3Binary` variable with MIME type `application/x-driveline.slice-buffer.<slice-type>;version=0.12`. The value is a `dl_slice_buffer_header_t` followed by `count` entries, newest first. Each entry is a `uint64_t t_ns` followed by the slice struct.
+  * Initialization uses the `fmi3Binary` input `dl_init_context` (MIME type `application/x-driveline.init-context;version=0.12`). The runtime sets it in initialization mode, at $t = 0$ for cold init and at $t = t_{\text{splice}}$ for warm start. `is_warm_start` tells the two apart. For a splice, the runtime creates a new FMU instance. For a re-trim ([§6.2.4](06-lifecycle.md)), it calls `fmi3Reset` and initializes again with the re-trim context.
   * Component parameters are FMI parameters with the same names.
-  * The actor's own state ([§9.1](09-abi.md)) is the `fmi3Binary` input `own_state` with MIME type `application/x-driveline.kinematic-state;version=0.11`. The runtime sets it on every step.
+  * The actor's own state ([§9.1](09-abi.md)) is the `fmi3Binary` input `own_state` with MIME type `application/x-driveline.kinematic-state;version=0.12`. The runtime sets it on every step.
   * A Mode A manifest's `cardinality` must be `OneToOne`. Any other value is a compile-time error.
   * **MIME subtype names:** `<checkpoint-type>` and `<slice-type>` are the type names written in lowercase with a hyphen before each inner capital: `IntentFrame` is `intent-frame`, `KinematicControlFrame` is `kinematic-control-frame`, and `RadarSlice` is `radar-slice`.
 * **Mode B (Scalar-Pin FMU):** A legacy FMU with scalar `Float64` pins. `bind_inputs` maps expressions over the `SliceBuffer` ports and `own_state` onto input pins. `bind_outputs` maps output pins onto a checkpoint frame. Cold init uses the FMU's own start values. Splicing a Mode B FMU at $t > 0$ creates a new FMU instance, sets the input start values by evaluating `bind_inputs` at $t_{\text{splice}}$, calls `fmi3EnterInitializationMode` with `startTime` $= t_{\text{splice}}$ and then `fmi3ExitInitializationMode`, and reports `DL_STATUS_WARN_FMU_COLD_SPLICE`.
