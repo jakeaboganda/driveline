@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.42
+
+* Defined track relative velocity by rigid-body kinematics, the sensor frame orientation, and the arguments of the friction lookup.
+
 ## 0.41
 
 * Defined `StanleyLat`'s sampling start and direction, the front-axle point, nearest-point tie-breaking, and the lateral and heading errors. `d_ref` uses the reference-line sign convention of section 2.

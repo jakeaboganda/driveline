@@ -1,7 +1,7 @@
 ---
 title: Standard library
 section: 17
-version: 0.41
+version: 0.42
 status: draft
 normative: true
 depends_on: [02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 08-steady-state.md, 09-abi.md, 15-manifest.md, 16-static-semantics.md]
@@ -28,7 +28,7 @@ Common notation: $\Delta t = \Delta t_{\text{base}}$, $dt$ is the component's ow
 | `IntentFrame::decelerate` | `(a_ref: Acceleration) -> IntentFrame` | `lon_mode = ACCEL_TARGET`, `a_ref`, `valid_mask = 0x01`. |
 | `IntentFrame::follow_route` | `(route: RouteNodes, from: KinematicState, v_ref: Velocity) -> IntentFrame` | `lon_mode = VELOCITY_TARGET` with `v_ref`. `lat_mode = LANE_OFFSET` with `d_ref = 0`. The target lane is the route node whose `road_id` equals `from.road_id`, or `from`'s own lane if no node matches. `valid_mask = 0x03`. |
 
-The world friction field is $\mu(X, Y)$: the zone or default value at the lane that `world_to_frenet` returns for $(X, Y)$.
+The world friction field is $\mu(X, Y)$: the zone or default value at the lane that `world_to_frenet` returns for $(X, Y)$, called with the actor's yaw as `psi` and its current `road_id` as `hint_road_id`.
 
 ## 17.2 Sensors
 
@@ -42,7 +42,7 @@ Sensors are part of the runtime ([§0](00-conformance.md)). Every standard senso
 | `Windshield` | $(0.5 L,\ 0,\ 0.9 H_{\text{bbox}})$ |
 | `Center` | $(0.5 L,\ 0,\ 0.5 H_{\text{bbox}})$ |
 
-**Detection:** A target is every other actor. Its reference point is its footprint center on the ground. A target is detected if its reference point lies within `range` of the sensor origin and its bearing $\operatorname{atan2}(y, x)$ in the sensor frame lies within $\pm$`fov`/2. Track fields ([§4.3](04-perception.md)): `rel_x`, `rel_y`, and `rel_z` are the reference point in the sensor frame. `rel_vx` and `rel_vy` are the target's reference-point velocity minus the sensor origin's velocity, in the sensor frame. `rel_yaw` is the target's yaw minus the actor's yaw, wrapped. `range` is $\sqrt{x^2 + y^2 + z^2}$ and `bearing` is $\operatorname{atan2}(y, x)$. `ttc_lon` is $(x - L_{\text{bbox,target}}/2) / (-v_x)$ if $x > 0$ and $v_x < 0$, else `+INFINITY`. `road_id` and `lane_id` come from the target's committed map cache. `object_class` is `1` (CAR), and `confidence` is `1.0`.
+**Detection:** A target is every other actor. Its reference point is its footprint center on the ground. A target is detected if its reference point lies within `range` of the sensor origin and its bearing $\operatorname{atan2}(y, x)$ in the sensor frame lies within $\pm$`fov`/2. Track fields ([§4.3](04-perception.md)): `rel_x`, `rel_y`, and `rel_z` are the reference point in the sensor frame. `rel_vx` and `rel_vy` are the World velocity of the target's reference point minus the World velocity of the sensor origin, rotated into the sensor frame. Each point velocity follows by rigid-body kinematics from the committed `KinematicState`: $\vec{v}_P = \vec{v}_{\text{ra}} + \dot{\psi}\,\hat{z} \times \vec{r}_P$, with $\vec{r}_P$ the point's offset from the rear-axle origin. The sensor frame's yaw is the actor's yaw. Roll and pitch are ignored. `rel_yaw` is the target's yaw minus the actor's yaw, wrapped. `range` is $\sqrt{x^2 + y^2 + z^2}$ and `bearing` is $\operatorname{atan2}(y, x)$. `ttc_lon` is $(x - L_{\text{bbox,target}}/2) / (-v_x)$ if $x > 0$ and $v_x < 0$, else `+INFINITY`. `road_id` and `lane_id` come from the target's committed map cache. `object_class` is `1` (CAR), and `confidence` is `1.0`.
 
 | Sensor | Parameters | Slice | Mount | Additional Fields |
 | :--- | :--- | :--- | :--- | :--- |
