@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.16
+
+* Only Stage 2 components must reproduce the latched trim, and the runtime checks it on the first Tick 0 output, since initialization returns no output.
+
 ## 0.15
 
 * Added a bit coverage table for `IntentFrame`, rules making `trajectory` exclusive of the `LON` and `LAT` bits, array count limits, the time base for `trajectory`, and the reference point for `s_stop`.
