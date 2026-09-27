@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.11
+
+* Added a feasibility rule to the steady-state solve: steering beyond $\delta_{\max}$, or lateral acceleration beyond $\mu g$, fails with `DL_STATUS_ERR_NUMERIC`.
+
 ## 0.10
 
 * Cold init now takes spawn heading and curvature relative to the lane's driving direction. Before this, actors on lanes that drive toward decreasing $s$ started with a yaw rate of the wrong sign.
