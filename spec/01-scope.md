@@ -1,7 +1,7 @@
 ---
 title: Scope, principles, and related work
 section: 1
-version: 0.5
+version: 0.23
 status: draft
 normative: false
 depends_on: []
@@ -26,7 +26,7 @@ This section summarizes the design. It states no requirements. The normative sec
 
 ## 1.2 Related Work & Standards Positioning
 
-The table below states what each related standard covers and where Driveline differs. The comparative claims in the third column describe scope. They are not measured results. Appendix A lists the claims that still need a checked reference.
+The table below states what each related standard covers and where Driveline differs. The comparative claims in the third column describe scope. They are not measured results. [Open items](open-items.md) lists the claims that still need a checked reference.
 
 | Standard / Framework | Scope Covered | Not Covered | How Driveline Relates |
 | :--- | :--- | :--- | :--- |

@@ -109,6 +109,8 @@ def check_docs():
             prefixes = [".".join(parts[:i]) for i in range(len(parts), 0, -1)]
             if not any(p in headings for p in prefixes[:2]):
                 fail(f"spec/{name}: §{ref} has no matching heading")
+        if re.search(r"\bAppendix [A-Z]\b", text):
+            fail(f"spec/{name}: refers to an appendix; the suite has none")
         bare = re.findall(r"(?<!\[)§\d+(?:\.\d+)*", text)
         if bare:
             fail(f"spec/{name}: unlinked section references {sorted(set(bare))}")

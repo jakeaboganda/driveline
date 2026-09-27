@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.23
+
+* Removed the last stale appendix reference. `tools/check.py` now rejects appendix references.
+
 ## 0.22
 
 * Track lists have unique IDs, a fixed sort order (range, then ID), truncation to 32, and zero-filled unused entries.
