@@ -1,7 +1,7 @@
 ---
 title: Scope, principles, and related work
 section: 1
-version: 0.4
+version: 0.5
 status: draft
 normative: false
 depends_on: []
@@ -12,6 +12,8 @@ depends_on: []
 **Driveline** is a deterministic, component-first scenario description language and execution architecture for road-driving simulation. It separates ground-truth world state from per-actor behavioral, control, and physical compute pipelines, and it specifies the control and vehicle-dynamics contracts that existing scenario standards leave to the host simulator.
 
 ## 1.1 Core Architectural Principles
+
+This section summarizes the design. It states no requirements. The normative sections govern ([§0](00-conformance.md)).
 
 1. **Three-Level World vs. Actor Separation:**
    * **Lexical Level:** A `.dline` scenario file serves as the top-level simulation manifest: it declares the physical world (`map`, `environment`, `static_object`), spawns actor entities with initial physical states, and binds each actor's initial component graph.

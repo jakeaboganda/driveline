@@ -1,7 +1,7 @@
 ---
 title: Units and coordinate conventions
 section: 2
-version: 0.4
+version: 0.5
 status: draft
 normative: true
 depends_on: []
@@ -9,7 +9,7 @@ depends_on: []
 
 # 2. Global Units & Coordinate Conventions
 
-All compliant runtimes and components must enforce the following mathematical conventions at every port boundary:
+All conforming runtimes and components must enforce the following mathematical conventions at every port boundary:
 
 * **Strict SI Units:** Distance in meters ($\text{m}$), time in seconds ($\text{s}$), mass in kilograms ($\text{kg}$), force in newtons ($\text{N}$), pressure in pascals ($\text{Pa}$), torque in newton-meters ($\text{N}\cdot\text{m}$), angles in radians ($\text{rad}$), angular velocity in radians per second ($\text{rad/s}$), velocity in meters per second ($\text{m/s}$), acceleration in meters per second squared ($\text{m/s}^2$), and jerk in meters per second cubed ($\text{m/s}^3$). Non-SI units in the DSL (such as `deg` or `Hz`) are syntactic sugar converted to SI (`rad`, $\text{s}^{-1}$) at compile time.
 * **Time Representation:** Every timestamp, and every value of the DSL type `Time`, is an unsigned 64-bit count of nanoseconds. The compiler converts time literals such as `0.18s` to nanoseconds exactly. Components convert to seconds only inside their own arithmetic.

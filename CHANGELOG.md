@@ -6,6 +6,11 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.5
+
+* Added section 0: normative language, conformance classes for compilers, runtimes, and components, and a glossary that defines stages by output type.
+* Replaced "compliant" with "conforming" and "master" with "runtime".
+
 ## 0.4
 
 * Split the single specification file into one document per concern under `spec/`, each with front-matter. Section 6 of v0.3 became sections 6, 7, and 8. Sections 7 to 10 of v0.3 became sections 9 to 13.

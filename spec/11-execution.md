@@ -1,7 +1,7 @@
 ---
 title: Execution model and determinism
 section: 11
-version: 0.4
+version: 0.5
 status: draft
 normative: true
 depends_on: [06-lifecycle.md]
@@ -22,6 +22,6 @@ depends_on: [06-lifecycle.md]
    * Within Phase 1, Phase 2, and Phase 3, actors and $1\text{:}N$ groups are evaluated in ascending order of `actor_id` (and topological chain order within each actor). A group sorts by its smallest member `actor_id`. Because Phase 2 components only read Phase 1 `SliceBuffer` snapshots from $X(t)$ and write to actor-local checkpoint buffers, Phase 2 is data-race-free and parallelizable across actors.
    * Each stochastic sensor gets a 64-bit seed per tick: `SipHash-2-4(key, msg)`. The 128-bit `key` is `scenario_seed` as a little-endian `uint64` followed by 8 zero bytes. The 24-byte `msg` is `actor_id` (little-endian `uint64`), `sensor_port_index` (little-endian `uint32`), 4 zero bytes, and `k_tick` (little-endian `uint64`). The sensor's random generator algorithm is part of the sensor's versioned implementation.
 4. **Determinism Guarantee & Scope:**
-   * **Same Build, Same Platform:** A compliant runtime produces bit-identical results for the same scenario, seed, runtime build, component binaries, and platform.
+   * **Same Build, Same Platform:** A conforming runtime produces bit-identical results for the same scenario, seed, runtime build, component binaries, and platform.
    * **Across Platforms:** Bit-identical results across platforms or compilers are guaranteed only if the runtime and every component meet three conditions. They use one correctly rounded math library for transcendental functions (`sin`, `atan`, `exp`, and the rest), because platform `libm` implementations differ in the last bit. They are compiled without fast-math and without floating-point contraction (`-ffp-contract=off`), so no compiler fuses operations into FMA. They use IEEE 754 binary64 arithmetic with round-to-nearest-even.
-   * **External Components:** FMUs and ONNX models must run single-threaded. ONNX Runtime components run on the CPU execution provider with `ORT_SEQUENTIAL` and one intra-op thread. GPU inference is not compliant in this version.
+   * **External Components:** FMUs and ONNX models must run single-threaded. ONNX Runtime components run on the CPU execution provider with `ORT_SEQUENTIAL` and one intra-op thread. GPU inference does not conform in this version.

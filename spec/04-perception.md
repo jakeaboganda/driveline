@@ -1,7 +1,7 @@
 ---
 title: Priors, sensors, and SliceBuffer
 section: 4
-version: 0.4
+version: 0.5
 status: draft
 normative: true
 depends_on: [02-conventions.md]
@@ -40,7 +40,7 @@ All `SliceBuffer<T, N>` ports enforce deterministic edge-case semantics across f
      * **Target Track Arrays (`TargetTrack[32]`):** Matched across $s[k+1]$ and $s[k]$ by `target_actor_id`. Tracks present in both samples interpolate field by field under the rules above. Tracks present in only one sample are taken from $s[k+1]$, or dropped if absent from $s[k+1]$.
 
 ## 4.3 Normative Sensor Slice Schemas (and ASAM OSI Mapping)
-Driveline defines four standard sensor slice payloads, one track element type (`TargetTrack`), and one composite (`SensorBundle`). All are defined in `driveline_abi.h` ([§9](09-abi.md)). Compliant runtimes may also fill them from **ASAM OSI** `osi3::SensorView` / `osi3::SensorData` messages. Appendix A lists the OSI mappings that still need checking against the OSI release.
+Driveline defines four standard sensor slice payloads, one track element type (`TargetTrack`), and one composite (`SensorBundle`). All are defined in `driveline_abi.h` ([§9](09-abi.md)). Conforming runtimes may also fill them from **ASAM OSI** `osi3::SensorView` / `osi3::SensorData` messages. Appendix A lists the OSI mappings that still need checking against the OSI release.
 
 | Slice Type | C-ABI Struct | Fields & Semantics | ASAM OSI Equivalent |
 | :--- | :--- | :--- | :--- |

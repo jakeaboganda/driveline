@@ -1,7 +1,7 @@
 ---
 title: Component lifecycle
 section: 6
-version: 0.4
+version: 0.5
 status: draft
 normative: true
 depends_on: [05-checkpoints.md, 08-steady-state.md, 09-abi.md]
@@ -9,7 +9,7 @@ depends_on: [05-checkpoints.md, 08-steady-state.md, 09-abi.md]
 
 # 6. Driveline Component Model (DCM) & Lifecycle
 
-The **Driveline Component Model (DCM)** is a C-ABI ([§9](09-abi.md)). Native components export the `dl_*` entry points. Components packaged as `.fmu` files export only standard FMI 3.0 functions, and the runtime master drives them as [§7](07-fmu-packaging.md) describes.
+The **Driveline Component Model (DCM)** is a C-ABI ([§9](09-abi.md)). Native components export the `dl_*` entry points. Components packaged as `.fmu` files export only standard FMI 3.0 functions, and the runtime drives them as [§7](07-fmu-packaging.md) describes.
 
 ## 6.1 Component Lifecycle State Machine
 

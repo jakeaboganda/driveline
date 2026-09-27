@@ -1,6 +1,6 @@
 ---
 title: Driveline specification
-spec_version: 0.4
+spec_version: 0.5
 abi_version: 0.3
 status: draft
 ---
@@ -15,6 +15,7 @@ Driveline scenario files use the extensions `.dline` and `.dl`.
 
 | Section | Document | Normative |
 | :--- | :--- | :--- |
+| 0 | [Conformance and terminology](spec/00-conformance.md) | Yes |
 | 1 | [Scope, principles, and related work](spec/01-scope.md) | No |
 | 2 | [Units and coordinate conventions](spec/02-conventions.md) | Yes |
 | 3 | [Vehicle parameter tiers](spec/03-vehicle-parameters.md) | Yes |
