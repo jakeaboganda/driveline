@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.33
+
+* Removed the actor array syntax `actor x[N]`. It had no defined meaning and conflicts with unique literal actor IDs.
+
 ## 0.32
 
 * Added section 16, DSL static semantics: types and dimensions, `Time` versus seconds, literals, expression typing, scopes, world separation as a compile-time rule, required unique actor IDs, pipe-input binding, chain types, and `fn` rules.

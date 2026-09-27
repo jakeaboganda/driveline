@@ -1,7 +1,7 @@
 ---
 title: DSL grammar
 section: 12
-version: 0.32
+version: 0.33
 status: draft
 normative: true
 depends_on: []
@@ -36,7 +36,7 @@ WorldStmt        ::= ("map" "=" Expr ";") | ("timestep" "=" TimeLit ";") | ("see
 EnvBlock         ::= "environment" "{" (Ident "=" Expr ";" | CallExpr ";")* "}"
 StaticObjDecl    ::= "static_object" Ident "=" CallExpr ";"
 
-ActorDecl        ::= "actor" Ident ("[" IntLit "]")? "=" CallExpr ("with" ActorBody)? ";"
+ActorDecl        ::= "actor" Ident "=" CallExpr ("with" ActorBody)? ";"
 ActorBody        ::= "{" PriorsBlock? SensorsBlock? ChainDecl* PhysicsDecl? "}"
 PriorsBlock      ::= "priors" "{" (Ident "=" Expr ";")* "}"
 SensorsBlock     ::= "sensors" "{" (Ident "=" CallExpr ";")* "}"
