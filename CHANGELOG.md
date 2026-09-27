@@ -6,6 +6,12 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.6
+
+* Added section 14: status code table, runtime handling of warnings and errors, output validation, and report fields.
+* Renamed `DL_STATUS_WARN_COLD_FMU` to `DL_STATUS_WARN_FMU_COLD_SPLICE` and added `DL_STATUS_ERR_STATE`. Prose now uses the header names only.
+* ABI version 0.4.
+
 ## 0.5
 
 * Added section 0: normative language, conformance classes for compilers, runtimes, and components, and a glossary that defines stages by output type.
