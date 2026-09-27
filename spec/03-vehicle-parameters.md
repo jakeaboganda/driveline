@@ -1,7 +1,7 @@
 ---
 title: Vehicle parameter tiers
 section: 3
-version: 0.8
+version: 0.12
 status: draft
 normative: true
 depends_on: [02-conventions.md]
@@ -9,7 +9,9 @@ depends_on: [02-conventions.md]
 
 # 3. Stratified Vehicle Parameter Specification (`vehicle_spec`)
 
-Borrowing the hierarchical model structure of CommonRoad, Driveline defines a four-tier parameter specification attached to the actor entity. Higher tiers strictly require all lower numeric tiers (Tier 2 requires Tiers 0 and 1; Tier 1 requires Tier 0).
+Borrowing the hierarchical model structure of CommonRoad, Driveline defines a four-tier parameter specification attached to the actor entity. Higher tiers strictly require all lower numeric tiers (Tier 2 requires Tiers 0 and 1; Tier 1 requires Tier 0). Tier 3 requires Tier 0.
+
+Tiers 0–2 describe a two-axle vehicle with a steered front axle and four wheels. A vehicle with more axles or wheels needs a Tier 3 deck and a physics component that supports it. That physics component initializes any wheels beyond the four that [§6](06-lifecycle.md) seeds.
 
 | Tier | C-ABI Struct | Target Fidelity Models | Mandatory Parameters & Invariants |
 | :--- | :--- | :--- | :--- |

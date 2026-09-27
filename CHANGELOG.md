@@ -6,6 +6,12 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.12
+
+* Tiers 0–2 describe two-axle, four-wheel vehicles. Tier 3 requires Tier 0. `num_wheels` is 0 or 4.
+* Cold init skips axle loads and wheel seeding for Tier-0-only actors, which have no mass.
+* ABI version 0.5.
+
 ## 0.11
 
 * Added a feasibility rule to the steady-state solve: steering beyond $\delta_{\max}$, or lateral acceleration beyond $\mu g$, fails with `DL_STATUS_ERR_NUMERIC`.

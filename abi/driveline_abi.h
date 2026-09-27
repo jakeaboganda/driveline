@@ -9,7 +9,7 @@ extern "C" {
 
 #pragma pack(push, 8)
 
-#define DL_ABI_VERSION_0_4 0x00000400U
+#define DL_ABI_VERSION_0_5 0x00000500U
 
 typedef enum {
     DL_STATUS_OK                    = 0,
@@ -257,13 +257,13 @@ typedef struct {
 } dl_powertrain_state_t;
 
 typedef struct {
-    uint32_t abi_version;                        /* Must equal DL_ABI_VERSION_0_4 */
+    uint32_t abi_version;                        /* Must equal DL_ABI_VERSION_0_5 */
     uint32_t struct_size;                        /* sizeof(dl_init_context_t) */
     uint64_t sim_time_ns;                        /* [ns] */
     uint8_t  is_warm_start;                      /* 0:ColdInit, 1:WarmStart */
     uint8_t  trim_equilibrium;                   /* 1:Solve quasi-static trim */
     uint16_t _pad;
-    uint32_t num_wheels;                         /* 4 for passenger car, up to 8 */
+    uint32_t num_wheels;                         /* 0 (no Tier 2) or 4 */
 
     dl_kinematic_state_t          chassis_state;
     dl_wheel_corner_state_t       wheels[8];

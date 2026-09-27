@@ -1,7 +1,7 @@
 ---
 title: Component lifecycle
 section: 6
-version: 0.10
+version: 0.12
 status: draft
 normative: true
 depends_on: [05-checkpoints.md, 08-steady-state.md, 09-abi.md]
@@ -60,7 +60,7 @@ The **Driveline Component Model (DCM)** is a C-ABI ([§9](09-abi.md)). Native co
    * **Pass 1 (Host Steady State & Tick 0 Sensor Projection):**
      1. For each actor, the host calls `frenet_to_world` at the spawn `(road_id, lane_id, s_0, d_0)`. The returned `psi_lane` and `kappa_lane` are the lane's heading and signed curvature in the direction of increasing $s$, with positive curvature turning left. Let $\sigma = +1$ if the spawn lane drives toward increasing $s$ and $\sigma = -1$ otherwise ([§2](02-conventions.md)). The spawn heading is $\psi_0 = $ `psi_lane` for $\sigma = +1$ and `psi_lane` $+ \pi$, wrapped to $(-\pi, \pi]$, for $\sigma = -1$. The curvature along the direction of travel is $\kappa_0 = \sigma \cdot$ `kappa_lane`, because a curve that turns left toward increasing $s$ turns right toward decreasing $s$. The host also reads the road grade $\theta_{\text{road}}$ and bank $\phi_{\text{road}}$ (sign conventions in [§2](02-conventions.md)).
      2. It sets $\dot{\psi}_0 = v_0 \kappa_0$ and solves the steady state of [§8](08-steady-state.md) for the tier of the actor's physics component. That solve gives $v_{\text{lat,ra}}$, $\delta_{\text{ss}}$, and $\beta_{\text{cg}}$.
-     3. It computes static axle normal loads:
+     3. If Tier 1 is populated, it computes static axle normal loads. Tier 0 has no mass, so a Tier-0-only actor skips this step and step 4:
      $$F_{z,f} = m g \cos\theta_{\text{road}}\cos\phi_{\text{road}} \frac{l_r}{L} - m g \sin\theta_{\text{road}} \frac{h_{\text{cg}}}{L}, \qquad F_{z,r} = m g \cos\theta_{\text{road}}\cos\phi_{\text{road}} \frac{l_f}{L} + m g \sin\theta_{\text{road}} \frac{h_{\text{cg}}}{L}$$
      With the [§2](02-conventions.md) sign convention, an uphill road ($\theta_{\text{road}} > 0$) moves load to the rear axle.
      4. If Tier 2 is populated, it sets `num_wheels = 4`, splits each axle load evenly between left and right wheels, and sets wheel speeds $\omega_{i,0} = v_0 / R_{\text{eff}}$. Otherwise it sets `num_wheels = 0`, and the `wheels[]` entries are unused.
