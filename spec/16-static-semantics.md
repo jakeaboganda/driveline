@@ -1,10 +1,10 @@
 ---
 title: DSL static semantics
 section: 16
-version: 0.53
+version: 0.56
 status: draft
 normative: true
-depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 09-abi.md, 10-composition.md, 11-execution.md, 12-grammar.md, 15-manifest.md, 17-standard-library.md]
+depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 07-fmu-packaging.md, 09-abi.md, 10-composition.md, 11-execution.md, 12-grammar.md, 15-manifest.md, 17-standard-library.md]
 ---
 
 # 16. DSL Static Semantics
@@ -63,6 +63,8 @@ Names resolve from the innermost scope outward. A name declared twice in one sco
 * **`fn`:** A call to a `fn` substitutes its body chain. `fn` parameters bind by name to values, such as sensor buffers. The body's type must equal the declared `Chain<A, B>`. A `fn` must not call itself, directly or through other `fn`s.
 * **Physics and groups:** An actor's `physics` declaration, and the chain in a `bind` statement, must have type `Chain<(), KinematicState>`.
 * **`step`:** A `step` block must return a value of the component's output type on every path. `let` names are immutable.
+* **`bind_inputs`:** Each expression must be a quantity, an `Int`, or a `Bool`. The runtime writes it to the `Float64` pin as its SI value, as the integer's value, or as 1.0 for true and 0.0 for false. Each pin name must be an input variable in the FMU's `modelDescription.xml`.
+* **`bind_outputs`:** `fmu.out("name")` is the value of the named output variable after `fmi3DoStep` ([§7.1](07-fmu-packaging.md)), as a dimensionless quantity. It is allowed only inside `bind_outputs`, and the name must be an output variable of the FMU. Each assignment's value must have the field's type, except that a dimensionless quantity may be assigned to a quantity field and is taken as SI.
 
 ## 16.6 Scenario and Vehicle Specification Rules
 

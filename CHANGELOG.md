@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.56
+
+* Defined the typing of `bind_inputs` expressions, `fmu.out`, and `bind_outputs` assignments. Pin names must exist in the FMU's model description.
+
 ## 0.55
 
 * A re-trim reproduces the new steering angle where the component can, and the runtime checks it with the same tolerance as cold init. Stateless components and Mode B FMUs get a warning instead of breaking a requirement they cannot meet.
