@@ -1,7 +1,7 @@
 ---
 title: Scope, principles, and related work
 section: 1
-version: 0.34
+version: 0.43
 status: draft
 normative: false
 depends_on: []
@@ -16,7 +16,7 @@ depends_on: []
 This section summarizes the design. It states no requirements. The normative sections govern ([§0](00-conformance.md)).
 
 1. **Three-Level World vs. Actor Separation:**
-   * **Lexical Level:** A `.dline` scenario file serves as the top-level simulation manifest: it declares the physical world (`map`, `environment`, `static_object`), spawns actor entities with initial physical states, and binds each actor's initial component graph.
+   * **Lexical Level:** A `.dline` scenario file serves as the top-level simulation manifest: it declares the physical world (`map` and `environment`), spawns actor entities with initial physical states, and binds each actor's initial component graph.
    * **Type Level:** World truth types (`OpenDriveMap`, `FrictionField`) cannot be passed as inputs to Stage 1 (Intent) or Stage 2 (Control) components.
    * **Runtime Memory Level:** Pipeline components execute in isolated memory contexts and cannot query global world state directly. They access external context only through actor-mounted `SliceBuffer<T, N>` sensor ports, `priors`, and the read-only host map callbacks ([§9](09-abi.md)).
    * **Stated Ground-Truth Exceptions:** Three inputs are ground truth by design. Every component receives its own actor's committed `KinematicState` (ideal proprioception, [§9.1](09-abi.md)). The host map callbacks give every component the exact OpenDRIVE geometry (a perfect-map prior). Standard sensors report the true `target_actor_id` of each track (ideal data association). A sensor model that simulates map error or association error must produce those errors itself.

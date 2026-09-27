@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.43
+
+* Removed `static_object`. No section defined its geometry, detection, or collision, and no scenario used it.
+
 ## 0.42
 
 * Defined track relative velocity by rigid-body kinematics, the sensor frame orientation, and the arguments of the friction lookup.

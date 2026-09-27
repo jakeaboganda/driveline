@@ -1,7 +1,7 @@
 ---
 title: Conformance and terminology
 section: 0
-version: 0.5
+version: 0.43
 status: draft
 normative: true
 depends_on: []
@@ -27,7 +27,7 @@ In normative documents, these words have fixed meanings:
 
 ## 0.3 Terms
 
-* **World:** The ground truth that the runtime owns: the map, the friction field, static objects, and every actor's `KinematicState`. $X(t)$ is the World state at time $t$.
+* **World:** The ground truth that the runtime owns: the map, the friction field, and every actor's `KinematicState`. $X(t)$ is the World state at time $t$.
 * **World-truth types:** `OpenDriveMap` (the type of `map`) and `FrictionField` (the type of `environment`). They appear only in scenario world statements. Passing a value of a world-truth type to a component port is a compile-time error.
 * **Actor:** A vehicle that the scenario spawns. Each actor has a unique `actor_id`, a `vehicle_spec`, sensors, priors, and exactly one physics component.
 * **Tick:** One step of the base clock ([§11](11-execution.md)). Tick $k$ starts at $t = k \cdot \Delta t_{\text{base}}$.

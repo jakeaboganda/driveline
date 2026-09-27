@@ -1,7 +1,7 @@
 ---
 title: DSL grammar
 section: 12
-version: 0.33
+version: 0.43
 status: draft
 normative: true
 depends_on: []
@@ -32,9 +32,8 @@ StepBlock        ::= "step" "(" PortList ")" "->" TypeSpec "{" Stmt* "}"
 
 ScenarioDecl     ::= "scenario" Ident "{" WorldStmt* ActorDecl* BindStmt* EventStmt* TerminateStmt "}"
 WorldStmt        ::= ("map" "=" Expr ";") | ("timestep" "=" TimeLit ";") | ("seed" "=" IntLit ";")
-                   | ("allow_pose_override" "=" BoolLit ";") | EnvBlock | StaticObjDecl
+                   | ("allow_pose_override" "=" BoolLit ";") | EnvBlock
 EnvBlock         ::= "environment" "{" (Ident "=" Expr ";" | CallExpr ";")* "}"
-StaticObjDecl    ::= "static_object" Ident "=" CallExpr ";"
 
 ActorDecl        ::= "actor" Ident "=" CallExpr ("with" ActorBody)? ";"
 ActorBody        ::= "{" PriorsBlock? SensorsBlock? ChainDecl* PhysicsDecl? "}"
