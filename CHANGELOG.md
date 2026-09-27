@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.32
+
+* Added section 16, DSL static semantics: types and dimensions, `Time` versus seconds, literals, expression typing, scopes, world separation as a compile-time rule, required unique actor IDs, pipe-input binding, chain types, and `fn` rules.
+
 ## 0.31
 
 * Added SipHash-2-4 seed test vectors. `tools/check.py` verifies them against a SipHash implementation that is itself checked against the reference vectors.

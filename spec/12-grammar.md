@@ -1,13 +1,15 @@
 ---
 title: DSL grammar
 section: 12
-version: 0.27
+version: 0.32
 status: draft
 normative: true
 depends_on: []
 ---
 
 # 12. Grammar
+
+This section defines which texts parse. [§16](16-static-semantics.md) defines which parsed scenarios are valid.
 ```ebnf
 ScenarioFile     ::= ImportDecl* VehicleSpecDecl* (ComponentDecl | FnDecl)* ScenarioDecl
 ImportDecl       ::= "use" ScopedIdent "::" "{" IdentList "}" ";"
