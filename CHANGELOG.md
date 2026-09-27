@@ -6,6 +6,11 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.9
+
+* Defined `slip_angle_beta_cg` with atan2 so it stays finite at a standstill and in reverse.
+* The single-track steady state applies only at $v \ge 1$ m/s. Reverse and low speeds use the kinematic solution.
+
 ## 0.8
 
 * Invariants in the vehicle parameter tiers hold within a relative tolerance of 1e-6, so the result no longer depends on summation order.

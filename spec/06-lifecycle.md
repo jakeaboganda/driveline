@@ -1,7 +1,7 @@
 ---
 title: Component lifecycle
 section: 6
-version: 0.6
+version: 0.9
 status: draft
 normative: true
 depends_on: [05-checkpoints.md, 08-steady-state.md, 09-abi.md]
@@ -70,7 +70,7 @@ The **Driveline Component Model (DCM)** is a C-ABI ([§9](09-abi.md)). Native co
    * **Pass 3 (Stage 3 Physics Trim):** Physics components enter `dl_enter_cold_init` and solve their internal states, such as suspension deflection $z_{i,0}$ and tire relaxation, at the Pass 1 steady state. Physics does not re-solve $\delta$. If Pass 2 reported no `DL_STATUS_WARN_TRIM_MISMATCH`, Tick 0 starts at the linear-tire steady state of [§8](08-steady-state.md). Otherwise the first ticks contain a transient.
 4. **`WarmStartMode` (`dl_enter_warm_start` at $t > 0$), Fidelity Promotion & Demotion:**
    * **Promotion, Tier 0 (`KS`) $\rightarrow$ Tier 1/2 (`ST` / `MB`):** The runtime keeps the pose, $v_{\text{lon}}$, and $\dot{\psi}$. It solves the `ST` steady state of [§8](08-steady-state.md) at $(v_{\text{lon}}, \dot{\psi})$ and passes it to the incoming physics component. Three fields change: $v_{\text{lat,ra}}$ goes from $0$ to the solved value, `front_wheel_angle` goes from $\delta_{\text{KS}}$ to $\delta_{\text{ss}}$, and $\beta_{\text{cg}}$ follows from both. With linear tires, the lateral force and yaw moment of the incoming model are balanced at the first step.
-   * **Demotion, Tier 1/2 $\rightarrow$ Tier 0:** The runtime keeps the pose, $v_{\text{lon}}$, and $\dot{\psi}$. It sets $v_{\text{lat,ra}} = 0$ and `front_wheel_angle` $= \delta_{\text{KS}} = \arctan(L \dot{\psi} / v_{\text{lon}})$. These two fields and $\beta_{\text{cg}}$ change.
+   * **Demotion, Tier 1/2 $\rightarrow$ Tier 0:** The runtime keeps the pose, $v_{\text{lon}}$, and $\dot{\psi}$. It sets $v_{\text{lat,ra}} = 0$ and `front_wheel_angle` $= \delta_{\text{KS}}$ from [§8](08-steady-state.md). These two fields and $\beta_{\text{cg}}$ change.
    * **Re-Trim of Upstream Controllers:** A promotion or demotion changes `front_wheel_angle`. In the same inter-tick window, the runtime moves each Stage 2 component that feeds the new physics component from `StepMode` back into `WarmStartMode`. It passes `latched_kinematic_ctrl.steer_angle_cmd` $= $ the new `front_wheel_angle`, and it passes the matching `latched_actuator_ctrl`. Each re-trimmed component resets its internal state so that its next output equals the new steering angle. A component that cannot re-trim (a Mode B FMU, [§7](07-fmu-packaging.md)) causes `DL_STATUS_WARN_TRIM_MISMATCH`.
    * **Size of the Change:** For linear tires, $\delta_{\text{ss}} - \delta_{\text{KS}} \approx K_{\text{us}}\, v_{\text{lon}} \dot{\psi}$, where $K_{\text{us}} = \frac{m}{L}\left(\frac{l_r}{C_{\alpha f}} - \frac{l_f}{C_{\alpha r}}\right)$ is the understeer gradient. [§8](08-steady-state.md) gives a test vector.
    * **Full-Stack Bridge (`SensorBundle -> KinematicState`):** Allowed only as a static $t = 0$ actor binding, for replay actors or external HiL ego bridges. Splicing a `SensorBundle -> KinematicState` component at $t > 0$ is a compile-time error unless the scenario declares `allow_pose_override = true;`.
