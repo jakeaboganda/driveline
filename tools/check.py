@@ -308,6 +308,41 @@ def check_scenario_rules():
                  f"{checked} buffer bindings fit their capacities")
 
 
+def struct_members(header, struct):
+    body = re.search(r"typedef struct \{([^{}]*)\} " + struct + ";", header).group(1)
+    body = re.sub(r"/\*.*?\*/", "", body)
+    out = set()
+    for decl in body.split(";"):
+        words = decl.split()
+        for n in " ".join(words[1:]).split(","):
+            n = re.sub(r"\[.*\]", "", n).strip()
+            if n and not n.startswith("_"):
+                out.add(n)
+    return out
+
+
+def check_frame_tables(docs):
+    header = HEADER.read_text()
+    body = docs["05-checkpoints.md"][1]
+    sections = {"dl_intent_frame_t": ("## 5.1", "## 5.2"),
+                "dl_kinematic_control_frame_t": ("### Tier A", "### Tier B"),
+                "dl_actuator_control_frame_t": ("### Tier B", "## 5.3"),
+                "dl_kinematic_state_t": ("## 5.3", None)}
+    for struct, (start, end) in sections.items():
+        part = body[body.index(start): body.index(end) if end else len(body)]
+        rows = [l for l in part.splitlines() if l.startswith("|") and not l.startswith("| :")][1:]
+        names = set()
+        for row in rows:
+            cells = [c.strip() for c in row.strip("|").split("|")]
+            cell = cells[1] if cells[0].startswith("**") or cells[0] == "" else cells[0]
+            names |= set(re.findall(r"`([a-z_]+)`", cell))
+        members = struct_members(header, struct)
+        if names != members:
+            fail(f"05-checkpoints.md: {struct} table differs from header: "
+                 f"table only {sorted(names - members)}, header only {sorted(members - names)}")
+    notes.append("frame tables in section 5 match the header structs")
+
+
 def check_test_vector(docs):
     scenario = (EXAMPLES / "kanagawa_pinch_test.dline").read_text()
 
@@ -375,6 +410,7 @@ def main():
     check_grammar(docs)
     check_vehicle_spec_fields()
     check_scenario_rules()
+    check_frame_tables(docs)
     check_test_vector(docs)
     check_siphash(docs)
     for n in notes:

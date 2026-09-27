@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.61
+
+* The section 5 frame tables use the header's field names: `pos_x`…`yaw` instead of `position` and `orientation`, and they now list `num_waypoints` and `num_traj_points`. `tools/check.py` compares every table with its header struct.
+
 ## 0.60
 
 * Updated the FMI fact-check item to the FMI calls that section 7 now uses.

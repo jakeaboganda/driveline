@@ -1,7 +1,7 @@
 ---
 title: Checkpoint data contracts
 section: 5
-version: 0.54
+version: 0.61
 status: draft
 normative: true
 depends_on: [02-conventions.md, 06-lifecycle.md, 10-composition.md, 15-manifest.md]
@@ -48,8 +48,10 @@ Produced by Stage 1 (Intent) components.
 | | `target_road_id` | `char[64]` | — | Target OpenDRIVE road identifier. |
 | | `target_lane_id` | `int32` | — | Signed OpenDRIVE lane index. |
 | | `d_ref` | `float64` | $\text{m}$ | Target lateral offset from the `target_lane_id` centerline, with the sign convention of `d` in [§2](02-conventions.md): positive to the left of the reference line direction, whatever the lane's driving direction. |
+| | `num_waypoints` | `uint32` | — | Number of valid entries in `path_points`, at most 64. |
 | | `path_points` | `Waypoint[64]` | $\text{m}, \text{rad}, \text{m}^{-1}$ | Array of $(X, Y, \psi_{\text{ref}}, \kappa_{\text{ref}})$ geometric path targets. |
-| **Coupled Horizon** | `trajectory` | `TrajPoint[64]` | $\text{s}, \text{m}, \text{m/s}$ | Time-indexed array $(t_k, X_k, Y_k, \psi_k, v_k, a_k, \kappa_k)$. |
+| **Coupled Horizon** | `num_traj_points` | `uint32` | — | Number of valid entries in `trajectory`, at most 64. |
+| | `trajectory` | `TrajPoint[64]` | $\text{s}, \text{m}, \text{m/s}$ | Time-indexed array $(t_k, X_k, Y_k, \psi_k, v_k, a_k, \kappa_k)$. |
 | **Auxiliary** | `turn_signal` | `enum` | — | `NONE` ($0$), `LEFT` ($1$), `RIGHT` ($2$), `HAZARD` ($3$). |
 
 **Bit Coverage:** Each `valid_mask` bit covers these fields. The hold rule moves a bit and its fields together.
@@ -101,7 +103,7 @@ Produced by Stage 1 (Intent) components.
 ## 5.3 Checkpoint 3: `KinematicState` & Reference-Point Continuity
 Produced by Stage 3 (Physical Compute) at the end of every simulation step $t + \Delta t$.
 
-* **Resolution of Rear-Axle vs. CG Reference Point:** All pose and twist quantities (`position`, `v_lon`, `v_lat`, `a_lon`, `a_lat`) in `KinematicState` are measured at the **rear-axle reference origin** $(x_{\text{ra}}, y_{\text{ra}}, z_{\text{ra}})$. Simultaneously, `slip_angle_beta_cg` stores the sideslip angle at the **Center of Gravity (CG)** $\beta_{\text{cg}}$.
+* **Resolution of Rear-Axle vs. CG Reference Point:** All pose and twist quantities (`pos_x`, `pos_y`, `pos_z`, `v_lon`, `v_lat`, `a_lon`, `a_lat`) in `KinematicState` are measured at the **rear-axle reference origin** $(x_{\text{ra}}, y_{\text{ra}}, z_{\text{ra}})$. Simultaneously, `slip_angle_beta_cg` stores the sideslip angle at the **Center of Gravity (CG)** $\beta_{\text{cg}}$.
 * **Rigid-Body Transform Between Rear Axle and CG:** Given rear-axle velocities $(v_{\text{lon}}, v_{\text{lat}})$ and yaw rate $\dot{\psi}$, the velocity and sideslip at the CG are related by exact rigid-body kinematics:
   $$v_{x,\text{cg}} = v_{\text{lon}}, \qquad v_{y,\text{cg}} = v_{\text{lat}} + l_r \dot{\psi}, \qquad \beta_{\text{cg}} = \operatorname{atan2}\!\left(\operatorname{sgn}(v_{\text{lon}})\, v_{y,\text{cg}},\ |v_{\text{lon}}|\right)$$
   with $\operatorname{sgn}(0) = +1$ and $\beta_{\text{cg}} = 0$ when $v_{\text{lon}} = v_{y,\text{cg}} = 0$. This equals $\arctan(v_{y,\text{cg}} / v_{\text{lon}})$ whenever $v_{\text{lon}} \ne 0$, including reverse driving, and stays defined at a standstill.
@@ -111,8 +113,8 @@ Produced by Stage 3 (Physical Compute) at the end of every simulation step $t + 
 | :--- | :--- | :--- | :--- | :--- |
 | **Header** | `actor_id` | `uint64` | — | Unique actor entity identifier. |
 | | `timestamp_ns` | `uint64` | $\text{ns}$ | Simulation time $t + \Delta t$. |
-| **World Pose** | `position` | `Vec3` | $\text{m}$ | $(X, Y, Z)$ position of rear-axle center in World Frame. |
-| | `orientation` | `Vec3` | $\text{rad}$ | $(\text{roll } \phi, \text{pitch } \theta, \text{yaw } \psi)$ intrinsic $Z\text{-}Y'\text{-}X''$ Euler angles. |
+| **World Pose** | `pos_x`, `pos_y`, `pos_z` | `float64` | $\text{m}$ | $(X, Y, Z)$ position of the rear-axle origin in the World frame. |
+| | `roll`, `pitch`, `yaw` | `float64` | $\text{rad}$ | $(\phi, \theta, \psi)$ intrinsic $Z\text{-}Y'\text{-}X''$ Euler angles. |
 | **Rear-Axle Twist** | `v_lon` | `float64` | $\text{m/s}$ | Longitudinal velocity $v_{x,\text{ra}}$ at rear-axle origin in Body Frame. |
 | | `v_lat` | `float64` | $\text{m/s}$ | Lateral slip velocity $v_{y,\text{ra}}$ at rear-axle origin ($0$ for non-slip `KS`, $-l_r\dot{\psi} + v_{y,\text{cg}}$ for `ST`/`MB`). |
 | | `yaw_rate` | `float64` | $\text{rad/s}$ | Yaw angular velocity $\dot{\psi}$ about vehicle $+z$ axis. |
