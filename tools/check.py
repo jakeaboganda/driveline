@@ -286,17 +286,24 @@ def check_scenario_rules():
         for name, n in re.findall(r"(\w+)\s*=\s*\w+\([^;]*history:\s*(\d+)", body):
             history[(actor, name)] = int(n)
     ports = {}
-    for comp, portlist in re.findall(r"component (\w+)[^:]*:\s*\((.*?)\)\s*->", scenario, re.S):
+    for comp, portlist in re.findall(r"component (\w+)[^;{]*?\):\s*\((.*?)\)\s*->", scenario, re.S):
         for port, n in re.findall(r"(\w+):\s*SliceBuffer<\w+,\s*(\d+)>", portlist):
             ports[(comp, port)] = int(n)
+    checked = 0
     for actor, body in re.findall(r"actor (\w+) = spawn\(.*?\) with \{(.*?)\n    \};", scenario, re.S):
         for comp, args in re.findall(r"(\w+)\(([^()]*sensors\.[^()]*)\)", body):
             for port, sensor in re.findall(r"(\w+):\s*sensors\.(\w+)", args):
                 need = ports.get((comp, port))
                 have = history.get((actor, sensor))
-                if need is not None and (have is None or have < need):
+                if need is None:
+                    continue
+                checked += 1
+                if have is None or have < need:
                     fail(f"scenario: {actor}.{sensor} history {have} < {comp}.{port} capacity {need}")
-    notes.append(f"scenario: rates divide the base clock, ids {sorted(ids)} unique, buffer capacities fit")
+    if checked == 0:
+        fail("scenario: no sensor-to-port bindings found to check")
+    notes.append(f"scenario: rates divide the base clock, ids {sorted(ids)} unique, "
+                 f"{checked} buffer bindings fit their capacities")
 
 
 def check_test_vector(docs):
