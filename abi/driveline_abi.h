@@ -9,11 +9,10 @@ extern "C" {
 
 #pragma pack(push, 8)
 
-#define DL_ABI_VERSION_0_7 0x00000700U
+#define DL_ABI_VERSION_0_8 0x00000800U
 
 typedef enum {
     DL_STATUS_OK                    = 0,
-    DL_STATUS_WARN_UNDERFLOW        = 1,
     DL_STATUS_WARN_FMU_COLD_SPLICE  = 2,
     DL_STATUS_WARN_TRIM_MISMATCH    = 3,
     DL_STATUS_ERR_INVALID_ARG       = -1,
@@ -258,7 +257,7 @@ typedef struct {
 } dl_powertrain_state_t;
 
 typedef struct {
-    uint32_t abi_version;                        /* Must equal DL_ABI_VERSION_0_7 */
+    uint32_t abi_version;                        /* Must equal DL_ABI_VERSION_0_8 */
     uint32_t struct_size;                        /* sizeof(dl_init_context_t) */
     uint64_t sim_time_ns;                        /* [ns] */
     uint8_t  is_warm_start;                      /* 0:ColdInit, 1:WarmStart */

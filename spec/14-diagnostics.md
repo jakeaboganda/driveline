@@ -1,7 +1,7 @@
 ---
 title: Status codes and error handling
 section: 14
-version: 0.6
+version: 0.21
 status: draft
 normative: true
 depends_on: [06-lifecycle.md, 09-abi.md]
@@ -16,7 +16,6 @@ depends_on: [06-lifecycle.md, 09-abi.md]
 | Code | Name | Returned or Reported When |
 | :--- | :--- | :--- |
 | `0` | `DL_STATUS_OK` | The call succeeded. |
-| `1` | `DL_STATUS_WARN_UNDERFLOW` | A `SliceBuffer` index clamped because the buffer held too few samples ([§4](04-perception.md)). |
 | `2` | `DL_STATUS_WARN_FMU_COLD_SPLICE` | The runtime spliced a Mode B FMU without a current warm start ([§7](07-fmu-packaging.md)). |
 | `3` | `DL_STATUS_WARN_TRIM_MISMATCH` | A Stage 2 output differs from its latched trim frame, or a component cannot re-trim ([§6.2](06-lifecycle.md)). |
 | `-1` | `DL_STATUS_ERR_INVALID_ARG` | A parameter, descriptor, or frame is invalid, or `abi_version` or `struct_size` does not match. |

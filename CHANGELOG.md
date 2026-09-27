@@ -6,6 +6,11 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.21
+
+* Replaced the `buffer.underflow` flag with a read-only `buffer.count`. Removed `DL_STATUS_WARN_UNDERFLOW`.
+* ABI version 0.8.
+
 ## 0.20
 
 * Added `on (...) { splice ... }` statements with chain and `physics_model` targets, type rules, edge-triggered firing, and splice timing. The reference scenario promotes the blocker at 4 s.
