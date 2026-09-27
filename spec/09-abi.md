@@ -1,7 +1,7 @@
 ---
 title: C-ABI
 section: 9
-version: 0.53
+version: 0.59
 status: draft
 normative: true
 depends_on: [05-checkpoints.md, 06-lifecycle.md, 07-fmu-packaging.md, 11-execution.md]
@@ -12,6 +12,8 @@ depends_on: [05-checkpoints.md, 06-lifecycle.md, 07-fmu-packaging.md, 11-executi
 All structs in `driveline_abi.h` use fixed-width types and explicit padding, so the compiler inserts no padding. Data structs contain no pointers: vehicle parameters, sensor slices, checkpoint frames, `dl_route_t`, and `dl_init_context_t`. Their layout is identical on 32-bit and 64-bit targets, and Mode A FMUs exchange them byte for byte ([§7](07-fmu-packaging.md)). Call descriptors (`dl_slice_buffer_view_t`, `dl_batch_step_io_t`, `dl_structural_config_t`) and the callback table contain pointers. They are valid only inside one process.
 
 The normative header is [`abi/driveline_abi.h`](../abi/driveline_abi.h). This section does not copy it.
+
+**Process Scope:** A native component runs in the runtime's process. Running a component in another process or on another machine requires packaging it as a Mode A FMU ([§7](07-fmu-packaging.md)), which defines a byte-level encoding for every port.
 
 ## 9.1 Calling Rules
 

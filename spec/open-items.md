@@ -1,6 +1,6 @@
 ---
 title: Open items
-version: 0.58
+version: 0.59
 status: draft
 normative: false
 depends_on: []
@@ -17,5 +17,4 @@ These items are unresolved in the current version (README `spec_version`).
 * The FMI 3.0 layered-standard file location `extra/<name>/` and the `fmi3Reset` and `fmi3GetFMUState` behavior that [§7](07-fmu-packaging.md) relies on.
 * The [§1.2](01-scope.md) statement that OpenSCENARIO leaves controller and vehicle-dynamics models to the host simulator.
 
-**Design items:**
-* Native components cannot run out of process. Only Mode A FMUs ([§7](07-fmu-packaging.md)) have a serialized port encoding.
+**Design items:** None open.

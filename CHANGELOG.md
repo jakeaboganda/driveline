@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.59
+
+* Native components run in process. Out-of-process execution uses Mode A FMUs. This closes the last open design item.
+
 ## 0.58
 
 * Added `primary_target_id` to `RadarSlice`. Primary fields interpolate only within one target, and `rate_of` is invalid across a target or road change.
