@@ -1,6 +1,6 @@
 ---
 title: Driveline specification
-spec_version: 0.23
+spec_version: 0.24
 abi_version: 0.8
 status: draft
 ---
@@ -30,6 +30,7 @@ Driveline scenario files use the extensions `.dline` and `.dl`.
 | 12 | [DSL grammar](spec/12-grammar.md) | Yes |
 | 13 | [Reference scenario](spec/13-reference-scenario.md) | Yes |
 | 14 | [Status codes and error handling](spec/14-diagnostics.md) | Yes |
+| 15 | [Component manifests and packaging](spec/15-manifest.md) | Yes |
 | | [Open items](spec/open-items.md) | No |
 | | [Changelog](CHANGELOG.md) | No |
 

@@ -6,6 +6,11 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.24
+
+* Added section 15: JSON component manifests, one component per shared library, resolution of `use` paths, and parameter checking and passing.
+* Mode A FMU manifests use the same JSON format.
+
 ## 0.23
 
 * Removed the last stale appendix reference. `tools/check.py` now rejects appendix references.

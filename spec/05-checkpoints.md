@@ -1,7 +1,7 @@
 ---
 title: Checkpoint data contracts
 section: 5
-version: 0.15
+version: 0.24
 status: draft
 normative: true
 depends_on: [02-conventions.md]
@@ -62,7 +62,7 @@ Produced by Stage 1 (Intent) components.
 
 **Measured Gap for `GAP_PROFILE`:** `IntentFrame` carries the gap target and the desired gap. It does not carry the measured gap. A Stage 2 component that tracks `GAP_PROFILE` must declare a `SliceBuffer` input port whose slice type contains `tracks[]`. It reads the measured gap from the track whose `target_actor_id` equals `gap_target_actor_id`.
 
-**Unsupported Modes:** If a Stage 2 component receives a `lon_mode` or `lat_mode` that it does not implement, `dl_do_step` returns `DL_STATUS_ERR_UNSUPPORTED_MODE`, and the runtime stops the scenario.
+**Unsupported Modes:** A component's manifest lists the modes it implements ([§15](15-manifest.md)). If a Stage 2 component receives a `lon_mode` or `lat_mode` that it does not implement, `dl_do_step` returns `DL_STATUS_ERR_UNSUPPORTED_MODE`, and the runtime stops the scenario.
 
 ## 5.2 Checkpoint 2: `ControlFrame` (Strict Two-Tier Typing)
 
