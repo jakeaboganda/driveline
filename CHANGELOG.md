@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.55
+
+* A re-trim reproduces the new steering angle where the component can, and the runtime checks it with the same tolerance as cold init. Stateless components and Mode B FMUs get a warning instead of breaking a requirement they cannot meet.
+
 ## 0.54
 
 * The runtime now applies the hold rule, by hold unit instead of per bit. A per-bit hold could revive a stale steering angle after a switch to rate commands, and could break trajectory exclusivity. Arbiters still see raw frames.
