@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.14
+
+* Defined Tier 3 deck semantics: which components read a deck, what the two precedence modes mean, how a relative `uri` resolves, and which values a deck never overrides.
+
 ## 0.13
 
 * Added `reverse_gear_ratio` to Tier 2 and to the reference vehicle.
