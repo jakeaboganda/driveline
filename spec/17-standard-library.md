@@ -1,7 +1,7 @@
 ---
 title: Standard library
 section: 17
-version: 0.36
+version: 0.37
 status: draft
 normative: true
 depends_on: [02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 08-steady-state.md, 09-abi.md, 15-manifest.md, 16-static-semantics.md]
@@ -22,7 +22,7 @@ Common notation: $\Delta t = \Delta t_{\text{base}}$, $g = 9.80665\text{ m/s}^2$
 | `RouteNodes` | `(nodes: [String]) -> RouteNodes` | At most 64 lane reference strings ([§2](02-conventions.md)). |
 | `friction_zone` | `(road: String, s_start: Length, s_end: Length, mu: Scalar)` | Inside `environment`. Sets $\mu$ on every lane of `road` for $s_{\text{start}} \le s < s_{\text{end}}$. Where zones overlap, the later statement wins. |
 | `default_friction` | `Scalar` | Inside `environment`. $\mu$ everywhere that no zone covers. The default is `1.0`. |
-| `collision` | `(a: Actor, b: Actor or any) -> Bool` | True if the footprints of `a` and `b` overlap or touch. `any` matches every other actor. A footprint is the Tier 0 rectangle from $x = -o_r$ to $x = L + o_f$ and $y = \pm W_{\text{bbox}}/2$ in the body frame, placed by the committed pose. |
+| `collision` | `(a: Actor, b: Actor or any) -> Bool` | True if the footprints of `a` and `b` overlap or touch. `any` matches every other actor. A footprint is the $xy$ extent of the Tier 0 bounding box ([§3](03-vehicle-parameters.md)), placed by the committed pose. |
 | `select` | `(c: Bool, a: T, b: T) -> T` | `a` if `c`, else `b`. |
 | `clamp` | `(x: T, lo: T, hi: T) -> T` | $\min(\max(x, lo), hi)$ for a quantity type `T`. |
 | `IntentFrame::decelerate` | `(a_ref: Acceleration) -> IntentFrame` | `lon_mode = ACCEL_TARGET`, `a_ref`, `valid_mask = 0x01`. |

@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.37
+
+* Section 3 now defines where the Tier 0 bounding box sits in the body frame. The collision footprint refers to it instead of restating it.
+
 ## 0.36
 
 * Added section 17, the standard library: builtins, constructors, and the friction field; ideal sensor models with mounts, detection, and every slice field; and the manifests and equations of `PincerHiveMind`, `PIDSpeedController`, `JerkLimiter`, `StanleyLat`, `SimpleDrivetrain`, `BrakeOverrideArbiter`, `KinematicBicycle`, and `DynamicSingleTrack`.
