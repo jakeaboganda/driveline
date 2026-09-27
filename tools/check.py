@@ -238,6 +238,8 @@ STRINGLIT: /"(?:\\\\.|[^"\\\\])*"/
 %ignore /\\/\\/[^\\n]*/
 """
     parser = Lark(src, start="scenario_file", parser="earley", lexer="dynamic")
+    if not list(EXAMPLES.glob("*.dline")):
+        fail("grammar: no example scenarios to parse")
     for path in sorted(EXAMPLES.glob("*.dline")):
         try:
             parser.parse(path.read_text())
