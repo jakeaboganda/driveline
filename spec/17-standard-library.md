@@ -1,7 +1,7 @@
 ---
 title: Standard library
 section: 17
-version: 0.42
+version: 0.45
 status: draft
 normative: true
 depends_on: [02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 08-steady-state.md, 09-abi.md, 15-manifest.md, 16-static-semantics.md]
@@ -26,7 +26,7 @@ Common notation: $\Delta t = \Delta t_{\text{base}}$, $dt$ is the component's ow
 | `select` | `(c: Bool, a: T, b: T) -> T` | `a` if `c`, else `b`. |
 | `clamp` | `(x: T, lo: T, hi: T) -> T` | $\min(\max(x, lo), hi)$ for a quantity type `T`. |
 | `IntentFrame::decelerate` | `(a_ref: Acceleration) -> IntentFrame` | `lon_mode = ACCEL_TARGET`, `a_ref`, `valid_mask = 0x01`. |
-| `IntentFrame::follow_route` | `(route: RouteNodes, from: KinematicState, v_ref: Velocity) -> IntentFrame` | `lon_mode = VELOCITY_TARGET` with `v_ref`. `lat_mode = LANE_OFFSET` with `d_ref = 0`. The target lane is the route node whose `road_id` equals `from.road_id`, or `from`'s own lane if no node matches. `valid_mask = 0x03`. |
+| `IntentFrame::follow_route` | `(route: RouteNodes, from: KinematicState, v_ref: Velocity) -> IntentFrame` | `lon_mode = VELOCITY_TARGET` with `v_ref`. `lat_mode = LANE_OFFSET` with `d_ref = 0`. The target lane is the first route node whose `road_id` equals `from.road_id`, or `from`'s own lane if no node matches. `valid_mask = 0x03`. |
 
 The world friction field is $\mu(X, Y)$: the zone or default value at the lane that `world_to_frenet` returns for $(X, Y)$, called with the actor's yaw as `psi` and its current `road_id` as `hint_road_id`.
 
@@ -68,10 +68,10 @@ All Stage 2 components are `OneToOne`.
 
 **`PIDSpeedController`:** Tier 0. Input `IntentFrame`. Output `Lon<KinematicControlFrame>`. Parameters `kp: f64 [1/s]`, `ki: f64 [1/s^2]`, `kd: f64 [1]`. Modes `ACCEL_TARGET`, `VELOCITY_TARGET`.
 * `ACCEL_TARGET`: $a = $ `a_ref`.
-* `VELOCITY_TARGET`: $e_k = v_{\text{ref}} - \text{own.v\_lon}$, $I_k = I_{k-1} + e_k \, dt$, $a = k_p e_k + k_i I_k + k_d (e_k - e_{k-1}) / dt$. The derivative term is 0 on the first step. Cold init and warm start set $I$ so that the first output equals the latched `a_lon_cmd`, if $k_i \ne 0$.
+* `VELOCITY_TARGET`: $e_k = v_{\text{ref}} - \text{own.v\_lon}$, $I_k = I_{k-1} + e_k \, dt$, $a = k_p e_k + k_i I_k + k_d (e_k - e_{k-1}) / dt$. The derivative term is 0 on the first step. Cold init and warm start set $e_{-1} = e_0$ and $I_{-1} = (a_{\text{latched}} - k_p e_0)/k_i - e_0\, dt$, with $e_0$ computed from `latched_intent.v_ref` and `chassis_state.v_lon`, so that the first output equals the latched `a_lon_cmd`. If $k_i = 0$, they set $I_{-1} = 0$.
 * Output `a_lon_cmd` $= a$ with `valid_mask = 0x01`.
 
-**`JerkLimiter`:** Tier 0. Input and output `Lon<KinematicControlFrame>`. Parameter `max_jerk: f64 [m/s^3]`. Output $a_k = a_{k-1} + \operatorname{clamp}(a_{\text{in}} - a_{k-1}, \pm \text{max\_jerk} \cdot dt)$. Initialization sets $a_{k-1}$ to the latched `a_lon_cmd`.
+**`JerkLimiter`:** Tier 0. Input and output `Lon<KinematicControlFrame>`. Parameter `max_jerk: f64 [m/s^3]`. Output $a_k = a_{k-1} + \operatorname{clamp}(a_{\text{in}} - a_{k-1}, \pm \text{max\_jerk} \cdot dt)$. Initialization sets $a_{k-1}$ to the latched `a_lon_cmd`. Output `a_lon_cmd` $= a_k$ with `valid_mask = 0x01`.
 
 **`StanleyLat`:** Tier 0. Input `IntentFrame`. Output `Lat<KinematicControlFrame>`. Parameters `k: f64 [1]`, `sample_step: f64 [m]`, `k_soft: f64 [m/s] = 1.0`. Modes `LANE_OFFSET`, `POLYLINE_PATH`. The reference path is `path_points` for `POLYLINE_PATH`. For `LANE_OFFSET`, it is 64 points from `sample_lane_path` on the target lane at `d_offset = d_ref`, with `ds` $= \sigma_t \cdot$ `sample_step`, where $\sigma_t$ is the target lane's direction sign. Sampling starts at `s_start = own.frenet_s` if the target road is the actor's road, and otherwise at the start of the target lane in its driving direction. The front-axle point is $(x_f, y_f) = (X + L\cos\psi,\ Y + L\sin\psi)$. Let $p = (x_p, y_p)$ be the path point nearest to it, with the smallest index winning ties, and let $\psi_p$ and $\kappa_p$ be its heading and curvature. Then $e = -\sin\psi_p\,(x_f - x_p) + \cos\psi_p\,(y_f - y_p)$ is the lateral offset of the front axle, positive to the path's left, and $\psi_e = \psi_p - \psi$, wrapped to $(-\pi, \pi]$. Then
 $$\delta = \operatorname{clamp}\!\left(\arctan(L \kappa_p) + \psi_e + \arctan\!\left(\frac{-k\, e}{k_{\text{soft}} + |\text{own.v\_lon}|}\right),\ \pm\delta_{\max}\right)$$

@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.45
+
+* `PIDSpeedController` initialization computes the integrator from the latched intent and state. Stated `JerkLimiter`'s output mask. `follow_route` takes the first matching route node.
+
 ## 0.44
 
 * Added section 16.6: multiplicity of world statements, uniqueness of sensor and prior names, and `vehicle_spec` keys and record fields, taken from the header structs. Added the `VehicleSpec`, `OpenDriveMap`, and `Mount` types.
