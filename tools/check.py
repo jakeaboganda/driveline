@@ -145,6 +145,10 @@ def check_abi(readme_meta):
             fail(f"abi: macro version {major}.{minor} != README abi_version")
         if value != (major << 16 | minor << 8):
             fail("abi: macro name and value disagree")
+    fmu = (SPEC / "07-fmu-packaging.md").read_text()
+    for v in set(re.findall(r";version=(\d+\.\d+)", fmu)):
+        if v != readme_meta.get("abi_version"):
+            fail(f"spec/07-fmu-packaging.md: MIME version {v} != abi_version")
     base = ["gcc", "-std=c11", "-Wall", "-Wextra", "-Wpadded", "-Werror", "-fsyntax-only", "-x", "c"]
     r = subprocess.run([*base, str(HEADER)], capture_output=True, text=True)
     if r.returncode:
