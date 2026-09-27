@@ -1,0 +1,3 @@
+#!/bin/sh
+# Blocks a commit when tools/check.py fails. Install: ln -s ../../tools/pre-commit .git/hooks/pre-commit
+exec .venv/bin/python tools/check.py > /tmp/driveline-check.log 2>&1 || { cat /tmp/driveline-check.log | grep -E 'FAIL|failure'; exit 1; }

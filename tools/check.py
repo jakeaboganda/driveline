@@ -342,6 +342,25 @@ def check_frame_tables(docs):
                  f"table only {sorted(names - members)}, header only {sorted(members - names)}")
     notes.append("frame tables in section 5 match the header structs")
 
+    slices = {"TargetTrack": "dl_target_track_t", "VisualSlice": "dl_visual_slice_t",
+              "RadarSlice": "dl_radar_slice_t", "CameraSlice": "dl_camera_slice_t",
+              "SurfaceSlice": "dl_surface_slice_t"}
+    perception = docs["04-perception.md"][1]
+    for name, struct in slices.items():
+        row = re.search(r"^\| \*\*`" + name + r"`\*\*.*$", perception, re.M)
+        if not row:
+            fail(f"04-perception.md: no table row for {name}")
+            continue
+        cell = [c.strip() for c in row.group(0).strip("|").split("|")][2]
+        types = {"char", "uint8", "uint32", "uint64", "int32", "float64"}
+        names = {n for n in re.findall(r"`([a-z_]+)(?:\[\d+\])?`", cell)
+                 if not n.endswith("_t") and n not in types}
+        members = struct_members(header, struct)
+        if names != members:
+            fail(f"04-perception.md: {name} row differs from header: "
+                 f"table only {sorted(names - members)}, header only {sorted(members - names)}")
+    notes.append("slice rows in section 4.3 match the header structs")
+
 
 def check_test_vector(docs):
     scenario = (EXAMPLES / "kanagawa_pinch_test.dline").read_text()

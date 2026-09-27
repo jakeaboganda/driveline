@@ -57,4 +57,6 @@ python3 -m venv .venv
 .venv/bin/python tools/check.py
 ```
 
+To run the checks before every commit, link the hook: `ln -s ../../tools/pre-commit .git/hooks/pre-commit`.
+
 The 32-bit build needs `gcc -m32` support. If it is missing, the check reports the 32-bit step as skipped.
