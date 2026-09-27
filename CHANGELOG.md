@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.30
+
+* Defined `sensor_port_index` and the default `scenario_seed`.
+
 ## 0.29
 
 * Defined the termination check: `sim_time` is $t + \Delta t$, the run ends before `on` statements fire, and the runtime has no contact model.
