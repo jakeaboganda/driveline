@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.47
+
+* Defined the latched frames in splice and re-trim contexts. A re-trim replaces only the steering fields, so longitudinal control continues without a step.
+
 ## 0.46
 
 * Cold init instantiates and configures every component before Pass 1, physics exits init mode in Pass 3, and Pass 1 fills every `chassis_state` field, including the map cache.
