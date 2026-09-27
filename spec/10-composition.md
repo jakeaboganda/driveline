@@ -1,7 +1,7 @@
 ---
 title: Composition, arbitration, and splicing
 section: 10
-version: 0.4
+version: 0.20
 status: draft
 normative: true
 depends_on: [05-checkpoints.md]
@@ -15,5 +15,9 @@ depends_on: [05-checkpoints.md]
    * **Evaluation:** The runtime passes the same $T_{\text{in}}$ to both branches. The merged frame takes `LON` fields from the `Lon` branch and `LAT` fields from the `Lat` branch, with `valid_mask = (lon.valid_mask & LON) | (lat.valid_mask & LAT)`. A `+` merge never sets `COUPLED` bits.
    * **Chaining Within a Branch:** A branch can chain partial types, for example `PIDSpeedController: IntentFrame -> Lon<KinematicControlFrame>` followed by `JerkLimiter: Lon<KinematicControlFrame> -> Lon<KinematicControlFrame>`.
 3. **Multi-Chain Arbitration (`Arbitrate`):** Merges two parallel chains producing the same checkpoint type $T_{\text{check}}$ (`IntentFrame`, `KinematicControlFrame`, or `ActuatorControlFrame`) via an explicit `Arbiter` component. Arbiters read raw `valid_mask` bits and do not apply the hold rule of [§5](05-checkpoints.md). For example, `BrakeOverrideArbiter` uses the secondary's `throttle` and `brake` when `secondary.valid_mask & 0x02` is set. It passes `primary.steering_wheel_norm` through whenever `secondary.valid_mask & 0x04 == 0`.
-4. **Type-Safe Splicing:** When the runtime splices a component or sub-chain $C_{\text{new}}: T_{\text{in}} \rightarrow T_{\text{out}}$ into an actor's pipeline at $t > 0$, it matches $(T_{\text{in}}, T_{\text{out}})$ against the replaced sub-chain. It moves the outgoing sub-chain to `Terminated`, initializes $C_{\text{new}}$ through `WarmStartMode` ([§6.2.4](06-lifecycle.md)), and swaps the two between ticks. Appendix A lists the DSL syntax for splice triggers as an open item.
+4. **Type-Safe Splicing:** A scenario replaces components during a run with `on (condition) { splice target = replacement; ... }` ([§12](12-grammar.md)).
+   * **Targets:** `actor.name` names a chain that the actor declared with `chain name = ...`, and the replacement is a whole new chain. `actor.physics_model` names the actor's Stage 3 physics component, and the replacement is one Stage 3 component. The splice replaces only that component, and the rest of the physics chain keeps running.
+   * **Typing:** The replacement must have the same input and output types as the target. A mismatch, an unknown actor, or an unknown chain name is a compile-time error. The tier check of [§3.1](03-vehicle-parameters.md) applies to the replacement.
+   * **Trigger:** The condition is evaluated in Phase 4 of every tick, after the termination check. Each `on` statement fires at most once, on the first tick where its condition is true. Statements that fire on the same tick run in source order.
+   * **Timing:** Splices run between ticks, after Phase 4 of the firing tick and before Phase 1 of the next tick. The runtime calls `dl_terminate` and `dl_free_instance` on every outgoing instance. It then instantiates the replacement and initializes it through `WarmStartMode` ([§6.2.4](06-lifecycle.md)). A `physics_model` splice between tiers is a promotion or demotion and triggers the re-trim of [§6.2.4](06-lifecycle.md).
 5. **Physics Assignment Rule:** Each actor gets exactly one Stage 3 physics component, from either its `physics` declaration or one `bind` statement. An actor with zero or two physics components is a compile-time error.

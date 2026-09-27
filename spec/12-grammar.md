@@ -1,7 +1,7 @@
 ---
 title: DSL grammar
 section: 12
-version: 0.4
+version: 0.20
 status: draft
 normative: true
 depends_on: []
@@ -29,7 +29,7 @@ BindInputsBlock  ::= "bind_inputs" "{" (StringLit "=" Expr ";")* "}"
 BindOutputsBlock ::= "bind_outputs" "->" TypeSpec "{" (Ident "=" Expr ";")* "}"
 StepBlock        ::= "step" "(" PortList ")" "->" TypeSpec "{" Stmt* "}"
 
-ScenarioDecl     ::= "scenario" Ident "{" WorldStmt* ActorDecl* BindStmt* TerminateStmt "}"
+ScenarioDecl     ::= "scenario" Ident "{" WorldStmt* ActorDecl* BindStmt* EventStmt* TerminateStmt "}"
 WorldStmt        ::= ("map" "=" Expr ";") | ("timestep" "=" TimeLit ";") | ("seed" "=" IntLit ";")
                    | ("allow_pose_override" "=" BoolLit ";") | EnvBlock | StaticObjDecl
 EnvBlock         ::= "environment" "{" (Ident "=" Expr ";" | CallExpr ";")* "}"
@@ -46,6 +46,8 @@ BindStmt         ::= "bind" ("[" IdentList "]" | Ident) "->" PipeExpr ";"
 PipeExpr         ::= PrimaryPipe (">>" PrimaryPipe)*
 PrimaryPipe      ::= CallExpr | "(" PipeExpr ("+" PipeExpr)* ")" | ArbitrateExpr | Ident
 ArbitrateExpr    ::= "Arbitrate" "(" PipeExpr "," PipeExpr "," "via" ":" CallExpr ")"
+EventStmt        ::= "on" "(" Expr ")" "{" SpliceStmt+ "}"
+SpliceStmt       ::= "splice" Ident "." Ident "=" PipeExpr ";"
 TerminateStmt    ::= "terminate" "when" "(" Expr ")" ";"
 
 Stmt             ::= LetStmt | IfStmt | ReturnStmt

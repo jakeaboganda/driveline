@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.20
+
+* Added `on (...) { splice ... }` statements with chain and `physics_model` targets, type rules, edge-triggered firing, and splice timing. The reference scenario promotes the blocker at 4 s.
+
 ## 0.19
 
 * Added a table of legal lifecycle calls. `dl_terminate` is legal from every live state, which the error handling in section 14 needs.

@@ -140,7 +140,8 @@ scenario KanagawaExpresswayPinchTest {
     // --- Actors 2 & 3: Challengers with Mounted Sensors & 1:N Hive-Mind Coordination ---
     actor blocker = spawn(id: 2, spec: Sedan_2026, road: "road_10", lane: 1, s: 30.0m, v: 26.0m/s) with {
         sensors {
-            surround = SurroundVisualSensor(range: 150.0m, rate: 25Hz, history: 5);
+            surround   = SurroundVisualSensor(range: 150.0m, rate: 25Hz, history: 5);
+            tire_patch = SurfaceContactSensor(rate: 500Hz, history: 1);
         }
     };
 
@@ -159,6 +160,11 @@ scenario KanagawaExpresswayPinchTest {
                                   )
                                >> kinematic_coupled_control()
                                >> KinematicBicycle();
+
+    // Promote the blocker from Tier 0 to Tier 1 physics before it reaches the ice patch.
+    on (sim_time > 4.0s) {
+        splice blocker.physics_model = DynamicSingleTrack(surface: blocker.sensors.tire_patch);
+    }
 
     terminate when (sim_time > 25.0s or collision(ego, any) or ego.state.v_lon < 0.1m/s);
 }
