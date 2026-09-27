@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.41
+
+* Defined `StanleyLat`'s sampling start and direction, the front-axle point, nearest-point tie-breaking, and the lateral and heading errors. `d_ref` uses the reference-line sign convention of section 2.
+
 ## 0.40
 
 * Fixed the order of a standard physics step: actuators first, then derivatives at the old state with the new actuator values, then Euler, then the speed clamp and the planar Z. Defined physics initialization from `chassis_state` and the symbol `dt`.

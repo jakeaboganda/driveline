@@ -1,7 +1,7 @@
 ---
 title: Checkpoint data contracts
 section: 5
-version: 0.24
+version: 0.41
 status: draft
 normative: true
 depends_on: [02-conventions.md]
@@ -39,7 +39,7 @@ Produced by Stage 1 (Intent) components.
 | **Lateral** | `lat_mode` | `enum` | — | `LANE_OFFSET` ($0$), `POLYLINE_PATH` ($1$), or `SPATIOTEMPORAL_TRAJECTORY` ($2$). |
 | | `target_road_id` | `char[64]` | — | Target OpenDRIVE road identifier. |
 | | `target_lane_id` | `int32` | — | Signed OpenDRIVE lane index. |
-| | `d_ref` | `float64` | $\text{m}$ | Target lateral offset from `target_lane_id` centerline. |
+| | `d_ref` | `float64` | $\text{m}$ | Target lateral offset from the `target_lane_id` centerline, with the sign convention of `d` in [§2](02-conventions.md): positive to the left of the reference line direction, whatever the lane's driving direction. |
 | | `path_points` | `Waypoint[64]` | $\text{m}, \text{rad}, \text{m}^{-1}$ | Array of $(X, Y, \psi_{\text{ref}}, \kappa_{\text{ref}})$ geometric path targets. |
 | **Coupled Horizon** | `trajectory` | `TrajPoint[64]` | $\text{s}, \text{m}, \text{m/s}$ | Time-indexed array $(t_k, X_k, Y_k, \psi_k, v_k, a_k, \kappa_k)$. |
 | **Auxiliary** | `turn_signal` | `enum` | — | `NONE` ($0$), `LEFT` ($1$), `RIGHT` ($2$), `HAZARD` ($3$). |
