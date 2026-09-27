@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.60
+
+* Updated the FMI fact-check item to the FMI calls that section 7 now uses.
+
 ## 0.59
 
 * Native components run in process. Out-of-process execution uses Mode A FMUs. This closes the last open design item.
