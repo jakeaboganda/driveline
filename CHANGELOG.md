@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.25
+
+* Added ABI calling rules for version encoding and equality, strings, pointer lifetimes, output allocation, frame header ownership, step times, and threads.
+
 ## 0.24
 
 * Added section 15: JSON component manifests, one component per shared library, resolution of `use` paths, and parameter checking and passing.
