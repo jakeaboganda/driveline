@@ -1,7 +1,7 @@
 ---
 title: DSL static semantics
 section: 16
-version: 0.32
+version: 0.34
 status: draft
 normative: true
 depends_on: [02-conventions.md, 04-perception.md, 05-checkpoints.md, 10-composition.md, 12-grammar.md, 15-manifest.md]
@@ -46,9 +46,9 @@ Names resolve from the innermost scope outward. A name declared twice in one sco
 | File | Imported components, `vehicle_spec` names, `component` names, and `fn` names. |
 | Scenario | Actor names. In `terminate when` and `on` conditions only: `sim_time` (`Time`, [§11](11-execution.md)). |
 | Actor body | `sensors.<name>`, `priors.<name>`, and the actor's chain names. |
-| Component body | Input port names, `param` names, and inside `step`, its parameters and `let` names. |
+| Component body | Input port names, `param` names, inside `bind_inputs`, `own_state`, and inside `step`, its parameters, `let` names, and `own_state` (`KinematicState`, the actor's own committed state, [§9.1](09-abi.md)). |
 
-* **World Separation:** `actor.state` and `sim_time` are allowed only in `terminate when` and `on` conditions. Using them anywhere else, including as a component argument, is a compile-time error. Components see the World only through sensors, priors, and host map callbacks ([§1.1](01-scope.md)).
+* **World Separation:** `actor.state` and `sim_time` are allowed only in `terminate when` and `on` conditions. Using them anywhere else, including as a component argument, is a compile-time error. Components see the World only through sensors, priors, host map callbacks, and their own actor's `own_state` ([§1.1](01-scope.md)).
 * **Field Selectors:** The first argument of `rate_of` is a field name of the buffer's slice type, resolved in that type's scope.
 * **Actor IDs:** Every `spawn` must pass `id:` as an `Int` literal of at least 1. IDs must be unique within the scenario. `0` means "no actor" in frame fields such as `gap_target_actor_id`.
 

@@ -6,6 +6,12 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.34
+
+* Every component now receives its own actor's committed `KinematicState`: `own_states` in `dl_batch_step_io_t`, `own_state` in the DSL, and an `own_state` input on Mode A FMUs. Before this, controllers could not read their own speed.
+* `actor_ids` follows group order, not ascending order.
+* ABI version 0.9.
+
 ## 0.33
 
 * Removed the actor array syntax `actor x[N]`. It had no defined meaning and conflicts with unique literal actor IDs.
