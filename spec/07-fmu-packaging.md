@@ -1,7 +1,7 @@
 ---
 title: FMU packaging
 section: 7
-version: 0.49
+version: 0.51
 status: draft
 normative: true
 depends_on: [06-lifecycle.md, 09-abi.md]
@@ -17,14 +17,13 @@ A `component ... from_fmu("...")` declaration uses one of two modes. The compile
   * Initialization uses the `fmi3Binary` input `dl_init_context` (MIME type `application/x-driveline.init-context;version=0.11`). The runtime sets it in initialization mode, at $t = 0$ for cold init and at $t = t_{\text{splice}}$ for warm start. `is_warm_start` tells the two apart. For a splice, the runtime creates a new FMU instance. For a re-trim ([§6.2.4](06-lifecycle.md)), it calls `fmi3Reset` and initializes again with the re-trim context.
   * Component parameters are FMI parameters with the same names.
   * The actor's own state ([§9.1](09-abi.md)) is the `fmi3Binary` input `own_state` with MIME type `application/x-driveline.kinematic-state;version=0.11`. The runtime sets it on every step.
-  * Mode A FMUs are $1\text{:}1$ only. They cannot be bound to a group.
-* **Mode B (Scalar-Pin FMU):** A legacy FMU with scalar `Float64` pins. `bind_inputs` maps expressions over the `SliceBuffer` ports and `own_state` onto input pins. `bind_outputs` maps output pins onto a checkpoint frame. Cold init uses the FMU's own start values. Splicing a Mode B FMU at $t > 0$ uses the first case that applies:
-  1. **Restore a Saved State:** If this FMU instance was spliced out earlier in the same run, and the FMU declares `canGetAndSetFMUState="true"`, the runtime saved its state with `fmi3GetFMUState` at splice-out. The runtime restores that state with `fmi3SetFMUState`. The restored state is from the splice-out time, not the current time. The runtime reports `DL_STATUS_WARN_FMU_COLD_SPLICE`.
-  2. **Cold Splice:** Otherwise the runtime calls `fmi3Reset`, or creates a new instance, and sets the input start values by evaluating `bind_inputs` at $t_{\text{splice}}$. It then calls `fmi3EnterInitializationMode` with `startTime` $= t_{\text{splice}}$, then `fmi3ExitInitializationMode`, and reports `DL_STATUS_WARN_FMU_COLD_SPLICE`.
+  * A Mode A manifest's `cardinality` must be `OneToOne`. Any other value is a compile-time error.
+  * **MIME subtype names:** `<checkpoint-type>` and `<slice-type>` are the type names written in lowercase with a hyphen before each inner capital: `IntentFrame` is `intent-frame`, `KinematicControlFrame` is `kinematic-control-frame`, and `RadarSlice` is `radar-slice`.
+* **Mode B (Scalar-Pin FMU):** A legacy FMU with scalar `Float64` pins. `bind_inputs` maps expressions over the `SliceBuffer` ports and `own_state` onto input pins. `bind_outputs` maps output pins onto a checkpoint frame. Cold init uses the FMU's own start values. Splicing a Mode B FMU at $t > 0$ creates a new FMU instance, sets the input start values by evaluating `bind_inputs` at $t_{\text{splice}}$, calls `fmi3EnterInitializationMode` with `startTime` $= t_{\text{splice}}$ and then `fmi3ExitInitializationMode`, and reports `DL_STATUS_WARN_FMU_COLD_SPLICE`.
 
   In `bind_outputs`, a frame field that no assignment names is zero. If `valid_mask` is not assigned, it is the union of the bits that cover the assigned fields ([§5](05-checkpoints.md)). Named call-site arguments that are not input ports are FMI parameters with the same names, set before initialization.
 
-  A Mode B FMU cannot be re-trimmed ([§6.2.4](06-lifecycle.md)). An FMU state saved with `fmi3GetFMUState` is opaque, so the runtime cannot build one from `dl_init_context_t`.
+  A Mode B FMU cannot be re-trimmed ([§6.2.4](06-lifecycle.md)), because it has no input for `dl_init_context_t`.
 
 ## 7.1 Stepping and Output Timing
 

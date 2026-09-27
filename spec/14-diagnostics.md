@@ -1,7 +1,7 @@
 ---
 title: Status codes and error handling
 section: 14
-version: 0.21
+version: 0.51
 status: draft
 normative: true
 depends_on: [06-lifecycle.md, 09-abi.md]
@@ -27,6 +27,6 @@ depends_on: [06-lifecycle.md, 09-abi.md]
 ## 14.2 Runtime Handling
 
 1. **Warnings:** The runtime records the warning with the tick, the component instance name, and the call or rule that produced it. The run continues.
-2. **Errors:** When a `dl_*` call returns an error, or the runtime detects an error itself, the runtime stops the run. It finishes no further phase. It calls `dl_terminate` and then `dl_free_instance` on every instance that is not `Terminated`, in descending `actor_id` order, and reports the error with the tick, the instance name, and the call. A run that stops this way has failed. Its last committed World state is the state after the last completed Phase 4.
+2. **Errors:** When a `dl_*` call returns an error, or the runtime detects an error itself, the runtime stops the run. It finishes no further phase. It calls `dl_terminate` and then `dl_free_instance`, or `fmi3Terminate` and `fmi3FreeInstance` for FMUs, on every instance that is not `Terminated`, in descending `actor_id` order, and reports the error with the tick, the instance name, and the call. A run that stops this way has failed. Its last committed World state is the state after the last completed Phase 4.
 3. **Output Validation:** After each `dl_do_step`, the runtime checks every output frame. A field whose `valid_mask` bit is set must be finite. `throttle` and `brake` must lie in $[0, 1]$, and `steering_wheel_norm` must lie in $[-1, 1]$. Every `KinematicState` field must be finite. A failed check is `DL_STATUS_ERR_NUMERIC`, handled as an error.
 4. **Report Format:** Each report has the fields `tick`, `sim_time_ns`, `severity` (`warning` or `error`), `code` (a `dl_status_t` name), `instance` (the name passed to `dl_instantiate`), and `detail` (text). The transport and file format of reports are implementation-defined.
