@@ -6,6 +6,12 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.36
+
+* Added section 17, the standard library: builtins, constructors, and the friction field; ideal sensor models with mounts, detection, and every slice field; and the manifests and equations of `PincerHiveMind`, `PIDSpeedController`, `JerkLimiter`, `StanleyLat`, `SimpleDrivetrain`, `BrakeOverrideArbiter`, `KinematicBicycle`, and `DynamicSingleTrack`.
+* `tools/check.py` verifies that the `DynamicSingleTrack` derivatives vanish at the section 8 steady state.
+* The reference scenario imports `SimpleDrivetrain` from `std::control` and passes `own_state` to `follow_route`.
+
 ## 0.35
 
 * Added section 9.2: semantics, tie-breaking, and out-of-map behavior for the four host map callbacks.

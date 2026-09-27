@@ -1,7 +1,7 @@
 ---
 title: Component manifests and packaging
 section: 15
-version: 0.24
+version: 0.36
 status: draft
 normative: true
 depends_on: [00-conformance.md, 05-checkpoints.md, 07-fmu-packaging.md, 09-abi.md, 12-grammar.md]
@@ -19,7 +19,7 @@ A manifest tells the compiler and the runtime what a library component is: its p
 | Mode B FMU (`from_fmu` with `bind_inputs` or `bind_outputs`) | The `component` declaration. No manifest. |
 | Mode A FMU (`from_fmu` without bind blocks) | `extra/org.driveline.dcm/manifest.json` inside the `.fmu` ([§7](07-fmu-packaging.md)). |
 | Native library component | `<Name>.dcm.json` next to the shared library. |
-| Standard library component (`std::...`) | The manifests that the standard library specification lists. |
+| Standard library component (`std::...`) | The signatures in [§17](17-standard-library.md). |
 
 A Mode A declaration in the scenario must match its manifest. The declared ports, output type, and `required_tier` must equal the manifest's. A mismatch is a compile-time error.
 

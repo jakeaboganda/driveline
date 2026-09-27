@@ -260,6 +260,19 @@ def check_test_vector(docs):
         fail(f"test vector: yaw moment {moment} is not zero")
     notes.append("test vector: recomputed values match spec/08-steady-state.md")
 
+    iz = param("inertia_zz")
+    vy = vlat + lr * r
+    alpha_f = dss - math.atan((vy + lf * r) / v)
+    alpha_r = -math.atan((vy - lr * r) / v)
+    fyf, fyr = caf * alpha_f, car * alpha_r
+    vy_dot = (fyf + fyr) / m - v * r
+    r_dot = (lf * fyf - lr * fyr) / iz
+    if abs(vy_dot) > 1e-9 or abs(r_dot) > 1e-9:
+        fail(f"std DynamicSingleTrack is not at rest in the section 8 steady state: "
+             f"vy_dot={vy_dot:.3e}, r_dot={r_dot:.3e}")
+    else:
+        notes.append("std DynamicSingleTrack derivatives vanish at the section 8 steady state")
+
 
 def check_siphash(docs):
     import struct

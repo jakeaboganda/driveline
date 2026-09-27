@@ -1,7 +1,7 @@
 use std::sensors::{HumanVisualSensor, SurroundVisualSensor, MillimeterRadar, MonoCamera, SurfaceContactSensor};
 use std::intent::{PincerHiveMind};
-use std::control::{PIDSpeedController, JerkLimiter, StanleyLat, LinearPedalMapper, BrakeOverrideArbiter};
-use std::physics::{SimpleDrivetrain, DynamicSingleTrack, KinematicBicycle};
+use std::control::{PIDSpeedController, JerkLimiter, StanleyLat, SimpleDrivetrain, BrakeOverrideArbiter};
+use std::physics::{DynamicSingleTrack, KinematicBicycle};
 
 // ============================================================================
 // 1. STRATIFIED VEHICLE SPECIFICATION (Satisfies all Tier 0, 1, 2 invariants)
@@ -59,7 +59,7 @@ component HumanIntent (rate: 20Hz) (required_tier: 0): (
             // Sets LON bits only. Downstream keeps the last lateral target (hold rule, §5).
             return IntentFrame::decelerate(a_ref: -5.5m/s^2);
         } else {
-            return IntentFrame::follow_route(route: route, v_ref: desired_speed);
+            return IntentFrame::follow_route(route: route, from: own_state, v_ref: desired_speed);
         }
     }
 }
