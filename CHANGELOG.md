@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.17
+
+* Warm start and re-trim pass one init context per affected actor. Components match contexts to slots by `actor_id` and keep the other actors' state.
+
 ## 0.16
 
 * Only Stage 2 components must reproduce the latched trim, and the runtime checks it on the first Tick 0 output, since initialization returns no output.

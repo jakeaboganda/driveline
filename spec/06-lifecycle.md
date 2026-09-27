@@ -1,7 +1,7 @@
 ---
 title: Component lifecycle
 section: 6
-version: 0.16
+version: 0.17
 status: draft
 normative: true
 depends_on: [05-checkpoints.md, 08-steady-state.md, 09-abi.md]
@@ -72,6 +72,7 @@ The **Driveline Component Model (DCM)** is a C-ABI ([§9](09-abi.md)). Native co
    * **Promotion, Tier 0 (`KS`) $\rightarrow$ Tier 1/2 (`ST` / `MB`):** The runtime keeps the pose, $v_{\text{lon}}$, and $\dot{\psi}$. It solves the `ST` steady state of [§8](08-steady-state.md) at $(v_{\text{lon}}, \dot{\psi})$ and passes it to the incoming physics component. Three fields change: $v_{\text{lat,ra}}$ goes from $0$ to the solved value, `front_wheel_angle` goes from $\delta_{\text{KS}}$ to $\delta_{\text{ss}}$, and $\beta_{\text{cg}}$ follows from both. With linear tires, the lateral force and yaw moment of the incoming model are balanced at the first step.
    * **Demotion, Tier 1/2 $\rightarrow$ Tier 0:** The runtime keeps the pose, $v_{\text{lon}}$, and $\dot{\psi}$. It sets $v_{\text{lat,ra}} = 0$ and `front_wheel_angle` $= \delta_{\text{KS}}$ from [§8](08-steady-state.md). These two fields and $\beta_{\text{cg}}$ change.
    * **Re-Trim of Upstream Controllers:** A promotion or demotion changes `front_wheel_angle`. In the same inter-tick window, the runtime moves each Stage 2 component that feeds the new physics component from `StepMode` back into `WarmStartMode`. It passes `latched_kinematic_ctrl.steer_angle_cmd` $= $ the new `front_wheel_angle`, and it passes the matching `latched_actuator_ctrl`. Each re-trimmed component resets its internal state so that its next output equals the new steering angle. A component that cannot re-trim (a Mode B FMU, [§7](07-fmu-packaging.md)) causes `DL_STATUS_WARN_TRIM_MISMATCH`.
+   * **Contexts per Actor:** `dl_enter_cold_init` and `dl_enter_warm_start` take one `dl_init_context_t` per actor, and the component matches each context to its actor slot by `chassis_state.actor_id`. Cold init and a splice pass a context for every bound actor. A re-trim passes contexts only for the actors whose physics changed, and the component keeps the state of every other actor.
    * **Size of the Change:** For linear tires, $\delta_{\text{ss}} - \delta_{\text{KS}} \approx K_{\text{us}}\, v_{\text{lon}} \dot{\psi}$, where $K_{\text{us}} = \frac{m}{L}\left(\frac{l_r}{C_{\alpha f}} - \frac{l_f}{C_{\alpha r}}\right)$ is the understeer gradient. [§8](08-steady-state.md) gives a test vector.
    * **Full-Stack Bridge (`SensorBundle -> KinematicState`):** Allowed only as a static $t = 0$ actor binding, for replay actors or external HiL ego bridges. Splicing a `SensorBundle -> KinematicState` component at $t > 0$ is a compile-time error unless the scenario declares `allow_pose_override = true;`.
 5. **Membership Mutation (`dl_on_membership_change`):** Actors can join or leave a $1\text{:}N$ or $N\text{:}N$ component at $t > 0$. `dl_membership_change_t` lists the full active actor set after the change and the init contexts of the added actors. An actor absent from the new active set has left. The component warm-starts each added actor's slot and does not reset the other members.
