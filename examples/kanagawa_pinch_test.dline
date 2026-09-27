@@ -130,8 +130,8 @@ scenario KanagawaExpresswayPinchTest {
 
         chain active_safety = BoschPCS_v4(radar: sensors.front_radar, camera: sensors.front_cam);
 
-        // BrakeOverrideArbiter outputs ActuatorControlFrame; SimpleDrivetrain converts pedals
-        // to axle forces/angles using Tier-2 powertrain parameters before DynamicSingleTrack
+        // BrakeOverrideArbiter outputs ActuatorControlFrame. SimpleDrivetrain converts it to a
+        // KinematicControlFrame with Tier 2 powertrain parameters before DynamicSingleTrack.
         physics = Arbitrate(human_driver, active_safety, via: BrakeOverrideArbiter())
                >> SimpleDrivetrain()
                >> DynamicSingleTrack(surface: sensors.tire_patch);

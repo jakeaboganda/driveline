@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.39
+
+* Fixed a stale comment in the reference scenario about what `SimpleDrivetrain` outputs.
+
 ## 0.38
 
 * Pitch lies in $[-\pi/2, \pi/2]$. Listed the non-SI port fields: normalized commands, confidences, and dBsm.

@@ -1,7 +1,7 @@
 ---
 title: Reference scenario
 section: 13
-version: 0.36
+version: 0.39
 status: draft
 normative: true
 depends_on: [12-grammar.md]
