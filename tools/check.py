@@ -111,6 +111,8 @@ def check_docs():
                 fail(f"spec/{name}: §{ref} has no matching heading")
         if re.search(r"\bv\d+\.\d+\b", text):
             fail(f"spec/{name}: names a spec version in prose; versions live in front-matter")
+        if re.search(r"\bSections? \d", text):
+            fail(f"spec/{name}: cites sections by bare number; use linked § references")
         if re.search(r"\bAppendix [A-Z]\b", text):
             fail(f"spec/{name}: refers to an appendix; the suite has none")
         bare = re.findall(r"(?<!\[)§\d+(?:\.\d+)*", text)

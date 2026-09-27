@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.52
+
+* Replaced a stale section range in the reference scenario text. `tools/check.py` rejects section numbers written without a link.
+
 ## 0.51
 
 * Mode B splices always start a fresh FMU instance. The saved-state restore case is gone. Defined MIME subtype names. A Mode A manifest must be `OneToOne`. Error teardown uses the FMI calls for FMUs.
