@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.31
+
+* Added SipHash-2-4 seed test vectors. `tools/check.py` verifies them against a SipHash implementation that is itself checked against the reference vectors.
+
 ## 0.30
 
 * Defined `sensor_port_index` and the default `scenario_seed`.

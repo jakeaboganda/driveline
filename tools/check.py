@@ -261,11 +261,35 @@ def check_test_vector(docs):
     notes.append("test vector: recomputed values match spec/08-steady-state.md")
 
 
+def check_siphash(docs):
+    import struct
+    sys.path.insert(0, str(ROOT / "tools"))
+    from siphash import siphash24
+
+    key = bytes(range(16))
+    reference = {0: 0x726FDB47DD0E0E31, 8: 0x93F5F5799A932462, 15: 0xA129CA6149BE45E5}
+    for length, expected in reference.items():
+        if siphash24(key, bytes(range(length))) != expected:
+            fail(f"siphash: reference vector for length {length} fails")
+            return
+    body = docs["11-execution.md"][1]
+    vectors = re.findall(r"`scenario_seed = (\d+)`, `actor_id = (\d+)`, `sensor_port_index = (\d+)`, "
+                         r"`k_tick = (\d+)` gives `(0x[0-9a-f]{16})`", body)
+    if not vectors:
+        fail("siphash: no seed test vectors in spec/11-execution.md")
+    for scn, actor, port, tick, expected in vectors:
+        got = siphash24(struct.pack("<QQ", int(scn), 0), struct.pack("<QIIQ", int(actor), int(port), 0, int(tick)))
+        if got != int(expected, 16):
+            fail(f"siphash: seed vector {scn},{actor},{port},{tick} gives 0x{got:016x}, spec says {expected}")
+    notes.append(f"siphash: reference vectors pass, {len(vectors)} seed vectors match")
+
+
 def main():
     readme_meta, docs = check_docs()
     check_abi(readme_meta)
     check_grammar(docs)
     check_test_vector(docs)
+    check_siphash(docs)
     for n in notes:
         print("ok   ", n)
     for f in failures:
