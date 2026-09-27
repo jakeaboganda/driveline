@@ -1,7 +1,7 @@
 ---
 title: Execution model and determinism
 section: 11
-version: 0.28
+version: 0.29
 status: draft
 normative: true
 depends_on: [06-lifecycle.md]
@@ -20,7 +20,8 @@ depends_on: [06-lifecycle.md]
    1. **Phase 1 (Sensor Projection):** Scheduled sensors project World state $X(t)$ into each actor's `SliceBuffer`s. Tick 0 skips Phase 1 because cold initialization Pass 1 has done it ([§6.2.3](06-lifecycle.md)).
    2. **Phase 2 (Intent, Control, & Arbitration):** Scheduled Stage 1, Stage 2, and Arbiter components step.
    3. **Phase 3 (Physics):** Scheduled Stage 3 components compute $X(t + \Delta t)$.
-   4. **Phase 4 (World Commit & Termination Check):** The runtime commits $X(t + \Delta t)$, updates cached Frenet coordinates, and evaluates `terminate when`.
+   4. **Phase 4 (World Commit & Termination Check):** The runtime commits $X(t + \Delta t)$, updates cached Frenet coordinates, and evaluates `terminate when`. Inside the predicate, `sim_time` is $t + \Delta t$ and `actor.state` is the committed `KinematicState`. If the predicate is true, the run ends successfully after this phase, and no `on` statement fires on this tick. Otherwise the runtime evaluates `on` statements ([§10.4](10-composition.md)).
+   * **No Contact Model:** The runtime does not model contact between actors, or between actors and static objects. Actors can overlap. `collision(...)` is a predicate on committed state that a scenario can use to end the run.
 3. **Deterministic Intra-Phase Ordering & Seeding:**
    * Within Phase 1, Phase 2, and Phase 3, actors and $1\text{:}N$ groups are evaluated in ascending order of `actor_id` (and topological chain order within each actor). A group sorts by its smallest member `actor_id`. Because Phase 2 components only read Phase 1 `SliceBuffer` snapshots from $X(t)$ and write to actor-local checkpoint buffers, Phase 2 is data-race-free and parallelizable across actors.
    * Each stochastic sensor gets a 64-bit seed per tick: `SipHash-2-4(key, msg)`. The 128-bit `key` is `scenario_seed` as a little-endian `uint64` followed by 8 zero bytes. The 24-byte `msg` is `actor_id` (little-endian `uint64`), `sensor_port_index` (little-endian `uint32`), 4 zero bytes, and `k_tick` (little-endian `uint64`). The sensor's random generator algorithm is part of the sensor's versioned implementation.

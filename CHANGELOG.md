@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.29
+
+* Defined the termination check: `sim_time` is $t + \Delta t$, the run ends before `on` statements fire, and the runtime has no contact model.
+
 ## 0.28
 
 * Physics runs on every tick. Defined same-tick dataflow in Phase 2 and the values of `t` and `dt` passed to `step`.
