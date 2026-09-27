@@ -1,6 +1,6 @@
 ---
 title: Open items
-version: 0.20
+version: 0.50
 status: draft
 normative: false
 depends_on: []
@@ -8,7 +8,7 @@ depends_on: []
 
 # Open Items
 
-These items are unresolved in v0.3.
+These items are unresolved in the current version (README `spec_version`).
 
 **External facts to check against the current standard documents:**
 * ASAM OSI message names and the slice mappings in [§4.3](04-perception.md).

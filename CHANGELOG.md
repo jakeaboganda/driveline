@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.50
+
+* Removed a stale version reference from the open items. `tools/check.py` rejects spec-version literals in prose.
+
 ## 0.49
 
 * Removed `SensorBundle`, the full-stack bridge rule, and `allow_pose_override`. No sensor produced a `SensorBundle`. A replay actor needs no special rule: it is a source physics chain.
