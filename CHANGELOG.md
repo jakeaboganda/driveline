@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.104
+
+* Listed every valid `IntentFrame` mask. `s_stop` requires `0x01` and is excluded by a trajectory, and `turn_signal` goes with anything.
+
 ## 0.103
 
 * `rate_of` wraps angle differences and is invalid across non-finite samples. `ANGLE` interpolation defines the tie at exactly $\pi$.
