@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.71
+
+* Defined $\bar{\mu}$ in `DynamicSingleTrack`. Stated that `KinematicBicycle` ignores friction, grade, and bank, and that neither model applies grade gravity. A stopped actor keeps no negative acceleration.
+
 ## 0.70
 
 * Defined how the runtime computes road grade and bank from the map. Bank is now relative to the direction of travel. The lane direction sign $\sigma$ is defined once, in section 2.

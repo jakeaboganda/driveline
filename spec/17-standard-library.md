@@ -1,7 +1,7 @@
 ---
 title: Standard library
 section: 17
-version: 0.70
+version: 0.71
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 06-lifecycle.md, 08-steady-state.md, 09-abi.md, 11-execution.md, 15-manifest.md]
@@ -91,8 +91,8 @@ Both physics components are `OneToOne` and run every tick ([§11](11-execution.m
 1. Update the actuator states $\delta$ and $a$ from the command frame, as below.
 2. Evaluate the derivatives at the state of tick $t$, using the updated $\delta$ and $a$.
 3. Apply one explicit Euler step of length $\Delta t$ to every integrated state.
-4. Clamp $v_{\text{lon}} \leftarrow \max(0, v_{\text{lon}})$. The standard physics does not drive in reverse.
-5. Set $Z$ to the map elevation at the new $(X, Y)$, and roll and pitch to 0. The standard physics is planar.
+4. Clamp $v_{\text{lon}} \leftarrow \max(0, v_{\text{lon}})$. If the clamp changes $v_{\text{lon}}$, also set $a \leftarrow \max(0, a)$, so a stopped actor reports no deceleration. The standard physics does not drive in reverse.
+5. Set $Z$ to the map elevation at the new $(X, Y)$, and roll and pitch to 0. The standard physics is planar: neither component applies gravity along the grade or bank.
 
 **Initialization:** On cold init or warm start, each component sets its internal state from `chassis_state` in its init context: the pose, $v_{\text{lon}}$, $\dot{\psi}$, $\delta$ from `front_wheel_angle`, $a$ from `a_lon`, and, for `DynamicSingleTrack`, $v_y = v_{\text{lat}} + l_r \dot{\psi}$.
 
@@ -102,9 +102,9 @@ Both physics components are `OneToOne` and run every tick ([§11](11-execution.m
 
 **`KinematicBicycle`:** Tier 0. Input `KinematicControlFrame`. Output `KinematicState`. With rear-axle speed $v$:
 $$\dot{X} = v\cos\psi, \quad \dot{Y} = v\sin\psi, \quad \dot{\psi} = \frac{v}{L}\tan\delta, \quad \dot{v} = a$$
-It reports $v_{\text{lat}} = 0$, `a_lon` $= a$, and `a_lat` $= v\dot{\psi}$.
+It reports $v_{\text{lat}} = 0$, `a_lon` $= a$, and `a_lat` $= v\dot{\psi}$. It ignores friction, grade, and bank.
 
-**`DynamicSingleTrack`:** Tier 1. Inputs `KinematicControlFrame` (the pipe input) and `surface: SliceBuffer<SurfaceSlice, 1>`. Output `KinematicState`. The state is the pose, $v_x$ ($= v_{\text{lon}}$), the CG lateral velocity $v_y$, the yaw rate $r$, $\delta$, and $a$. From `surface.latest()`: $\mu_f$ and $\mu_r$ are the axle means of the corner values, and $F_{zf}$ and $F_{zr}$ are the static axle loads of [§6.2](06-lifecycle.md) at its grade and bank. For $v_x \ge 1\text{ m/s}$:
+**`DynamicSingleTrack`:** Tier 1. Inputs `KinematicControlFrame` (the pipe input) and `surface: SliceBuffer<SurfaceSlice, 1>`. Output `KinematicState`. The state is the pose, $v_x$ ($= v_{\text{lon}}$), the CG lateral velocity $v_y$, the yaw rate $r$, $\delta$, and $a$. From `surface.latest()`: $\mu_f$ and $\mu_r$ are the axle means of the corner values, $\bar{\mu}$ is `mu_mean`, and $F_{zf}$ and $F_{zr}$ are the static axle loads of [§6.2](06-lifecycle.md) at its grade and bank. For $v_x \ge 1\text{ m/s}$:
 $$\alpha_f = \delta - \arctan\frac{v_y + l_f r}{v_x}, \quad \alpha_r = -\arctan\frac{v_y - l_r r}{v_x}, \quad F_{yi} = \operatorname{clamp}(C_{\alpha i}\, \alpha_i,\ \pm\mu_i F_{zi})$$
 $$\dot{v}_y = \frac{F_{yf} + F_{yr}}{m} - v_x r, \quad \dot{r} = \frac{l_f F_{yf} - l_r F_{yr}}{I_{zz}}, \quad \dot{v}_x = \operatorname{clamp}(a,\ \pm \bar{\mu} g)$$
 The front lateral force acts along the body $y$ axis. This small-angle model matches [§8](08-steady-state.md). The rear-axle lateral velocity is $v_{\text{lat}} = v_y - l_r r$, and the pose moves with $\dot{X} = v_x\cos\psi - v_{\text{lat}}\sin\psi$, $\dot{Y} = v_x\sin\psi + v_{\text{lat}}\cos\psi$, $\dot{\psi} = r$. It reports `a_lon` $= \dot{v}_x - v_{\text{lat}}\, r$ and `a_lat` $= \dot{v}_{\text{lat}} + v_x r$. For $v_x < 1\text{ m/s}$, it uses the `KinematicBicycle` equations and sets $r = v_x \tan\delta / L$ and $v_y = l_r r$.
