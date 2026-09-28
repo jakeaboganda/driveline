@@ -1,7 +1,7 @@
 ---
 title: Priors, sensors, and SliceBuffer
 section: 4
-version: 0.103
+version: 0.112
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 06-lifecycle.md, 09-abi.md]
@@ -16,7 +16,7 @@ Actor-mounted data that does not change during a run ([§0](00-conformance.md)):
 * `RouteNodes`: Ordered array of up to 64 lanes (`dl_route_t`, [§9](09-abi.md)) that the actor intends to drive through. Each node is a `dl_lane_ref_t` `(road_id, lane_id)`. The DSL writes nodes as lane reference strings ([§2](02-conventions.md)).
 
 ## 4.2 Timestamped Ring Buffers (`SliceBuffer<T, N>`)
-Every mounted sensor has a compile-time capacity $N \in [1, 64]$ declared in its port signature `SliceBuffer<T, N>`. A sensor with capacity $N_s$ can bind to any component input port expecting `SliceBuffer<T, N_c>` provided $N_s \ge N_c$. The component sees only the port's view: its buffer has `capacity` $= N_c$ and `count` $\le N_c$, holding the newest $\min(\text{count}_s, N_c)$ samples, natively and in Mode A alike. `port_history_depths` in `dl_structural_config_t` gives $N_c$. Each entry is a `Timestamped<T>` struct containing `{ uint64 t_ns; T data; }`. In the DSL, `slice.t` is the entry's `Time`, and `slice.field` is shorthand for `slice.data.field`. [§9](09-abi.md) defines the memory layout (`dl_slice_buffer_view_t`).
+Every mounted sensor has a compile-time capacity $N \in [1, 64]$ declared in its port signature `SliceBuffer<T, N>`. A sensor with capacity $N_s$ can bind to any component input port expecting `SliceBuffer<T, N_c>` provided $N_s \ge N_c$. The component sees only the port's view: its buffer has `capacity` $= N_c$ and `count` $\le N_c$, holding the newest $\min(\text{count}_s, N_c)$ samples, natively and in Mode A alike. `port_history_depths` in `dl_structural_config_t` gives $N_c$. The runtime lays out the port's samples as a ring of exactly $N_c$ entries, so the ring formula in the header uses `capacity` $= N_c$. Each entry is a `Timestamped<T>` struct containing `{ uint64 t_ns; T data; }`. In the DSL, `slice.t` is the entry's `Time`, and `slice.field` is shorthand for `slice.data.field`. [§9](09-abi.md) defines the memory layout (`dl_slice_buffer_view_t`).
 
 **Timestamp Invariant:** Timestamps in a buffer strictly decrease from $s[0]$ to $s[\text{count}-1]$. The runtime never pushes two samples with the same `t_ns`. Cold initialization ([§6.2](06-lifecycle.md)) relies on this rule.
 
@@ -30,6 +30,7 @@ All `SliceBuffer<T, N>` ports enforce deterministic edge-case semantics across f
    Times are in seconds, so `value` has the field's unit per second. For an `ANGLE` field, the difference $s[0].f - s[m].f$ is wrapped to $(-\pi, \pi]$. If $s[0].f$ or $s[m].f$ is not finite, the result is $\{0.0, \text{false}\}$. `valid` is also false if the dependency condition of $f$ ([§4.3](04-perception.md)) fails between $s[0]$ and $s[m]$, because the difference would then span two targets or two roads, or no target at all. Whenever `valid` is false, `value` is $0.0$. The timestamp invariant makes the denominator positive whenever $\text{count} \ge 2$. Consumers must check `valid`. A `value` of $0.0$ with `valid = false` means "no estimate", not "no motion".
 4. `buffer.at(t_query, mode: Interpolate | Floor) -> Timestamped<T>`:
    * **Clamping:** If $t_{\text{query}} \ge s[0].t$, returns $s[0]$. If $t_{\text{query}} \le s[\text{count}-1].t$, returns $s[\text{count}-1]$. `t_query` is a signed `Time` and may be negative. A negative query returns the oldest sample.
+   * **Result Time:** The returned entry's `t` is $t_{\text{query}}$ in `Interpolate` mode after clamping, and the chosen sample's time otherwise.
    * **`Floor` Mode:** Returns the newest sample $s[k]$ where $s[k].t \le t_{\text{query}}$.
    * **`Interpolate` Mode:** For bracket $s[k+1].t \le t_{\text{query}} < s[k].t$ with $\alpha = \frac{t_{\text{query}} - s[k+1].t}{s[k].t - s[k+1].t} \in [0, 1)$, each field follows its interpolation class from [§4.3](04-perception.md):
      * **`LINEAR`:** $(1 - \alpha) v_{k+1} + \alpha v_k$.

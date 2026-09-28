@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.112
+
+* Tightened data rules. Positive steering torque turns left, a port's ring has exactly $N_c$ entries, `at` defines the time of its result, and parameter names fit `dl_param_t`.
+
 ## 0.111
 
 * Tightened runtime rules. The trim check and range checks apply only to fields whose bits are set, teardown goes instance by instance, cold init orders groups as Phase 2 does, and runtime conformance includes sections 8 and 15.

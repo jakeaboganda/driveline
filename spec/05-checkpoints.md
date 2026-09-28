@@ -1,7 +1,7 @@
 ---
 title: Checkpoint data contracts
 section: 5
-version: 0.106
+version: 0.112
 status: draft
 normative: true
 depends_on: [02-conventions.md, 06-lifecycle.md, 10-composition.md, 15-manifest.md, 17-standard-library.md]
@@ -103,7 +103,7 @@ A component implements trajectories if its manifest's `lat_modes` lists `SPATIOT
 | `throttle` | `float64` | $[0.0, 1.0]$ | Normalized propulsion demand relative to `max_drive_torque` $T_{\text{drive,max}}$. |
 | `brake` | `float64` | $[0.0, 1.0]$ | Normalized brake demand relative to `max_brake_torque` $T_{\text{brake,max}}$. |
 | `steering_wheel_norm` | `float64` | $[-1.0, 1.0]$ | Steering wheel angle normalized against $(\delta_{\max} \cdot i_s)$. |
-| `steering_torque_nm` | `float64` | $\text{N}\cdot\text{m}$ | Optional column steering torque (used when `valid_mask & 0x08` is set). Setting both `0x04` and `0x08` is invalid. The consumer returns `DL_STATUS_ERR_INVALID_ARG`. |
+| `steering_torque_nm` | `float64` | $\text{N}\cdot\text{m}$ | Optional column steering torque (used when `valid_mask & 0x08` is set). Positive torque turns the wheels left. Setting both `0x04` and `0x08` is invalid. The consumer returns `DL_STATUS_ERR_INVALID_ARG`. |
 | `gear_mode` | `enum` | — | `PARK` ($0$), `REVERSE` ($1$), `NEUTRAL` ($2$), `DRIVE` ($3$). |
 | `manual_gear_index` | `int8` | — | Explicit gear index ($1..$`num_gears`, or $0$ for automatic selection in `DRIVE`). Bit `0x10` covers both `gear_mode` and `manual_gear_index`. |
 
