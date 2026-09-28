@@ -1,7 +1,7 @@
 ---
 title: C-ABI
 section: 9
-version: 0.65
+version: 0.66
 status: draft
 normative: true
 depends_on: [05-checkpoints.md, 06-lifecycle.md, 07-fmu-packaging.md, 11-execution.md]
@@ -18,7 +18,7 @@ The normative header is [`abi/driveline_abi.h`](../abi/driveline_abi.h). This se
 ## 9.1 Calling Rules
 
 1. **Version Encoding:** `DL_ABI_VERSION_<major>_<minor>` has the value `(major << 16) | (minor << 8)`. Before version 1.0, a component and a runtime work together only if their versions are equal. `dl_instantiate` returns `DL_STATUS_ERR_INVALID_ARG` for any other version. `struct_size` in `dl_init_context_t` must equal the component's `sizeof(dl_init_context_t)`.
-2. **Strings:** `const char*` arguments are null-terminated UTF-8. A `char[N]` field holds at most $N - 1$ bytes plus a terminating null. A scenario that names a road ID longer than 63 bytes is a compile-time error.
+2. **Strings:** `const char*` arguments are null-terminated UTF-8. A `char[N]` field holds at most $N - 1$ bytes plus a terminating null. A road ID longer than 63 bytes, in the scenario or in its map, is a compile-time error.
 3. **Pointer Lifetime:** A pointer that the runtime passes into a call, including every pointer inside a call descriptor, is valid only until that call returns. A component must not keep it. The callback table and `host_ctx` are the exception: they stay valid from `dl_instantiate` until `dl_free_instance`.
 4. **Output Memory:** The runtime allocates `outputs` in `dl_batch_step_io_t` with `actor_count` entries, `output_stride` bytes apart, in the order of `actor_ids`. `dl_do_step` must write every entry. Callback out-parameters are allocated by the caller.
 5. **Header Fields:** After `dl_do_step` returns, or after the outputs of `fmi3DoStep` are read ([§7.1](07-fmu-packaging.md)), the runtime writes `actor_id` and `timestamp_ns` into every output frame. The component's values for these two fields are ignored. `timestamp_ns` is the tick time $t$ of the step, except for `KinematicState`, where it is $t + \Delta t_{\text{base}}$ ([§5.3](05-checkpoints.md)).

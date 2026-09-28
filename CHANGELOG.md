@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.66
+
+* A map road ID longer than 63 bytes is a compile-time error, so every callback's road ID fits `char[64]`.
+
 ## 0.65
 
 * Map callbacks follow OpenDRIVE lane links across lane sections within a road, not only at road ends. `query_lane_topology` defines truncation at `max_successors`.
