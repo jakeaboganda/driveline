@@ -1,10 +1,10 @@
 ---
 title: Units and coordinate conventions
 section: 2
-version: 0.70
+version: 0.114
 status: draft
 normative: true
-depends_on: []
+depends_on: [06-lifecycle.md]
 ---
 
 # 2. Global Units & Coordinate Conventions
@@ -22,5 +22,5 @@ All conforming runtimes and components must enforce the following mathematical c
   * `s` (`float64`, $\text{m}$): Arc-length measured along the **OpenDRIVE road reference line** (`lane_id = 0`) from the start of `road_id`.
   * `d` (`float64`, $\text{m}$): Orthogonal lateral offset measured from the **centerline of `lane_id`** (positive to the left in the reference line direction).
   * **Lane Reference String:** Where the DSL writes a lane as a string, the format is `"<road_id>:<lane_id>"`. The text after the last colon is the signed lane index. Junction connecting roads are roads and use their own `road_id`.
-* **Driving Direction & Spawn Heading:** A lane's driving direction comes from the OpenDRIVE road `rule` attribute. For `RHT`, negative lanes drive toward increasing $s$. For `LHT`, positive lanes drive toward increasing $s$. A lane's direction sign $\sigma$ is $+1$ if it drives toward increasing $s$ and $-1$ otherwise. `spawn` places an actor facing its lane's driving direction, so the actor's `frenet_s` increases with time only on lanes that drive toward increasing $s$.
+* **Driving Direction & Spawn Heading:** A lane's driving direction comes from the OpenDRIVE road `rule` attribute. For `RHT`, negative lanes drive toward increasing $s$. For `LHT`, positive lanes drive toward increasing $s$. A lane's direction sign $\sigma$ is $+1$ if it drives toward increasing $s$ and $-1$ otherwise. `spawn` starts an actor moving in its lane's driving direction, with the heading of [§6.2](06-lifecycle.md), so the actor's `frenet_s` increases with time only on lanes that drive toward increasing $s$.
 * **Road Grade & Bank Signs:** `road_grade` $\theta_{\text{road}}$ is positive when the road rises in the actor's direction of travel. `road_bank` $\phi_{\text{road}}$ is positive when the road is higher on the actor's left, relative to its direction of travel, than on its right. The runtime computes both from the map at the query point: $\theta_{\text{road}} = \sigma \arctan(dz/ds)$ from the OpenDRIVE elevation profile, and $\phi_{\text{road}} = \sigma \cdot$ the OpenDRIVE superelevation, with $\sigma$ of the actor's lane. These are road properties. They are not the vehicle's ISO 8855 Euler angles. On an uphill road, a vehicle's ISO 8855 pitch is $\theta = -\theta_{\text{road}}$ because positive ISO pitch is nose-down.

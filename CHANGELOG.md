@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.114
+
+* A Tier 1 or 2 spawn on a curve now points its rear-axle velocity along the lane, so the actor follows the lane instead of drifting 0.37 m/s off it in the test vector. `StanleyLat` measures heading error against the rear axle's course angle. The cold-init `a_lon` is the steady-circle value.
+
 ## 0.113
 
 * Tightened physics rules. Jerk limits use $|j_{\text{cmd}}|$, the contact points use each axle's track width, `ttc_lon` is never negative, and `DynamicSingleTrack` states its Euler stability limit.
