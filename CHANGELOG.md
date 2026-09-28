@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.77
+
+* Defined section references that name numbered list items, such as §6.2.4. `tools/check.py` verifies that each referenced item exists.
+
 ## 0.76
 
 * Declared components are `OneToOne` and read no Tier 3 deck. Mode B declarations accept only `SliceBuffer` inputs.

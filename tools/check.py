@@ -84,9 +84,13 @@ def check_docs():
     notes.append(f"docs changed in {readme_meta.get('spec_version')}: {', '.join(changed) or 'none'}")
 
     headings = {}
+    items = {}
     for name, (meta, body) in docs.items():
-        for num in re.findall(r"^#{1,4} (\d+(?:\.\d+)*)[. ]", outside_fences(body), re.M):
+        parts = re.split(r"^(#{1,4} (\d+(?:\.\d+)*)[. ].*)$", outside_fences(body), flags=re.M)
+        for i in range(1, len(parts) - 2, 3):
+            num, section = parts[i + 1], parts[i + 2]
             headings[num] = name
+            items[num] = set(re.findall(r"^(\d+)\. ", section, re.M))
 
     section_file = {m["section"]: n for n, (m, _) in docs.items() if "section" in m}
     for num, name in section_file.items():
@@ -106,9 +110,9 @@ def check_docs():
             parts = ref.split(".")
             if section_file.get(parts[0]) != target:
                 fail(f"spec/{name}: §{ref} links to {target}, expected {section_file.get(parts[0])}")
-            prefixes = [".".join(parts[:i]) for i in range(len(parts), 0, -1)]
-            if not any(p in headings for p in prefixes[:2]):
-                fail(f"spec/{name}: §{ref} has no matching heading")
+            parent = ".".join(parts[:-1])
+            if ref not in headings and not (parent in headings and parts[-1] in items[parent]):
+                fail(f"spec/{name}: §{ref} is neither a heading nor a numbered item under §{parent}")
         if re.search(r"\bv\d+\.\d+\b", text):
             fail(f"spec/{name}: names a spec version in prose; versions live in front-matter")
         if re.search(r"\bSections? \d", text):

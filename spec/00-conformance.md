@@ -1,7 +1,7 @@
 ---
 title: Conformance and terminology
 section: 0
-version: 0.68
+version: 0.77
 status: draft
 normative: true
 depends_on: [04-perception.md, 05-checkpoints.md, 06-lifecycle.md, 07-fmu-packaging.md, 09-abi.md, 10-composition.md, 11-execution.md, 12-grammar.md, 14-diagnostics.md, 17-standard-library.md]
@@ -18,6 +18,8 @@ In normative documents, these words have fixed meanings:
 * **is a compile-time error** means that a conforming compiler rejects the scenario with a diagnostic.
 * **is invalid** means that the receiver returns the status code that the sentence names.
 * **may** states a permission. **should** states a recommendation that a conforming implementation can ignore.
+
+**Section References:** `§N.M` names the heading numbered N.M. If no such heading exists, it names numbered item M of the list under heading N. For example, [§6.2.4](06-lifecycle.md) is item 4 under heading 6.2.
 
 ## 0.2 Conformance Classes
 
