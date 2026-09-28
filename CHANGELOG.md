@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.156
+
+* Splice typing compares the pipe-input and output types, and other ports must be bound by name, as in the example's `DynamicSingleTrack` splice. Array literals of constants are constant, which covers the example's `RouteNodes` prior. Other fixes: a computed negative buffer index is an error, `fn` arguments are named, `[]` takes its expected type, and the untyped-postfix rule covers every expression.
+
 ## 0.155
 
 * `fmi3DoStep` uses the running communication point from §7 Times. At initialization, FMU checkpoint ports hold the latched frames, and buffer ports, `own_state`, and `bind_inputs` read the current state.
