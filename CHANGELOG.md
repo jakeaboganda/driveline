@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.128
+
+* FMUs get no host map callbacks. Bound FMI variables must use SI units, FMI times are the nearest binary64 seconds, and Mode A values follow the struct layout in little-endian order.
+
 ## 0.127
 
 * Actor names are visible across the scenario. An actor's sensors may be used only in its own body, in a `bind` that lists it, or in a `splice` of its targets, and `physics_model` is reserved as a chain name.

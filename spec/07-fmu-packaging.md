@@ -1,7 +1,7 @@
 ---
 title: FMU packaging
 section: 7
-version: 0.118
+version: 0.128
 status: draft
 normative: true
 depends_on: [05-checkpoints.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md]
@@ -12,7 +12,7 @@ depends_on: [05-checkpoints.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 1
 A `component ... from_fmu("...")` declaration uses one of two modes. The compiler picks the mode from the declaration. A declaration with `bind_inputs` or `bind_outputs` blocks is Mode B. A declaration without them is Mode A.
 
 * **Mode A (Driveline-Aware FMU):** The FMU implements the FMI 3.0 layered standard `org.driveline.dcm`. It ships a manifest at `extra/org.driveline.dcm/manifest.json` in the format of [§15](15-manifest.md). A Mode A declaration whose FMU has no manifest is a compile-time error.
-  * Each checkpoint port is an `fmi3Binary` variable with MIME type `application/x-driveline.<checkpoint-type>;version=0.14`. The value is the [§9](09-abi.md) struct, byte for byte.
+  * Each checkpoint port is an `fmi3Binary` variable with MIME type `application/x-driveline.<checkpoint-type>;version=0.14`. The value is the [§9](09-abi.md) struct layout in the byte order below.
   * Each prior port, such as `RouteNodes`, is an `fmi3Binary` variable with MIME type `application/x-driveline.<prior-type>;version=0.14`, holding its struct (`dl_route_t` for `RouteNodes`). The runtime sets it in initialization mode.
   * Every `fmi3Binary` value uses little-endian byte order and IEEE 754 binary64 for `double`, whatever the host.
   * Times inside a frame, such as `trajectory` offsets ([§5.1](05-checkpoints.md)), are relative to the `timestamp_ns` that the runtime stamps, which is the tick time $t$ ([§7.1](07-fmu-packaging.md)). The runtime does not shift them.
@@ -28,6 +28,12 @@ A `component ... from_fmu("...")` declaration uses one of two modes. The compile
   In `bind_outputs`, a frame field that no assignment names is zero. If `valid_mask` is not assigned, it is the union of the bits that cover the assigned fields ([§5](05-checkpoints.md)). Named call-site arguments that are not input ports are FMI parameters with the same names, set before initialization.
 
   A Mode B FMU cannot be re-trimmed ([§6.2.4](06-lifecycle.md)), because it has no input for `dl_init_context_t`.
+
+In both modes:
+
+* **No map callbacks:** An FMU gets no host map callbacks ([§9.2](09-abi.md)), because the callback table holds in-process pointers. Map context reaches an FMU only through its ports, priors, and `own_state`.
+* **Units:** Every bound `Float64` variable that declares a unit must declare one whose conversion to base units has factor 1 and offset 0 and whose base-unit exponents match the dimension of the value bound to it. Any other unit is a compile-time error, so the runtime never converts units.
+* **Times:** Every FMI time in seconds, such as `currentCommunicationPoint`, `communicationStepSize`, and `startTime`, is the binary64 value nearest to the nanosecond count divided by $10^9$.
 
 ## 7.1 Stepping and Output Timing
 
