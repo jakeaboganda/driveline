@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.133
+
+* Standard physics seeds $a$ from $\dot{v}_{\text{lon}}$ always. The latched command jumped $a$ when a jerk limit was set. At a standstill, `SimpleDrivetrain`'s brake and rolling resistance oppose the drive force, so a partial brake no longer vanishes.
+
 ## 0.132
 
 * Held trajectory times are rebased to the filled frame's timestamp, and a held `LON` unit drops `s_stop`, which cannot be moved from an old pose. `rate_of` in §4 links to the rule that limits it to top-level fields.

@@ -1,7 +1,7 @@
 ---
 title: Standard library
 section: 17
-version: 0.130
+version: 0.133
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 06-lifecycle.md, 08-steady-state.md, 09-abi.md, 11-execution.md, 15-manifest.md]
@@ -83,7 +83,7 @@ Output `steer_angle_cmd` $= \delta$ with `valid_mask = 0x04`. On a path that the
 **`SimpleDrivetrain`:** Tier 2. Input `ActuatorControlFrame`. Output `KinematicControlFrame`. No parameters. A frame with `0x08` (steering torque) set returns `DL_STATUS_ERR_UNSUPPORTED_MODE`. After the hold rule, a pedal whose bit is clear counts as 0, and a clear `0x04` gives `steer_angle_cmd` $= 0$. With $v = $ `own.v_lon`:
 * **Gear ratio $i$:** `DRIVE` with `manual_gear_index` $= 0$ uses the highest gear $g$ with $(v / R_{\text{eff}})\, i_g\, i_{\text{fd}} \ge 157.08\text{ rad/s}$, or gear 1 if none qualifies. `DRIVE` with an index $n$ from 1 to `num_gears` uses gear $n$. Any other index, and any index other than 0 with a gear mode other than `DRIVE`, is `DL_STATUS_ERR_INVALID_ARG`. `REVERSE` uses $-i_R$. `NEUTRAL` and `PARK` use no drive force.
 * **Forces:** $F_{\text{drive}} = \text{throttle} \cdot T_{\text{drive,max}}\, i\, i_{\text{fd}} / R_{\text{eff}}$. $F_{\text{brake}} = \text{brake} \cdot T_{\text{brake,max}} / R_{\text{eff}}$, or $T_{\text{brake,max}} / R_{\text{eff}}$ in `PARK`. $F_{\text{res}} = \tfrac{1}{2}\rho_{\text{air}} C_d A_f v |v| + C_{rr}\, m\, g \operatorname{sgn}(v)$, with $\operatorname{sgn}(0) = 0$.
-* **Output:** $a = (F_{\text{drive}} - F_{\text{res}} - F_{\text{brake}} \operatorname{sgn}(v)) / m$. If $|v| < 0.01\text{ m/s}$ and $F_{\text{brake}} \ge |F_{\text{drive}}|$, then $a = 0$. `steer_angle_cmd` $= $ `steering_wheel_norm` $\cdot\, \delta_{\max}$. `valid_mask = 0x05`.
+* **Output:** $a = (F_{\text{drive}} - F_{\text{res}} - F_{\text{brake}} \operatorname{sgn}(v)) / m$. If $|v| < 0.01\text{ m/s}$, the brake and rolling resistance instead oppose the drive force: $a = \operatorname{sgn}(F_{\text{drive}}) \max(|F_{\text{drive}}| - F_{\text{brake}} - C_{rr}\, m\, g,\ 0) / m$. `steer_angle_cmd` $= $ `steering_wheel_norm` $\cdot\, \delta_{\max}$. `valid_mask = 0x05`.
 
 **`BrakeOverrideArbiter`:** Tier 0. Inputs `primary` and `secondary`, both `ActuatorControlFrame`. Output `ActuatorControlFrame`. If `secondary.valid_mask & 0x02` is set, `throttle` is the secondary's throttle, or 0 if the secondary's `0x01` is clear, `brake` is the secondary's brake, and the output sets both `0x01` and `0x02`. Otherwise both come from `primary`. The steering fields come from `secondary` if its `0x04` or `0x08` is set, and from `primary` otherwise. The gear fields follow the same rule with `0x10`. The output `valid_mask` holds the bits of the fields taken from each source.
 
@@ -98,7 +98,7 @@ Both physics components are `OneToOne` and run every tick ([§11](11-execution.m
 5. Set $Z$ to the map elevation at the new $(X, Y)$, and roll and pitch to 0. The standard physics is planar: neither component applies gravity along the grade or bank.
 6. Report the new state. Reported fields that are derivatives (`yaw_rate` where it is not a state, `a_lon`, `a_lat`) are evaluated at the new state with the $\delta$ and $a$ of steps 1 and 4. `slip_angle_beta_cg` follows [§5.3](05-checkpoints.md), and the map cache is left to the runtime ([§11](11-execution.md)).
 
-**Initialization:** On cold init or warm start, each component sets its internal state from `chassis_state` in its init context: the pose, $v_{\text{lon}}$, $\dot{\psi}$, $\delta$ from `front_wheel_angle`, $a$ from `latched_kinematic_ctrl.a_lon_cmd` if its `0x01` bit is set and from $\dot{v}_{\text{lon}} = $ `chassis_state.a_lon` $+ v_{\text{lat}} \dot{\psi}$ otherwise ([§5.3](05-checkpoints.md)), and, for `DynamicSingleTrack`, $v_y = v_{\text{lat}} + l_r \dot{\psi}$.
+**Initialization:** On cold init or warm start, each component sets its internal state from `chassis_state` in its init context: the pose, $v_{\text{lon}}$, $\dot{\psi}$, $\delta$ from `front_wheel_angle`, $a$ from $\dot{v}_{\text{lon}} = $ `chassis_state.a_lon` $+ v_{\text{lat}} \dot{\psi}$ ([§5.3](05-checkpoints.md)), and, for `DynamicSingleTrack`, $v_y = v_{\text{lat}} + l_r \dot{\psi}$.
 
 **Actuator dynamics (both):**
 * **Steering:** If `0x04` is set, $\delta \leftarrow \delta + \operatorname{clamp}(\delta_{\text{cmd}} - \delta, \pm \rho\, \Delta t)$, where $\rho = \dot{\delta}_{\max}$, or $\min(\dot{\delta}_{\max}, |\dot{\delta}_{\text{cmd}}|)$ if `0x08` is also set. If only `0x08` is set, $\delta \leftarrow \delta + \operatorname{clamp}(\dot{\delta}_{\text{cmd}}, \pm\dot{\delta}_{\max})\, \Delta t$. If neither is set, $\delta$ keeps its value. Then $|\delta| \le \delta_{\max}$.
