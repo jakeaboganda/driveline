@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.166
+
+* A splice window solves all tier-change updates in `actor_id` order before it writes any of them, so a failed solve leaves the committed state unchanged. §10 links the Mode A `OneToOne` rule.
+
 ## 0.165
 
 * The runtime, not physics, writes `KinematicState`'s map cache, and `KinematicState` outputs ignore the physics values. A Mode A output of the wrong length is `DL_STATUS_ERR_FMU`, and inputs are always exact sizes.
