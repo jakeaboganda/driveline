@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.139
+
+* `SliceBuffer` queries and `fmu.out` take positional then named arguments, as builtins do, which covers the example's `eyes.at(...)` and `rate_of(...)`.
+
 ## 0.138
 
 * The pre-Pass-1 calls run per instance in Phase 2 order, so the first error and the teardown set are fixed. A re-trimmed rate-divided component holds its latched frame until its next step.
