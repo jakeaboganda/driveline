@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.83
+
+* Section 10 had its own, different summary of `BrakeOverrideArbiter`'s steering rule. It now points to the definition in section 17.
+
 ## 0.82
 
 * The example gives the PID gains their units (`1.8Hz`, `0.1Hz^2`). Bare numbers are dimensionless, so the example did not compile. `tools/check.py` now requires units on dimensioned std arguments in the example.

@@ -1,10 +1,10 @@
 ---
 title: Composition, arbitration, and splicing
 section: 10
-version: 0.72
+version: 0.83
 status: draft
 normative: true
-depends_on: [03-vehicle-parameters.md, 05-checkpoints.md, 06-lifecycle.md, 12-grammar.md, 15-manifest.md]
+depends_on: [03-vehicle-parameters.md, 05-checkpoints.md, 06-lifecycle.md, 12-grammar.md, 15-manifest.md, 17-standard-library.md]
 ---
 
 # 10. Composition, Fan-Out (`+`), Arbitration, & Splicing
@@ -24,7 +24,7 @@ depends_on: [03-vehicle-parameters.md, 05-checkpoints.md, 06-lifecycle.md, 12-gr
    * **Typing:** $(A + B)$ requires one branch of type $T_{\text{in}} \rightarrow$ `Lon<T>` and one branch of type $T_{\text{in}} \rightarrow$ `Lat<T>`, in either order. The result has type $T_{\text{in}} \rightarrow T$. Two `LON` branches, two `LAT` branches, or more than two branches are compile-time errors, so the two branches can never write the same field.
    * **Evaluation:** The runtime passes the same $T_{\text{in}}$ to both branches. The merged frame takes `LON` fields from the `Lon` branch and `LAT` fields from the `Lat` branch, with `valid_mask = (lon.valid_mask & LON) | (lat.valid_mask & LAT)`. A `+` merge never sets `COUPLED` bits.
    * **Chaining Within a Branch:** A branch can chain partial types, for example `PIDSpeedController: IntentFrame -> Lon<KinematicControlFrame>` followed by `JerkLimiter: Lon<KinematicControlFrame> -> Lon<KinematicControlFrame>`.
-3. **Multi-Chain Arbitration (`Arbitrate`):** Merges two parallel chains producing the same checkpoint type $T_{\text{check}}$ (`IntentFrame`, `KinematicControlFrame`, or `ActuatorControlFrame`) via an explicit `Arbiter` component. Arbiters read raw `valid_mask` bits and do not apply the hold rule of [§5](05-checkpoints.md). For example, `BrakeOverrideArbiter` uses the secondary's `throttle` and `brake` when `secondary.valid_mask & 0x02` is set. It passes `primary.steering_wheel_norm` through whenever `secondary.valid_mask & 0x04 == 0`.
+3. **Multi-Chain Arbitration (`Arbitrate`):** Merges two parallel chains producing the same checkpoint type $T_{\text{check}}$ (`IntentFrame`, `KinematicControlFrame`, or `ActuatorControlFrame`) via an explicit `Arbiter` component. Arbiters read raw `valid_mask` bits and do not apply the hold rule of [§5](05-checkpoints.md). [§17](17-standard-library.md) defines `BrakeOverrideArbiter`, the standard arbiter.
 4. **Type-Safe Splicing:** A scenario replaces components during a run with `on (condition) { splice target = replacement; ... }` ([§12](12-grammar.md)).
    * **Targets:** `actor.name` names a chain that the actor declared with `chain name = ...`, and the replacement is a whole new chain. `actor.physics_model` names the actor's Stage 3 physics component, and the replacement is one Stage 3 component. The splice replaces only that component, and the rest of the physics chain keeps running.
    * **Typing:** The replacement must have the same input and output types as the target. A mismatch, an unknown actor, or an unknown chain name is a compile-time error. So are two splice statements on the same actor where one target contains the other: a chain and a chain that it uses, or a chain and `physics_model` when that chain contains the physics component. Two splices of the same target are allowed, and each replaces what is running at the time. The tier check of [§3.1](03-vehicle-parameters.md) applies to the replacement.
