@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.123
+
+* `select` and `clamp` convert `Int` only when mixed with a quantity, which keeps the example's `valid_mask` an `Int`. Parameter arguments are constants that match by dimension. `fn` parameters and `fmu` have scopes, buffer methods have signatures, and `use` no longer depends on a greedy `ScopedIdent`.
+
 ## 0.122
 
 * Defined `a_lon` and `a_lat` as the rear axle's inertial acceleration in body axes, which is what the standard physics reports. The `KinematicState` timestamp notes that physics runs at the base rate.

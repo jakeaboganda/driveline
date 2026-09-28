@@ -1,7 +1,7 @@
 ---
 title: DSL grammar
 section: 12
-version: 0.117
+version: 0.123
 status: draft
 normative: true
 depends_on: [16-static-semantics.md]
@@ -12,7 +12,7 @@ depends_on: [16-static-semantics.md]
 This section defines which texts parse. [§16](16-static-semantics.md) defines which parsed scenarios are valid.
 ```ebnf
 ScenarioFile     ::= ImportDecl* VehicleSpecDecl* (ComponentDecl | FnDecl)* ScenarioDecl
-ImportDecl       ::= "use" ScopedIdent "::" "{" IdentList "}" ";"
+ImportDecl       ::= "use" Ident ("::" Ident)* "::" "{" IdentList "}" ";"
 VehicleSpecDecl  ::= "vehicle_spec" Ident "{" (Ident "=" Expr ";")* "}"
 
 ComponentDecl    ::= "component" Ident FmuClause? RateClause? TierClause? ":" "(" PortList? ")" "->" TypeSpec (Block | ";")

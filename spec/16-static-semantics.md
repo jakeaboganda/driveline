@@ -1,7 +1,7 @@
 ---
 title: DSL static semantics
 section: 16
-version: 0.121
+version: 0.123
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 07-fmu-packaging.md, 09-abi.md, 10-composition.md, 11-execution.md, 12-grammar.md, 15-manifest.md, 17-standard-library.md]
@@ -52,7 +52,8 @@ Names resolve from the innermost scope outward. A name declared twice in one sco
 | File | Imported components, `vehicle_spec` names, `component` names, and `fn` names. |
 | Scenario | Actor names. In `terminate when` and `on` conditions only: `sim_time` (`Time`, [§11](11-execution.md)). |
 | Actor body | `sensors.<name>`, `priors.<name>`, and the actor's chain names. |
-| Component body | Input port names and `param` names. Inside `bind_inputs` and `step`, also `own_state` (`KinematicState`, the actor's own committed state, [§9.1](09-abi.md)). Inside `step`, also its parameters and `let` names. |
+| `fn` body | The `fn`'s parameter names. |
+| Component body | Input port names and `param` names. Inside `bind_outputs`, also `fmu`, usable only as `fmu.out(...)`. Inside `bind_inputs` and `step`, also `own_state` (`KinematicState`, the actor's own committed state, [§9.1](09-abi.md)). Inside `step`, also its parameters and `let` names. |
 
 * **Imports:** `use std::m::{...}` must name a module and components of [§17](17-standard-library.md). Other imports follow [§15.2](15-manifest.md).
 * **World Separation:** `actor.state`, `sim_time`, and calls to `collision` are allowed only in `terminate when` and `on` conditions. `any` is allowed only as the second argument of `collision`. Using them anywhere else, including as a component argument, is a compile-time error. Components see the World only through sensors, priors, host map callbacks, and their own actor's `own_state` ([§1.1](01-scope.md)).
@@ -61,7 +62,7 @@ Names resolve from the innermost scope outward. A name declared twice in one sco
 
 ## 16.5 Calls and Chains
 
-* **Component calls** take named arguments only. A named argument is either an input port of the component or a parameter ([§15.4](15-manifest.md)). Builtin functions and constructors take their arguments positionally in the order of their [§17](17-standard-library.md) signature, optionally followed by named arguments. An argument given both ways, or missing without a default, is a compile-time error. `select` and `clamp` need arguments of one type `T` after `Int` converts to a dimensionless quantity.
+* **Component calls** take named arguments only. A named argument is either an input port of the component or a parameter ([§15.4](15-manifest.md)). Builtin functions and constructors take their arguments positionally in the order of their [§17](17-standard-library.md) signature, optionally followed by named arguments. An argument given both ways, or missing without a default, is a compile-time error. `select` and `clamp` need arguments of one type `T`. Only if at least one of those arguments is a quantity does an `Int` argument convert to a dimensionless quantity, so `select(c, 0x03, 0x00)` is an `Int`. Buffer methods take the arguments of [§4.2](04-perception.md): `at(t_query: Time, mode: InterpMode)` and `rate_of(field, window: Int = 1)`.
 * **Pipe input:** In `A >> B(...)`, the value from `A` goes to the one input port of `B` that the call does not bind by name. If the number of unbound ports is not exactly one, that is a compile-time error. The head of a source chain binds every input port by name. The head of any other chain, and the head of each `+` branch, leaves exactly one port unbound, and that port is the chain's pipe input.
 * **`+`:** Both branches receive the same pipe input ([§10.2](10-composition.md)).
 * **`Arbitrate(p, s, via: A())`:** `p` and `s` must have the same chain type `Chain<X, T>`. `T` must be `IntentFrame`, `KinematicControlFrame`, or `ActuatorControlFrame` ([§10](10-composition.md)). The arbiter `A` must have exactly the input ports `primary: T` and `secondary: T`, both unbound in the call, and output `T`. The result has type `Chain<X, T>`.
@@ -77,7 +78,7 @@ Names resolve from the innermost scope outward. A name declared twice in one sco
   | Mode B FMU ([§7](07-fmu-packaging.md)) | Present | A block with exactly one `bind_inputs` and exactly one `bind_outputs`, and nothing else. |
 
 * **Declaration clauses:** An omitted `required_tier` clause means `required_tier: 0`. Its value must be 0, 1, or 2. An omitted `rate` clause means the base rate ([§11](11-execution.md)).
-* **`param`:** A parameter's type must be a quantity type, `Time`, `Int`, `Bool`, or an enum. Its initializer must have that type and be a constant expression: literals, enum constants, and arithmetic on them, with no names. A call-site argument for a parameter must have the parameter's type.
+* **`param`:** A parameter's type must be a quantity type, `Time`, `Int`, `Bool`, or an enum. Its initializer must have that type and be a constant expression: literals, enum constants, and arithmetic on them, with no names. A call-site argument for a parameter must have the parameter's type, where quantity types match by dimension, and must be a constant expression. An actor's `id` counts as a constant.
 * **`step`:** Its signature must be `step(t: Time, dt: Time) -> T`, with `T` the component's output type. `t` is the tick time and `dt` the component's period ([§9.1](09-abi.md)). The block must return a value of type `T` on every path. `let` names are immutable.
 * **`bind_inputs`:** Each expression must be a quantity, an `Int`, or a `Bool`. The runtime writes it to the `Float64` pin as its SI value, as the integer's value, or as 1.0 for true and 0.0 for false. Each pin name must be an input variable in the FMU's `modelDescription.xml`.
 * **`bind_outputs`:** `fmu.out("name")` is the value of the named output variable after `fmi3DoStep` ([§7.1](07-fmu-packaging.md)), as a dimensionless quantity. It is allowed only inside `bind_outputs`, and the name must be an output variable of the FMU. In `bind_outputs -> T`, `T` must be the component's output type, and each assigned name must be a field of `T`, assigned at most once. Each assignment's value must have the field's type, except that a dimensionless quantity may be assigned to a quantity field and is taken as SI.
