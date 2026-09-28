@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.68
+
+* A conforming runtime also follows sections 4, 5, 7, and 14, and provides the section 17 standard library.
+
 ## 0.67
 
 * Trajectory Exclusivity no longer asks for `lat_mode` under a clear `LAT` bit. Bit `0x08` alone requests a trajectory. The hold rule zeroes discarded units and keeps its memory per actor.
