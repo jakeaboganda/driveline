@@ -1,7 +1,7 @@
 ---
 title: Checkpoint data contracts
 section: 5
-version: 0.88
+version: 0.92
 status: draft
 normative: true
 depends_on: [02-conventions.md, 06-lifecycle.md, 10-composition.md, 15-manifest.md]
@@ -23,7 +23,7 @@ Every checkpoint frame carries `timestamp_ns` (`uint64`, simulation time in nano
 
 | Frame | Hold Units |
 | :--- | :--- |
-| `IntentFrame` | `LON` $\{$`0x01`, `0x04`$\}$, `LAT` $\{$`0x02`, `0x10`$\}$, `COUPLED` $\{$`0x08`$\}$ |
+| `IntentFrame` | `LON` $\{$`0x01`, `0x04`$\}$, `LAT` $\{$`0x02`$\}$, `COUPLED` $\{$`0x08`$\}$, `AUX` $\{$`0x10`$\}$ |
 | `KinematicControlFrame` | `LON` $\{$`0x01`, `0x02`$\}$, `LAT` $\{$`0x04`, `0x08`$\}$ |
 | `ActuatorControlFrame` | `PEDALS` $\{$`0x01`, `0x02`$\}$, `STEER` $\{$`0x04`, `0x08`$\}$, `GEAR` $\{$`0x10`$\}$ |
 
@@ -64,7 +64,7 @@ Produced by Stage 1 (Intent) components.
 | `0x10` | `LAT` | `turn_signal` |
 | `0x08` | `COUPLED` | `num_traj_points`, `trajectory` |
 
-**Trajectory Exclusivity:** If `0x08` is set, `trajectory` governs both longitudinal and lateral motion, and `0x01` and `0x02` must be clear. The frame then requests `SPATIOTEMPORAL_TRAJECTORY` by the bit alone, and consumers ignore `lon_mode` and `lat_mode`. If `0x02` is set, `lat_mode` must not be `SPATIOTEMPORAL_TRAJECTORY`. Any other combination is invalid, and the consumer returns `DL_STATUS_ERR_INVALID_ARG`. A component implements trajectories if its manifest's `lat_modes` lists `SPATIOTEMPORAL_TRAJECTORY` ([§15](15-manifest.md)).
+**Trajectory Exclusivity:** If `0x08` is set, `trajectory` governs both longitudinal and lateral motion, and `0x01` and `0x02` must be clear. `0x10` (`turn_signal`) may accompany any combination. The frame then requests `SPATIOTEMPORAL_TRAJECTORY` by the bit alone, and consumers ignore `lon_mode` and `lat_mode`. If `0x02` is set, `lat_mode` must not be `SPATIOTEMPORAL_TRAJECTORY`. Any other combination is invalid, and the consumer returns `DL_STATUS_ERR_INVALID_ARG`. A component implements trajectories if its manifest's `lat_modes` lists `SPATIOTEMPORAL_TRAJECTORY` ([§15](15-manifest.md)).
 
 **Array Semantics:** `path_points` holds `num_waypoints` entries and `trajectory` holds `num_traj_points` entries, each at most 64. Entries beyond the count are ignored. A count above 64 is invalid. Both arrays are in the World frame and ordered along the direction of travel. Each `trajectory` time $t_k$ is in seconds after the frame's `timestamp_ns`, starts at $t_0 \ge 0$, and strictly increases.
 

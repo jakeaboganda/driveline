@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.92
+
+* `turn_signal` has its own `AUX` hold unit, so a trajectory frame can signal and a turn-signal-only frame no longer discards a held trajectory. It stays in the `LAT` field group for `+`.
+
 ## 0.91
 
 * A component sees its port's `SliceBuffer` view with capacity $N_c$, natively and in Mode A. `rate_of` is per second. Interpolated track lists are re-sorted by the track list rules.
