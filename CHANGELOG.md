@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.65
+
+* Map callbacks follow OpenDRIVE lane links across lane sections within a road, not only at road ends. `query_lane_topology` defines truncation at `max_successors`.
+
 ## 0.64
 
 * Added `DL_STATUS_ERR_FMU` for failed FMI calls and bad-sized Mode A outputs. FMU outputs get the same header fields and output validation as native ones, so Mode B frames no longer go out with `timestamp_ns = 0`.
