@@ -6,6 +6,11 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.100
+
+* Defined every `dl_init_context_t` field at cold init and warm start, including the wheel order FL, FR, RL, RR and `powertrain`. Removed the unused `trim_equilibrium` flag.
+* ABI version 0.14.
+
 ## 0.99
 
 * A promotion or demotion writes its changed fields into the committed state before warm start, so the physics, the re-trimmed controllers, and the next tick's sensors agree. Defined which splices change tier, including ones made through a chain. The balanced-first-step claim holds only when the re-trim matches.

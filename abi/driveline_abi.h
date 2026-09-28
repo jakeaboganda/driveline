@@ -9,7 +9,7 @@ extern "C" {
 
 #pragma pack(push, 8)
 
-#define DL_ABI_VERSION_0_13 0x00000D00U
+#define DL_ABI_VERSION_0_14 0x00000E00U
 
 typedef enum {
     DL_STATUS_OK                    = 0,
@@ -245,23 +245,22 @@ typedef struct {
 typedef struct {
     double   motor_or_engine_speed_rads;         /* [rad/s] (Strict SI) */
     double   actual_drive_torque_nm;             /* [N*m] */
-    double   brake_pressure_pa[8];               /* [Pa] (Strict SI) */
+    double   brake_pressure_pa[8];               /* [Pa], indexed as wheels[] */
     uint8_t  gear_mode;                          /* 0:P, 1:R, 2:N, 3:D */
     int8_t   active_gear_index;                  /* -1:R, 0:N, 1..10:Forward */
     uint8_t  _pad[6];
 } dl_powertrain_state_t;
 
 typedef struct {
-    uint32_t abi_version;                        /* Must equal DL_ABI_VERSION_0_13 */
+    uint32_t abi_version;                        /* Must equal DL_ABI_VERSION_0_14 */
     uint32_t struct_size;                        /* sizeof(dl_init_context_t) */
     uint64_t sim_time_ns;                        /* [ns] */
     uint8_t  is_warm_start;                      /* 0:ColdInit, 1:WarmStart */
-    uint8_t  trim_equilibrium;                   /* 1:Solve quasi-static trim */
-    uint16_t _pad;
+    uint8_t  _pad[3];
     uint32_t num_wheels;                         /* 0 (no Tier 2) or 4 */
 
     dl_kinematic_state_t          chassis_state;
-    dl_wheel_corner_state_t       wheels[8];
+    dl_wheel_corner_state_t       wheels[8];     /* 0:FL, 1:FR, 2:RL, 3:RR; 4..7 zero */
     dl_powertrain_state_t         powertrain;
 
     dl_intent_frame_t             latched_intent;
