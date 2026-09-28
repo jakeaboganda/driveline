@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.96
+
+* Defined the three valid component forms (native, Mode A, and Mode B), the `step` signature, and the target type of `bind_outputs`.
+
 ## 0.95
 
 * A time literal takes type `Time` when the other operand of `+`, `-`, or a comparison is `Time`.
