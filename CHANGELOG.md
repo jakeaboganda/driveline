@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.169
+
+* When several calls fail, the reported error is the first in §11 order, so parallel and sequential runtimes agree. Other fixes: the §14 `ERR_FMU` row lists every trigger, a spawn at or past the center of curvature is an error, and the KS heading clause reads as either-or.
+
 ## 0.168
 
 * `KinematicState` velocities, accelerations, and yaw rate use a new yaw-only heading frame from §2, which removes the roll and pitch ambiguity for multibody physics. The `GAP_PROFILE` gap comes from the latest sample of the first declared track-bearing port.
