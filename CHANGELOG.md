@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.90
+
+* Defined `PIDSpeedController` state across mode switches. Its integral is rebased on the first velocity step after initialization or `ACCEL_TARGET`, so the output does not jump and no unasserted `v_ref` is read.
+
 ## 0.89
 
 * `SimpleDrivetrain` treats a pedal with a clear bit as 0 and rejects gear indexes that are out of range. `BrakeOverrideArbiter` asserts both pedal bits when it takes the secondary's pedals.
