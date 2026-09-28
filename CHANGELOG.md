@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.164
+
+* Builtins live in a prelude scope that user names cannot shadow. Sensors and standard components must be imported from their own section. `spawn` appears only as an actor initializer, and per-actor array elements follow the port's binding and capacity rules.
+
 ## 0.163
 
 * Rebuilt latched intents target the committed lane. FMUs run without event mode or early return, and termination flags are errors. Other fixes: padding is zeroed before any read, bounds use $N_c$, standstill braking uses the drivetrain period, and array counts and trajectory order are in the validity list.

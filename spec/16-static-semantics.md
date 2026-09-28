@@ -1,7 +1,7 @@
 ---
 title: DSL static semantics
 section: 16
-version: 0.160
+version: 0.164
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 07-fmu-packaging.md, 09-abi.md, 10-composition.md, 11-execution.md, 12-grammar.md, 15-manifest.md, 17-standard-library.md]
@@ -35,7 +35,7 @@ depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-
 
 ## 16.3 Expressions
 
-* A postfix `.name`, `(...)`, or `[...]` that no rule of this section types is a compile-time error, in every expression.
+* A postfix `.name`, `(...)`, or `[...]` that no rule of [§16](16-static-semantics.md) types is a compile-time error, in every expression.
 * `+` and `-` require two `Time` values, which give a `Time`, or two quantities of the same dimension. A `Time` and a quantity of dimension s is a compile-time error, because the result would need rounding to nanoseconds. A literal of dimension s takes `Time` from the other operand ([§16.2](16-static-semantics.md)). `*` and `/` multiply and divide dimensions. `Time * Int`, `Int * Time`, and `Time / Int` are `Time`. When `Time` meets any other operand of `*` or `/`, it converts to a quantity in seconds, so `v * dt` is a `Length`, and `Time / Time` is a dimensionless quantity.
 * `+`, `-`, `*`, and `/` on two `Int` operands give an `Int`. `/` on `Int` or `Time` truncates toward zero, and a zero divisor or an overflow makes the step return `DL_STATUS_ERR_NUMERIC`.
 * Comparisons require two `Int` operands or operands of the same dimension. When a `Time` meets a quantity of dimension s, the `Time` converts to seconds.
@@ -51,16 +51,18 @@ Names resolve from the innermost scope outward. A name declared twice in one sco
 
 | Scope | Names |
 | :--- | :--- |
-| File | Imported components, `vehicle_spec` names, `component` names, and `fn` names. |
+| Prelude | The builtins and constructors of [§17.1](17-standard-library.md). A name declared or imported in the file must not equal one of them. |
+| File | Imported components and sensors, `vehicle_spec` names, `component` names, and `fn` names. |
 | Scenario | Actor names. In `terminate when` and `on` conditions only: `sim_time` (`Time`, [§11](11-execution.md)). |
 | Actor body | `sensors.<name>`, `priors.<name>`, and the actor's chain names. |
 | `fn` body | The `fn`'s parameter names. |
 | Component body | Input port names and `param` names. Inside `bind_outputs`, also `fmu`, usable only as `fmu.out(...)`. Inside `bind_inputs` and `step`, also `own_state` (`KinematicState`, the actor's own committed state, [§9.1](09-abi.md)). Inside `step`, also its parameters and `let` names. |
 
-* **Imports:** `use std::m::{...}` must name a module and components or sensors of [§17](17-standard-library.md). Other imports follow [§15.2](15-manifest.md).
+* **Imports:** `use std::m::{...}` must name a module of [§17](17-standard-library.md) and components or sensors that its section lists. A sensor or standard component is usable only if imported. Other imports follow [§15.2](15-manifest.md).
 * **Actors:** An actor name is visible in the whole scenario, including before its declaration. `a.sensors.n` may appear only in `a`'s own actor body, in a `bind` statement whose list contains `a`, or in a `splice` whose target belongs to `a`. Any other use is a compile-time error.
 * **World Separation:** `actor.state`, `sim_time`, and calls to `collision` are allowed only in `terminate when` and `on` conditions. `any` is allowed only as the second argument of `collision`. Using them anywhere else, including as a component argument, is a compile-time error. Components see the World only through sensors, priors, host map callbacks, and their own actor's `own_state` ([§1.1](01-scope.md)).
 * **Field Selectors:** The first argument of `rate_of` is a field name of the buffer's slice type, resolved in that type's scope. It must name a top-level `float64` field of the slice type, so track fields inside `tracks[]` cannot be selected. `window` must be an `Int` of at least 1. `Rate.value` has the field's dimension divided by time, and `Rate.valid` is `Bool`.
+* **`spawn`:** Every actor initializer must be a `spawn` call, and `spawn` may appear nowhere else.
 * **Actor IDs:** Every `spawn` must pass `id:` as an `Int` literal of at least 1. IDs must be unique within the scenario. `0` means "no actor" in frame fields such as `gap_target_actor_id`.
 
 ## 16.5 Calls and Chains
