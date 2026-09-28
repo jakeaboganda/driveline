@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.76
+
+* Declared components are `OneToOne` and read no Tier 3 deck. Mode B declarations accept only `SliceBuffer` inputs.
+
 ## 0.75
 
 * Fixed the pipe-input rule. Only a source chain's head binds every port, and other chain heads leave exactly one port unbound as the pipe input.

@@ -1,7 +1,7 @@
 ---
 title: Component manifests and packaging
 section: 15
-version: 0.53
+version: 0.76
 status: draft
 normative: true
 depends_on: [00-conformance.md, 03-vehicle-parameters.md, 07-fmu-packaging.md, 10-composition.md, 12-grammar.md, 17-standard-library.md]
@@ -20,6 +20,8 @@ A manifest tells the compiler and the runtime what a library component is: its p
 | Mode A FMU (`from_fmu` without bind blocks) | `extra/org.driveline.dcm/manifest.json` inside the `.fmu` ([§7](07-fmu-packaging.md)). |
 | Native library component | `<Name>.dcm.json` next to the shared library. |
 | Standard library component (`std::...`) | The signatures in [§17](17-standard-library.md). |
+
+A component whose signature comes from its declaration is `OneToOne` and reads no Tier 3 deck. A component with a `step` block reads `lon_mode` and `lat_mode` itself, so no mode list applies. Every input port of a Mode B declaration must be a `SliceBuffer`, because `bind_inputs` reads only buffers and `own_state` ([§7](07-fmu-packaging.md)). A checkpoint input on a Mode B declaration is a compile-time error.
 
 A Mode A declaration in the scenario must match its manifest. The declared ports, output type, and `required_tier` must equal the manifest's. A mismatch is a compile-time error.
 
