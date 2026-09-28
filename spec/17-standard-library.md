@@ -1,7 +1,7 @@
 ---
 title: Standard library
 section: 17
-version: 0.140
+version: 0.141
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 06-lifecycle.md, 08-steady-state.md, 09-abi.md, 11-execution.md, 15-manifest.md]
@@ -68,7 +68,7 @@ where $x$ and $v_x$ are the track's `rel_x` and `rel_vx`. In both cases, lateral
 
 All Stage 2 components are `OneToOne`.
 
-**`PIDSpeedController`:** Tier 0. Input `IntentFrame`. Output `Lon<KinematicControlFrame>`. Parameters `kp: f64 [1/s]`, `ki: f64 [1/s^2]`, `kd: f64 [1]`. Modes `ACCEL_TARGET`, `VELOCITY_TARGET`.
+**`PIDSpeedController`:** Tier 0. Input `IntentFrame`. Output `Lon<KinematicControlFrame>`. Parameters `kp: f64 [Hz]`, `ki: f64 [Hz^2]`, `kd: f64 [1]`. Modes `ACCEL_TARGET`, `VELOCITY_TARGET`.
 * **State:** the integral $I$, the previous error $e_{\text{prev}}$, the previous output $a_{\text{prev}}$, and a flag `rebase`. Cold init and warm start set $a_{\text{prev}}$ to the latched `a_lon_cmd` and set `rebase`.
 * `ACCEL_TARGET`: $a = $ `a_ref`. The step sets $a_{\text{prev}} = a$ and sets `rebase`. $I$ and $e_{\text{prev}}$ keep their values.
 * `VELOCITY_TARGET`: $e = v_{\text{ref}} - \text{own.v\_lon}$. If `rebase` is set, the step first sets $e_{\text{prev}} = e$ and $I = (a_{\text{prev}} - k_p e)/k_i - e\, dt$, or $I = 0$ if $k_i = 0$, and clears `rebase`. Then $I \leftarrow I + e\, dt$, $a = k_p e + k_i I + k_d (e - e_{\text{prev}}) / dt$, $e_{\text{prev}} \leftarrow e$, and $a_{\text{prev}} \leftarrow a$. So the first velocity step after initialization or after `ACCEL_TARGET` continues from the previous output without a step when $k_i \ne 0$.
@@ -76,7 +76,7 @@ All Stage 2 components are `OneToOne`.
 
 **`JerkLimiter`:** Tier 0. Input and output `Lon<KinematicControlFrame>`. Parameter `max_jerk: f64 [m/s^3]` (above zero). Output $a_k = a_{k-1} + \operatorname{clamp}(a_{\text{in}} - a_{k-1}, \pm \text{max\_jerk} \cdot dt)$. Initialization sets $a_{k-1}$ to the latched `a_lon_cmd`. Output `a_lon_cmd` $= a_k$ with `valid_mask = 0x01`.
 
-**`StanleyLat`:** Tier 0. Input `IntentFrame`. Output `Lat<KinematicControlFrame>`. Parameters `k: f64 [1/s]`, `sample_step: f64 [m]` (above zero), `k_soft: f64 [m/s] = 1.0` (above zero). Modes `LANE_OFFSET`, `POLYLINE_PATH`. The reference path is `path_points` for `POLYLINE_PATH`. For `LANE_OFFSET`, it is 64 points from `sample_lane_path` on the target lane at `d_offset = d_ref`, with `ds` $= \sigma_t \cdot$ `sample_step`, where $\sigma_t$ is the target lane's direction sign. Sampling starts at `s_start = own.frenet_s` if the target road is the actor's road, and otherwise at the start of the target lane in its driving direction. The reference point is the rear-axle origin $(X, Y)$. Let $p = (x_p, y_p)$ be the path point nearest to it, with the smallest index winning ties, and let $\psi_p$ and $\kappa_p$ be its heading and curvature. Then $e = -\sin\psi_p\,(X - x_p) + \cos\psi_p\,(Y - y_p)$ is the lateral offset of the rear axle, positive to the path's left, and $\psi_e = \psi_p - \chi$, wrapped to $(-\pi, \pi]$, where $\chi = \psi + \operatorname{atan2}(\text{own.v\_lat}, \text{own.v\_lon})$ is the rear axle's course angle, with $\operatorname{atan2}(0, 0) = 0$. Then
+**`StanleyLat`:** Tier 0. Input `IntentFrame`. Output `Lat<KinematicControlFrame>`. Parameters `k: f64 [Hz]`, `sample_step: f64 [m]` (above zero), `k_soft: f64 [m/s] = 1.0` (above zero). Modes `LANE_OFFSET`, `POLYLINE_PATH`. The reference path is `path_points` for `POLYLINE_PATH`. For `LANE_OFFSET`, it is 64 points from `sample_lane_path` on the target lane at `d_offset = d_ref`, with `ds` $= \sigma_t \cdot$ `sample_step`, where $\sigma_t$ is the target lane's direction sign. Sampling starts at `s_start = own.frenet_s` if the target road is the actor's road, and otherwise at the start of the target lane in its driving direction. The reference point is the rear-axle origin $(X, Y)$. Let $p = (x_p, y_p)$ be the path point nearest to it, with the smallest index winning ties, and let $\psi_p$ and $\kappa_p$ be its heading and curvature. Then $e = -\sin\psi_p\,(X - x_p) + \cos\psi_p\,(Y - y_p)$ is the lateral offset of the rear axle, positive to the path's left, and $\psi_e = \psi_p - \chi$, wrapped to $(-\pi, \pi]$, where $\chi = \psi + \operatorname{atan2}(\text{own.v\_lat}, \text{own.v\_lon})$ is the rear axle's course angle, with $\operatorname{atan2}(0, 0) = 0$. Then
 $$\delta = \operatorname{clamp}\!\left(\arctan(L \kappa_p) + \psi_e + \arctan\!\left(\frac{-k\, e}{k_{\text{soft}} + |\text{own.v\_lon}|}\right),\ \pm\delta_{\max}\right)$$
 Output `steer_angle_cmd` $= \delta$ with `valid_mask = 0x04`. On a path that the rear axle already follows, $e = 0$ and $\psi_e = 0$, so the output is $\arctan(L\kappa_p)$, which is $\delta_{\text{KS}}$ ([§8](08-steady-state.md)). It does not reproduce $\delta_{\text{ss}}$, so with Tier 1 or 2 physics, at cold init or after a promotion, the trim check reports `DL_STATUS_WARN_TRIM_MISMATCH` ([§6.2](06-lifecycle.md)) when $\delta_{\text{ss}}$ and $\delta_{\text{KS}}$ differ by more than its tolerance. A reference path with no points, or a failed `sample_lane_path` call, is `DL_STATUS_ERR_INVALID_ARG`.
 

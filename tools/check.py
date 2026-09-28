@@ -242,6 +242,14 @@ STRINGLIT: /"(?:\\\\.|[^"\\\\])*"/
 %ignore /\\/\\/[^\\n]*/
 """
     parser = Lark(src, start="scenario_file", parser="earley", lexer="dynamic")
+    std_units = re.findall(r"`\w+: f64 \[([^\]]+)\]", (SPEC / "17-standard-library.md").read_text())
+    if not std_units:
+        fail("units: no standard-library parameter units to check")
+    bad = [u for u in std_units if u != "1" and not re.fullmatch(f"{unit}(?:[*/]{unit})*", u)]
+    for u in bad:
+        fail(f"units: standard-library parameter unit [{u}] is not a UnitExpr or 1")
+    if not bad:
+        notes.append(f"units: {len(std_units)} standard-library parameter units parse")
     if not list(EXAMPLES.glob("*.dline")):
         fail("grammar: no example scenarios to parse")
     for path in sorted(EXAMPLES.glob("*.dline")):

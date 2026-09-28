@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.141
+
+* Standard-library gains use `Hz` and `Hz^2`, because `1/s` is not a manifest `UnitExpr`. `check.py` now parses every standard-library parameter unit.
+
 ## 0.140
 
 * Minor fixes: `let` block scopes, the `rate_of` time difference and endpoint rule, the clamped `at` result time, the PincerHiveMind and AEB ambiguities, the teardown order in groups, partial-output latching, and table precedence over the state diagram.
