@@ -1,7 +1,7 @@
 ---
 title: Status codes and error handling
 section: 14
-version: 0.87
+version: 0.111
 status: draft
 normative: true
 depends_on: [06-lifecycle.md, 07-fmu-packaging.md]
@@ -29,6 +29,6 @@ depends_on: [06-lifecycle.md, 07-fmu-packaging.md]
 
 1. **Warnings:** The runtime records the warning with the tick, the component instance name, and the call or rule that produced it. The run continues.
 2. **Errors:** When a `dl_*` call returns an error, an FMI call fails (`DL_STATUS_ERR_FMU`), or the runtime detects an error itself, the runtime stops the run. It finishes no further phase. It reports the error with the tick, the instance name, and the call, and then runs teardown. A run that stops this way has failed. Its last committed World state is the state after the last completed Phase 4.
-3. **Teardown:** Every run ends with teardown, whether it succeeds or fails. The runtime visits instances in descending `actor_id` order, with a group sorted by its smallest member, and within one actor or group in the reverse of Phase 2 order, physics first. It calls `dl_terminate` on each instance whose state allows it ([§6.1](06-lifecycle.md)), and then `dl_free_instance` on each instance that is not `Uninstantiated`. FMUs get `fmi3Terminate` and `fmi3FreeInstance` ([§7](07-fmu-packaging.md)). An error during teardown is reported, and teardown continues.
-4. **Output Validation:** After each `dl_do_step`, and after each `fmi3DoStep` once the outputs are read, the runtime checks every output frame. A field whose `valid_mask` bit is set must be finite. `throttle` and `brake` must lie in $[0, 1]$, and `steering_wheel_norm` must lie in $[-1, 1]$. Every `KinematicState` field must be finite. A failed check is `DL_STATUS_ERR_NUMERIC`, handled as an error.
+3. **Teardown:** Every run ends with teardown, whether it succeeds or fails. The runtime visits instances in descending `actor_id` order, with a group sorted by its smallest member, and within one actor or group in the reverse of Phase 2 order, physics first. For each instance in turn, it calls `dl_terminate` if the state allows it ([§6.1](06-lifecycle.md)), and then `dl_free_instance` if the instance is not `Uninstantiated`. FMUs get `fmi3Terminate` and `fmi3FreeInstance` ([§7](07-fmu-packaging.md)). An error during teardown is reported, and teardown continues.
+4. **Output Validation:** After each `dl_do_step`, and after each `fmi3DoStep` once the outputs are read, the runtime checks every output frame. A field whose `valid_mask` bit is set must be finite. If its bit is set, `throttle` and `brake` must lie in $[0, 1]$, and `steering_wheel_norm` must lie in $[-1, 1]$. Every `KinematicState` field must be finite. A failed check is `DL_STATUS_ERR_NUMERIC`, handled as an error.
 5. **Report Format:** Each report has the fields `tick`, `sim_time_ns`, `severity` (`warning` or `error`), `code` (a `dl_status_t` name), `instance` (the name passed to `dl_instantiate`), and `detail` (text). The transport and file format of reports are implementation-defined.

@@ -1,10 +1,10 @@
 ---
 title: Conformance and terminology
 section: 0
-version: 0.77
+version: 0.111
 status: draft
 normative: true
-depends_on: [04-perception.md, 05-checkpoints.md, 06-lifecycle.md, 07-fmu-packaging.md, 09-abi.md, 10-composition.md, 11-execution.md, 12-grammar.md, 14-diagnostics.md, 17-standard-library.md]
+depends_on: [04-perception.md, 05-checkpoints.md, 06-lifecycle.md, 07-fmu-packaging.md, 09-abi.md, 10-composition.md, 11-execution.md, 12-grammar.md, 14-diagnostics.md, 15-manifest.md, 17-standard-library.md]
 ---
 
 # 0. Conformance and Terminology
@@ -24,7 +24,7 @@ In normative documents, these words have fixed meanings:
 ## 0.2 Conformance Classes
 
 * **Conforming compiler:** Accepts a scenario if and only if it parses under [§12](12-grammar.md) and breaks no rule that the specification calls a compile-time error. It reports every compile-time error with the rule's section number.
-* **Conforming runtime:** Runs an accepted scenario as [§4](04-perception.md) through [§7](07-fmu-packaging.md), [§9](09-abi.md) through [§11](11-execution.md), and [§14](14-diagnostics.md) describe, and provides the standard library of [§17](17-standard-library.md). It calls components only through [§9](09-abi.md) or [§7](07-fmu-packaging.md).
+* **Conforming runtime:** Runs an accepted scenario as [§4](04-perception.md) through [§11](11-execution.md), [§14](14-diagnostics.md), and [§15](15-manifest.md) describe, and provides the standard library of [§17](17-standard-library.md). It calls components only through [§9](09-abi.md) or [§7](07-fmu-packaging.md).
 * **Conforming component:** Implements the [§9](09-abi.md) C-ABI or the [§7](07-fmu-packaging.md) FMU packaging, and meets the frame rules of [§5](05-checkpoints.md) and the lifecycle rules of [§6](06-lifecycle.md).
 
 ## 0.3 Terms
