@@ -1,7 +1,7 @@
 ---
 title: Standard library
 section: 17
-version: 0.108
+version: 0.110
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 06-lifecycle.md, 08-steady-state.md, 09-abi.md, 11-execution.md, 15-manifest.md]
@@ -96,7 +96,7 @@ Both physics components are `OneToOne` and run every tick ([§11](11-execution.m
 5. Set $Z$ to the map elevation at the new $(X, Y)$, and roll and pitch to 0. The standard physics is planar: neither component applies gravity along the grade or bank.
 6. Report the new state. Reported fields that are derivatives (`yaw_rate` where it is not a state, `a_lon`, `a_lat`) are evaluated at the new state with the $\delta$ and $a$ of steps 1 and 4. `slip_angle_beta_cg` follows [§5.3](05-checkpoints.md), and the map cache is left to the runtime ([§11](11-execution.md)).
 
-**Initialization:** On cold init or warm start, each component sets its internal state from `chassis_state` in its init context: the pose, $v_{\text{lon}}$, $\dot{\psi}$, $\delta$ from `front_wheel_angle`, $a$ from `a_lon`, and, for `DynamicSingleTrack`, $v_y = v_{\text{lat}} + l_r \dot{\psi}$.
+**Initialization:** On cold init or warm start, each component sets its internal state from `chassis_state` in its init context: the pose, $v_{\text{lon}}$, $\dot{\psi}$, $\delta$ from `front_wheel_angle`, $a$ from `latched_kinematic_ctrl.a_lon_cmd` if its `0x01` bit is set and from `chassis_state.a_lon` otherwise, and, for `DynamicSingleTrack`, $v_y = v_{\text{lat}} + l_r \dot{\psi}$.
 
 **Actuator dynamics (both):**
 * **Steering:** If `0x04` is set, $\delta \leftarrow \delta + \operatorname{clamp}(\delta_{\text{cmd}} - \delta, \pm \rho\, \Delta t)$, where $\rho = \dot{\delta}_{\max}$, or $\min(\dot{\delta}_{\max}, |\dot{\delta}_{\text{cmd}}|)$ if `0x08` is also set. If only `0x08` is set, $\delta \leftarrow \delta + \operatorname{clamp}(\dot{\delta}_{\text{cmd}}, \pm\dot{\delta}_{\max})\, \Delta t$. Then $|\delta| \le \delta_{\max}$.
@@ -109,4 +109,4 @@ It reports $v_{\text{lat}} = 0$, `a_lon` $= a$, and `a_lat` $= v\dot{\psi}$. It 
 **`DynamicSingleTrack`:** Tier 1. Inputs `KinematicControlFrame` (the pipe input) and `surface: SliceBuffer<SurfaceSlice, 1>`. Output `KinematicState`. The state is the pose, $v_x$ ($= v_{\text{lon}}$), the CG lateral velocity $v_y$, the yaw rate $r$, $\delta$, and $a$. From `surface.latest()`: $\mu_f$ and $\mu_r$ are the axle means of the corner values, $\bar{\mu}$ is `mu_mean`, and $F_{zf}$ and $F_{zr}$ are the static axle loads of [§6.2](06-lifecycle.md) at its grade and bank. For $v_x \ge 1\text{ m/s}$:
 $$\alpha_f = \delta - \arctan\frac{v_y + l_f r}{v_x}, \quad \alpha_r = -\arctan\frac{v_y - l_r r}{v_x}, \quad F_{yi} = \operatorname{clamp}(C_{\alpha i}\, \alpha_i,\ \pm\mu_i F_{zi})$$
 $$\dot{v}_y = \frac{F_{yf} + F_{yr}}{m} - v_x r, \quad \dot{r} = \frac{l_f F_{yf} - l_r F_{yr}}{I_{zz}}, \quad \dot{v}_x = \operatorname{clamp}(a,\ \pm \bar{\mu} g)$$
-The front lateral force acts along the body $y$ axis. This small-angle model matches [§8](08-steady-state.md). The rear-axle lateral velocity is $v_{\text{lat}} = v_y - l_r r$, and the pose moves with $\dot{X} = v_x\cos\psi - v_{\text{lat}}\sin\psi$, $\dot{Y} = v_x\sin\psi + v_{\text{lat}}\cos\psi$, $\dot{\psi} = r$. It reports `a_lon` $= \dot{v}_x - v_{\text{lat}}\, r$ and `a_lat` $= \dot{v}_{\text{lat}} + v_x r$. For $v_x < 1\text{ m/s}$, it uses the `KinematicBicycle` equations, sets $r = v_x \tan\delta / L$ and $v_y = l_r r$, and reports the `KinematicBicycle` outputs.
+The front lateral force acts along the body $y$ axis. This small-angle model matches [§8](08-steady-state.md). The rear-axle lateral velocity is $v_{\text{lat}} = v_y - l_r r$, and the pose moves with $\dot{X} = v_x\cos\psi - v_{\text{lat}}\sin\psi$, $\dot{Y} = v_x\sin\psi + v_{\text{lat}}\cos\psi$, $\dot{\psi} = r$. It reports `a_lon` $= \dot{v}_x - v_{\text{lat}}\, r$ and `a_lat` $= \dot{v}_{\text{lat}} + v_x r$. The regime follows $v_x$ at tick $t$: for $v_x < 1\text{ m/s}$, step 2 uses the `KinematicBicycle` equations. After step 4, if the new $v_x$ is below $1\text{ m/s}$, the component sets $r = v_x \tan\delta / L$ and $v_y = l_r r$ and reports the `KinematicBicycle` outputs. Otherwise it reports the dynamic outputs above.

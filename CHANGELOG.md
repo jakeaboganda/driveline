@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.110
+
+* Standard physics seeds its acceleration state from the latched command, not the reported `a_lon`. `DynamicSingleTrack` chooses its regime from the tick-$t$ speed and overwrites $r$ and $v_y$ after the step.
+
 ## 0.109
 
 * At standstill, cold init steers to the spawn curvature and a tier swap keeps the committed steering angle, instead of snapping to 0.
