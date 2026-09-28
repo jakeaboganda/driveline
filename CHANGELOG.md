@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.63
+
+* Added section 7.2, which maps each lifecycle call to its FMI 3.0 calls. Parameters are set again after `fmi3Reset`. Mode B cold init now evaluates `bind_inputs` at $t = 0$, the same way a splice does.
+
 ## 0.62
 
 * Fixed two stale Stage 3 phrases. Physics runs on every tick, so Phase 3 no longer says "scheduled".

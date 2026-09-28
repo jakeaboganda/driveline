@@ -1,10 +1,10 @@
 ---
 title: FMU packaging
 section: 7
-version: 0.58
+version: 0.63
 status: draft
 normative: true
-depends_on: [05-checkpoints.md, 06-lifecycle.md, 09-abi.md, 11-execution.md, 15-manifest.md]
+depends_on: [05-checkpoints.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 11-execution.md, 15-manifest.md]
 ---
 
 # 7. FMU Packaging (`org.driveline.dcm`)
@@ -14,12 +14,12 @@ A `component ... from_fmu("...")` declaration uses one of two modes. The compile
 * **Mode A (Driveline-Aware FMU):** The FMU implements the FMI 3.0 layered standard `org.driveline.dcm`. It ships a manifest at `extra/org.driveline.dcm/manifest.json` in the format of [§15](15-manifest.md). A Mode A declaration whose FMU has no manifest is a compile-time error.
   * Each checkpoint port is an `fmi3Binary` variable with MIME type `application/x-driveline.<checkpoint-type>;version=0.12`. The value is the [§9](09-abi.md) struct, byte for byte.
   * Each `SliceBuffer` port is an `fmi3Binary` variable with MIME type `application/x-driveline.slice-buffer.<slice-type>;version=0.12`. The value is a `dl_slice_buffer_header_t` followed by `count` entries, newest first. Each entry is a `uint64_t t_ns` followed by the slice struct.
-  * Initialization uses the `fmi3Binary` input `dl_init_context` (MIME type `application/x-driveline.init-context;version=0.12`). The runtime sets it in initialization mode, at $t = 0$ for cold init and at $t = t_{\text{splice}}$ for warm start. `is_warm_start` tells the two apart. For a splice, the runtime creates a new FMU instance. For a re-trim ([§6.2.4](06-lifecycle.md)), it calls `fmi3Reset` and initializes again with the re-trim context.
+  * Initialization uses the `fmi3Binary` input `dl_init_context` (MIME type `application/x-driveline.init-context;version=0.12`), set in initialization mode ([§7.2](07-fmu-packaging.md)). `is_warm_start` tells cold init from warm start.
   * Component parameters are FMI parameters with the same names.
   * The actor's own state ([§9.1](09-abi.md)) is the `fmi3Binary` input `own_state` with MIME type `application/x-driveline.kinematic-state;version=0.12`. The runtime sets it on every step.
   * A Mode A manifest's `cardinality` must be `OneToOne`. Any other value is a compile-time error.
   * **MIME subtype names:** `<checkpoint-type>` and `<slice-type>` are the type names written in lowercase with a hyphen before each inner capital: `IntentFrame` is `intent-frame`, `KinematicControlFrame` is `kinematic-control-frame`, and `RadarSlice` is `radar-slice`.
-* **Mode B (Scalar-Pin FMU):** A legacy FMU with scalar `Float64` pins. `bind_inputs` maps expressions over the `SliceBuffer` ports and `own_state` onto input pins. `bind_outputs` maps output pins onto a checkpoint frame. Cold init uses the FMU's own start values. Splicing a Mode B FMU at $t > 0$ creates a new FMU instance, sets the input start values by evaluating `bind_inputs` at $t_{\text{splice}}$, calls `fmi3EnterInitializationMode` with `startTime` $= t_{\text{splice}}$ and then `fmi3ExitInitializationMode`, and reports `DL_STATUS_WARN_FMU_COLD_SPLICE`.
+* **Mode B (Scalar-Pin FMU):** A legacy FMU with scalar `Float64` pins. `bind_inputs` maps expressions over the `SliceBuffer` ports and `own_state` onto input pins. `bind_outputs` maps output pins onto a checkpoint frame. A splice starts a new instance that initializes from `bind_inputs` alone, as at cold init ([§7.2](07-fmu-packaging.md)), and the runtime reports `DL_STATUS_WARN_FMU_COLD_SPLICE`.
 
   In `bind_outputs`, a frame field that no assignment names is zero. If `valid_mask` is not assigned, it is the union of the bits that cover the assigned fields ([§5](05-checkpoints.md)). Named call-site arguments that are not input ports are FMI parameters with the same names, set before initialization.
 
@@ -34,3 +34,19 @@ Both modes use FMI 3.0 Co-Simulation. On each tick $t$ where the component is sc
 3. It reads the outputs and uses them as the component's output for tick $t$.
 
 The outputs read in step 3 describe the FMU at $t + h$ computed from inputs held over $[t, t + h)$. An FMU component therefore reacts to its inputs one period later than a native component with the same logic. Scenario authors who compare FMU and native components must account for this delay of $h$.
+
+## 7.2 Lifecycle Mapping
+
+The runtime drives an FMU through the [§6](06-lifecycle.md) states with these FMI 3.0 calls. "Initialize at $t$" means: call `fmi3EnterInitializationMode` with `startTime` $= t$, set the inputs, and call `fmi3ExitInitializationMode`. A Mode A FMU's inputs are `dl_init_context`, `own_state`, and its ports. A Mode B FMU's inputs are the `bind_inputs` expressions evaluated at $t$.
+
+| [§6](06-lifecycle.md) Call | FMU Calls |
+| :--- | :--- |
+| `dl_instantiate` | `fmi3InstantiateCoSimulation`. |
+| `dl_set_parameters` | Set each parameter by name with the matching `fmi3Set<Type>` call. |
+| `dl_configure_structure` | None. A Mode A FMU reads buffer depths from each `dl_slice_buffer_header_t`. |
+| `dl_enter_cold_init`, `dl_exit_init_mode` | Initialize at $t = 0$. |
+| `dl_enter_warm_start` (splice) | Initialize at $t_{\text{splice}}$. The new instance has already been instantiated and given its parameters, and the outgoing instance is terminated and freed ([§10](10-composition.md)). |
+| `dl_enter_warm_start` (re-trim, Mode A only) | `fmi3Reset`, set the parameters again, and initialize at the current tick with the re-trim context ([§6.2.4](06-lifecycle.md)). |
+| `dl_do_step` | `fmi3DoStep` as [§7.1](07-fmu-packaging.md) describes. |
+| `dl_terminate` | `fmi3Terminate`. |
+| `dl_free_instance` | `fmi3FreeInstance`. |
