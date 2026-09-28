@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.152
+
+* Sensors are not components and have no manifest. Their §17.2 table is their signature, a sensor call is a `SliceBuffer<S, N>` with a constant `history`, and `sensors` entries must call sensors.
+
 ## 0.151
 
 * Lane sections are half-open in $s$, and `sample_lane_path` keeps its direction across a lane-section boundary. It reverses only by a road link's contact point. `frenet_to_world` names its error code.

@@ -1,7 +1,7 @@
 ---
 title: Standard library
 section: 17
-version: 0.149
+version: 0.152
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 06-lifecycle.md, 08-steady-state.md, 09-abi.md, 11-execution.md, 15-manifest.md]
@@ -9,7 +9,7 @@ depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-
 
 # 17. Standard Library
 
-Every conforming runtime provides the names in this section. Builtins and constructors need no import. Components are imported from `std::sensors` (17.2), `std::intent` (17.3), `std::control` (17.4), and `std::physics` (17.5). Each component's signature here is its manifest ([§15](15-manifest.md)). The behavior is normative: two conforming runtimes produce the same outputs from the same inputs, within the determinism scope of [§11](11-execution.md).
+Every conforming runtime provides the names in this section. Builtins and constructors need no import. Components are imported from `std::sensors` (17.2), `std::intent` (17.3), `std::control` (17.4), and `std::physics` (17.5). Each component's signature in [§17.3](17-standard-library.md) to [§17.5](17-standard-library.md) is its manifest ([§15](15-manifest.md)). Sensors are not components and have no manifest, and their signatures are the [§17.2](17-standard-library.md) table. The behavior is normative: two conforming runtimes produce the same outputs from the same inputs, within the determinism scope of [§11](11-execution.md).
 
 Common notation: $\Delta t = \Delta t_{\text{base}}$, $dt$ is the component's own period $k_{\text{div}} \cdot \Delta t_{\text{base}}$ ([§11](11-execution.md)), $g = 9.80665\text{ m/s}^2$, and $\rho_{\text{air}} = 1.225\text{ kg/m}^3$. `own` is the actor's `own_state` ([§9.1](09-abi.md)). $\sigma$ is the direction sign of the actor's current lane ([§2](02-conventions.md)).
 
@@ -32,7 +32,7 @@ The world friction field is $\mu(X, Y)$: the zone or default value at the lane t
 
 ## 17.2 Sensors
 
-Sensors are part of the runtime ([§0](00-conformance.md)). Every standard sensor is ideal. It has no noise, no occlusion, and no latency beyond its rate. Every sensor takes `rate: Frequency` and `history: Int` ($N$), and it samples in Phase 1 at its scheduled ticks.
+Sensors are part of the runtime ([§0](00-conformance.md)). Every standard sensor is ideal. It has no noise, no occlusion, and no latency beyond its rate. Every sensor takes `rate: Frequency` and `history: Int` ($N$), and it samples in Phase 1 at its scheduled ticks. A sensor call with slice type `S` has type `SliceBuffer<S, N>`, where `history` must be a constant of at least 1.
 
 **Mounts:** A sensor frame has the body frame's axes and its origin at the mount point, in body coordinates from the rear-axle origin.
 
