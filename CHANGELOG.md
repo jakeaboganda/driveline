@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.101
+
+* Defined the splice window. Each statement finishes, from terminate to exit init, before the next starts. One re-trim follows, and it skips new instances. Latched frames come from the outgoing target's boundary, and a replacement holds its latched frame until its first step.
+
 ## 0.100
 
 * Defined every `dl_init_context_t` field at cold init and warm start, including the wheel order FL, FR, RL, RR and `powertrain`. Removed the unused `trim_equilibrium` flag.
