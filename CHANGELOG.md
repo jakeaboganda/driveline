@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.144
+
+* Spawn yaw rate and `sample_lane_path` curvature use the offset curve $\kappa/(1-\kappa d)$, not the centerline, so an offset spawn on a tight curve stays on its path and `StanleyLat` agrees with it.
+
 ## 0.143
 
 * A lane's driving-direction successors come from its OpenDRIVE `predecessor` link when it drives against $s$. The `world_to_frenet` tie-break compares `psi` with the driving heading.
