@@ -9,7 +9,7 @@ extern "C" {
 
 #pragma pack(push, 8)
 
-#define DL_ABI_VERSION_0_12 0x00000C00U
+#define DL_ABI_VERSION_0_13 0x00000D00U
 
 typedef enum {
     DL_STATUS_OK                    = 0,
@@ -19,7 +19,8 @@ typedef enum {
     DL_STATUS_ERR_TIER_MISSING      = -2,
     DL_STATUS_ERR_NUMERIC           = -3,
     DL_STATUS_ERR_UNSUPPORTED_MODE  = -4,
-    DL_STATUS_ERR_STATE             = -5
+    DL_STATUS_ERR_STATE             = -5,
+    DL_STATUS_ERR_FMU               = -6  /* Reported by the runtime only */
 } dl_status_t;
 
 typedef void* dl_component_handle_t;
@@ -251,7 +252,7 @@ typedef struct {
 } dl_powertrain_state_t;
 
 typedef struct {
-    uint32_t abi_version;                        /* Must equal DL_ABI_VERSION_0_12 */
+    uint32_t abi_version;                        /* Must equal DL_ABI_VERSION_0_13 */
     uint32_t struct_size;                        /* sizeof(dl_init_context_t) */
     uint64_t sim_time_ns;                        /* [ns] */
     uint8_t  is_warm_start;                      /* 0:ColdInit, 1:WarmStart */

@@ -6,6 +6,11 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.64
+
+* Added `DL_STATUS_ERR_FMU` for failed FMI calls and bad-sized Mode A outputs. FMU outputs get the same header fields and output validation as native ones, so Mode B frames no longer go out with `timestamp_ns = 0`.
+* ABI version 0.13.
+
 ## 0.63
 
 * Added section 7.2, which maps each lifecycle call to its FMI 3.0 calls. Parameters are set again after `fmi3Reset`. Mode B cold init now evaluates `bind_inputs` at $t = 0$, the same way a splice does.
