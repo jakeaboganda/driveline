@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.81
+
+* The primary-target clause of the dependency condition applies only to the `primary_*` fields, so `ego_s` and `ego_d` interpolate again. Primary fields are zero when there is no primary target.
+
 ## 0.80
 
 * `StanleyLat` measures its error at the rear axle. At the front axle, the heading error and the curvature term both counted $\delta_{\text{KS}}$, so every curved spawn failed the trim check. An empty path is `DL_STATUS_ERR_INVALID_ARG`.

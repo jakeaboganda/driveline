@@ -1,7 +1,7 @@
 ---
 title: Priors, sensors, and SliceBuffer
 section: 4
-version: 0.79
+version: 0.81
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 06-lifecycle.md, 09-abi.md]
@@ -54,4 +54,4 @@ Driveline defines four standard sensor slice payloads and one track element type
 
 **Interpolation Classes:** Every `float64` field is `LINEAR` unless listed here. Integer, enum, flag, and `char[]` fields are `HOLD`.
 * `ANGLE`: `rel_yaw`, `bearing`, `primary_azimuth`, `heading_error_est`.
-* Dependent fields: `ego_s` depends on `ego_road_id`. `ego_d` depends on `ego_road_id` and `ego_lane_id`. `primary_range`, `primary_azimuth`, and `primary_rcs` depend on `primary_target_id`. The **dependency condition** of a field holds between two samples if each of its dependency fields is equal in both, and `primary_target_id` is also nonzero.
+* Dependent fields: `ego_s` depends on `ego_road_id`. `ego_d` depends on `ego_road_id` and `ego_lane_id`. `primary_range`, `primary_azimuth`, and `primary_rcs` depend on `primary_target_id`. The **dependency condition** of a field holds between two samples if each of its dependency fields is equal in both. For the `primary_*` fields, `primary_target_id` must also be nonzero. When `primary_target_id` is 0, `has_primary_target` is 0 and `primary_range`, `primary_azimuth`, and `primary_rcs` are 0.
