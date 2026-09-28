@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.75
+
+* Fixed the pipe-input rule. Only a source chain's head binds every port, and other chain heads leave exactly one port unbound as the pipe input.
+
 ## 0.74
 
 * Typed `rate_of`: a `float64` field, a window of at least 1, and `Rate.value` with the field's dimension per second. An invalid rate always has `value = 0.0`.
