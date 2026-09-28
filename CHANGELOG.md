@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.146
+
+* Minor fixes: `environment` friction values link to the constant-expression rule, and untyped postfix forms are errors.
+
 ## 0.145
 
 * Output validation runs after the runtime clears out-of-group partial bits. A Mode A re-trim sets priors again after `fmi3Reset`. Physics instances are instantiated after their Stage 2, and a re-trimmed group instance holds its last output for actors whose tier did not change.
