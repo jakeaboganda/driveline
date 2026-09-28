@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.74
+
+* Typed `rate_of`: a `float64` field, a window of at least 1, and `Rate.value` with the field's dimension per second. An invalid rate always has `value = 0.0`.
+
 ## 0.73
 
 * Comparisons have type `Bool`, and `if`, `on`, and `terminate when` conditions must be `Bool`.
