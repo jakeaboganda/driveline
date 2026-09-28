@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.132
+
+* Held trajectory times are rebased to the filled frame's timestamp, and a held `LON` unit drops `s_stop`, which cannot be moved from an old pose. `rate_of` in §4 links to the rule that limits it to top-level fields.
+
 ## 0.131
 
 * Minor fixes: `Bool` equality, `Arbitrate` pipe delivery, one trim warning for a Mode B FMU, the steering wheel sign, and the friction link.
