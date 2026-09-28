@@ -1,7 +1,7 @@
 ---
 title: Checkpoint data contracts
 section: 5
-version: 0.162
+version: 0.163
 status: draft
 normative: true
 depends_on: [02-conventions.md, 06-lifecycle.md, 10-composition.md, 15-manifest.md, 17-standard-library.md]
@@ -71,10 +71,11 @@ Produced by Stage 1 (Intent) components.
 * If `0x08` is set, `trajectory` governs both longitudinal and lateral motion, and `0x01`, `0x02`, and `0x04` are clear. The frame requests `SPATIOTEMPORAL_TRAJECTORY` by this bit alone, and consumers ignore `lon_mode` and `lat_mode`.
 * If `0x02` is set, `lat_mode` is not `SPATIOTEMPORAL_TRAJECTORY`.
 * `0x10` (`turn_signal`) may accompany any combination.
+* `num_waypoints` and `num_traj_points` are at most 64, and the `trajectory` times follow the Array Semantics below.
 
 A component implements trajectories if its manifest's `lat_modes` lists `SPATIOTEMPORAL_TRAJECTORY` ([§15](15-manifest.md)).
 
-**Array Semantics:** `path_points` holds `num_waypoints` entries and `trajectory` holds `num_traj_points` entries, each at most 64. Entries beyond the count are ignored. A count above 64 is invalid. Both arrays are in the World frame and ordered along the direction of travel. Each `trajectory` time $t_k$ is in seconds after the frame's `timestamp_ns` and strictly increases. A produced frame starts at $t_0 \ge 0$.
+**Array Semantics:** `path_points` holds `num_waypoints` entries and `trajectory` holds `num_traj_points` entries, each at most 64. Entries beyond the count are ignored. A count above 64 is invalid. Both arrays are in the World frame and ordered along the direction of travel. Each `trajectory` time $t_k$ is in seconds after the frame's `timestamp_ns`. In a produced frame the times start at $t_0 \ge 0$ and strictly increase. After the hold rule's shift they do not decrease.
 
 **Stop Distance:** `s_stop` is the distance along the actor's intended path from its rear-axle origin to the point where the rear-axle origin must stop.
 

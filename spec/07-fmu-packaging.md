@@ -1,7 +1,7 @@
 ---
 title: FMU packaging
 section: 7
-version: 0.158
+version: 0.163
 status: draft
 normative: true
 depends_on: [05-checkpoints.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md]
@@ -41,7 +41,7 @@ Both modes use FMI 3.0 Co-Simulation. On each tick $t$ where the component is sc
 
 1. It sets the inputs for tick $t$.
 2. It calls `fmi3DoStep` with the `currentCommunicationPoint` of tick $t$ by the Times rule of [§7](07-fmu-packaging.md) and `communicationStepSize` $= h$.
-3. It reads the outputs and uses them as the component's output for tick $t$. An FMI return of `fmi3Warning` counts as `fmi3OK`. Any worse return is `DL_STATUS_ERR_FMU` ([§14](14-diagnostics.md)).
+3. It reads the outputs and uses them as the component's output for tick $t$. An FMI return of `fmi3Warning` counts as `fmi3OK`. Any worse return, or a step that sets `terminateSimulation` or `earlyReturn`, is `DL_STATUS_ERR_FMU` ([§14](14-diagnostics.md)). The runtime instantiates every FMU with `eventModeUsed` and `earlyReturnAllowed` false and enters initialization with no tolerance and no stop time.
 
 The outputs read in step 3 describe the FMU at $t + h$ computed from inputs held over $[t, t + h)$. An FMU component therefore reacts to its inputs one period later than a native component with the same logic. Scenario authors who compare FMU and native components must account for this delay of $h$.
 

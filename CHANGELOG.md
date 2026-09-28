@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.163
+
+* Rebuilt latched intents target the committed lane. FMUs run without event mode or early return, and termination flags are errors. Other fixes: padding is zeroed before any read, bounds use $N_c$, standstill braking uses the drivetrain period, and array counts and trajectory order are in the validity list.
+
 ## 0.162
 
 * `a_lon_cmd` is the commanded $\dot{v}_{\text{lon}}$, which the physics, init, and latched frames already assume. It is not the body-frame acceleration that `a_lon` reports.

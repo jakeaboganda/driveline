@@ -1,7 +1,7 @@
 ---
 title: Priors, sensors, and SliceBuffer
 section: 4
-version: 0.157
+version: 0.163
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 06-lifecycle.md, 09-abi.md, 16-static-semantics.md]
@@ -23,7 +23,7 @@ Every mounted sensor has a compile-time capacity $N \in [1, 64]$ declared in its
 All `SliceBuffer<T, N>` ports enforce deterministic edge-case semantics across four query primitives:
 1. `buffer.latest() -> Timestamped<T>`: Equivalent to `buffer[0]`. Guaranteed valid from $t = 0$ because cold initialization Pass 1 performs the Tick 0 sensor projection ([§6.2](06-lifecycle.md)).
 2. `buffer[k] / buffer.history(k) -> Timestamped<T>`:
-   * **Compile-Time Bounds Check:** If $k$ is a compile-time constant and $k \ge N$, compilation fails.
+   * **Compile-Time Bounds Check:** If $k$ is a compile-time constant and $k \ge N_c$, compilation fails.
    * **Early-Tick Clamp ($k \ge \text{count}$):** Before $k+1$ samples have been recorded (e.g., on Tick 0 when $\text{count} == 1$), `buffer[k]` returns the oldest available sample `buffer[count - 1]`. `buffer.count` is the number of valid samples, from $1$ to $N$. A component that must not use clamped samples checks `k < buffer.count` first. Queries do not change the buffer.
 3. `buffer.rate_of(field_selector, window: k = 1) -> Rate`: Finite-difference derivative helper. `field_selector` names a top-level field ([§16.4](16-static-semantics.md)). `Rate` is `{ float64 value; bool valid; }`. With $m = \min(k, \text{count}-1)$:
    $$\text{rate\_of}(f, k) = \begin{cases} \{0.0, \text{false}\} & \text{if } \text{count} < 2 \\ \left\{\dfrac{s[0].f - s[m].f}{s[0].t - s[m].t}, \text{true}\right\} & \text{otherwise} \end{cases}$$

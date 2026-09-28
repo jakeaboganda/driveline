@@ -1,6 +1,6 @@
 ---
 title: Open items
-version: 0.150
+version: 0.163
 status: draft
 normative: false
 depends_on: []
@@ -16,7 +16,7 @@ These items are unresolved in the current version (README `spec_version`).
 * OpenDRIVE `rule` semantics for lane driving direction ([§2](02-conventions.md)).
 * The OpenDRIVE superelevation sign: positive when the road is higher on the side of increasing $t$ ([§2](02-conventions.md)).
 * OpenDRIVE lane links: lane IDs can change at a lane-section boundary, and each lane names its predecessor and successor lanes, both relative to increasing $s$ whatever the lane's driving direction ([§9.2](09-abi.md)).
-* The FMI 3.0 behavior that [§7](07-fmu-packaging.md) relies on: the layered-standard file location `extra/<name>/`, `fmi3Reset` returning an instance to its instantiated state with parameters at their start values, setting inputs, including `fmi3Binary` inputs, in initialization mode, a variable's declared unit carrying a factor, an offset, and base-unit exponents, and each `currentCommunicationPoint` having to equal the previous one plus its step size.
+* The FMI 3.0 behavior that [§7](07-fmu-packaging.md) relies on: the layered-standard file location `extra/<name>/`, `fmi3Reset` returning an instance to its instantiated state with parameters at their start values, setting inputs, including `fmi3Binary` inputs, in initialization mode, a variable's declared unit carrying a factor, an offset, and base-unit exponents, each `currentCommunicationPoint` having to equal the previous one plus its step size, and the `eventModeUsed`, `earlyReturnAllowed`, `terminateSimulation`, and `earlyReturn` flags.
 * The [§1.2](01-scope.md) statement that OpenSCENARIO leaves controller and vehicle-dynamics models to the host simulator.
 
 **Design items:** None open.
