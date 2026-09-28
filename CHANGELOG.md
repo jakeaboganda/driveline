@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.127
+
+* Actor names are visible across the scenario. An actor's sensors may be used only in its own body, in a `bind` that lists it, or in a `splice` of its targets, and `physics_model` is reserved as a chain name.
+
 ## 0.126
 
 * Typed `bool`, struct, and array fields and track indexing. `Time` mixed with a seconds quantity in `+`/`-` is an error. `clamp` needs a quantity, and `Lon<T>`/`Lat<T>` are limited to the two frame types but allowed in `Chain`.
