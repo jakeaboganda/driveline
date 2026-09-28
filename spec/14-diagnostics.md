@@ -1,10 +1,10 @@
 ---
 title: Status codes and error handling
 section: 14
-version: 0.111
+version: 0.120
 status: draft
 normative: true
-depends_on: [06-lifecycle.md, 07-fmu-packaging.md]
+depends_on: [06-lifecycle.md, 07-fmu-packaging.md, 10-composition.md]
 ---
 
 # 14. Status Codes and Error Handling
@@ -28,7 +28,7 @@ depends_on: [06-lifecycle.md, 07-fmu-packaging.md]
 ## 14.2 Runtime Handling
 
 1. **Warnings:** The runtime records the warning with the tick, the component instance name, and the call or rule that produced it. The run continues.
-2. **Errors:** When a `dl_*` call returns an error, an FMI call fails (`DL_STATUS_ERR_FMU`), or the runtime detects an error itself, the runtime stops the run. It finishes no further phase. It reports the error with the tick, the instance name, and the call, and then runs teardown. A run that stops this way has failed. Its last committed World state is the state after the last completed Phase 4.
-3. **Teardown:** Every run ends with teardown, whether it succeeds or fails. The runtime visits instances in descending `actor_id` order, with a group sorted by its smallest member, and within one actor or group in the reverse of Phase 2 order, physics first. For each instance in turn, it calls `dl_terminate` if the state allows it ([§6.1](06-lifecycle.md)), and then `dl_free_instance` if the instance is not `Uninstantiated`. FMUs get `fmi3Terminate` and `fmi3FreeInstance` ([§7](07-fmu-packaging.md)). An error during teardown is reported, and teardown continues.
+2. **Errors:** When a `dl_*` call returns an error, an FMI call fails (`DL_STATUS_ERR_FMU`), or the runtime detects an error itself, the runtime stops the run. It finishes no further phase. It reports the error with the tick, the instance name, and the call, and then runs teardown. A run that stops this way has failed. Its last committed World state is the state after the last completed Phase 4, including any committed state update of a splice window that had started ([§10.4](10-composition.md)). A run that fails during cold init has no committed state.
+3. **Teardown:** Every run ends with teardown, whether it succeeds or fails. The runtime visits instances in descending `actor_id` order, with a group sorted by its smallest member, and within one actor or group in the reverse of Phase 2 order, physics first. For each instance in turn, it calls `dl_terminate` if the state allows it ([§6.1](06-lifecycle.md)), and then `dl_free_instance` if the instance is not `Uninstantiated`. FMUs get `fmi3Terminate` and `fmi3FreeInstance` ([§7](07-fmu-packaging.md)). An error during teardown is reported, and teardown continues. It does not change whether the run succeeded.
 4. **Output Validation:** After each `dl_do_step`, and after each `fmi3DoStep` once the outputs are read, the runtime checks every output frame. A field whose `valid_mask` bit is set must be finite. If its bit is set, `throttle` and `brake` must lie in $[0, 1]$, and `steering_wheel_norm` must lie in $[-1, 1]$. Every `KinematicState` field must be finite. A failed check is `DL_STATUS_ERR_NUMERIC`, handled as an error.
 5. **Report Format:** Each report has the fields `tick`, `sim_time_ns`, `severity` (`warning` or `error`), `code` (a `dl_status_t` name), `instance` (the name passed to `dl_instantiate`), and `detail` (text). The transport and file format of reports are implementation-defined.
