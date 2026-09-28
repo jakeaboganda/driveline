@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.130
+
+* Tier changes keep $\dot{v}_{\text{lon}}$ by shifting `a_lon` with $v_{\text{lat,ra}}$, and standard physics seeds its acceleration state the same way. Slip angles are 0 below 1 m/s, and `StanleyLat` requires `k_soft` above zero.
+
 ## 0.129
 
 * String fields compare up to the null. The runtime zeroes the bytes after it and every padding member, so byte comparisons and FMU payloads are deterministic.
