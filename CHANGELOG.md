@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.162
+
+* `a_lon_cmd` is the commanded $\dot{v}_{\text{lon}}$, which the physics, init, and latched frames already assume. It is not the body-frame acceleration that `a_lon` reports.
+
 ## 0.161
 
 * Minor fixes: a stopped actor reports no deceleration however the stop rounds, `manual_gear_index` is checked only with `0x10` set, and the radar primary target comes from the slice's kept tracks.

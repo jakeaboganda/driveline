@@ -1,7 +1,7 @@
 ---
 title: Checkpoint data contracts
 section: 5
-version: 0.161
+version: 0.162
 status: draft
 normative: true
 depends_on: [02-conventions.md, 06-lifecycle.md, 10-composition.md, 15-manifest.md, 17-standard-library.md]
@@ -90,7 +90,7 @@ A component implements trajectories if its manifest's `lat_modes` lists `SPATIOT
 | `actor_id` | `uint64` | — | Unique actor entity identifier. |
 | `timestamp_ns` | `uint64` | $\text{ns}$ | Simulation timestamp. |
 | `valid_mask` | `uint32` | bitmask | `0x01`: `a_lon_cmd` valid, `0x02`: `jerk_lon_cmd` valid, `0x04`: `steer_angle_cmd` valid, `0x08`: `steer_rate_cmd` valid. A frame with bits outside `0x0F` is invalid (`DL_STATUS_ERR_INVALID_ARG`). |
-| `a_lon_cmd` | `float64` | $\text{m/s}^2$ | Commanded longitudinal acceleration at rear-axle origin in body $+x$. |
+| `a_lon_cmd` | `float64` | $\text{m/s}^2$ | Commanded rate of change $\dot{v}_{\text{lon}}$ of the rear-axle body-$x$ speed. In a turn it differs from the reported `a_lon` of [§5.3](05-checkpoints.md) by $v_{\text{lat}} \dot{\psi}$. |
 | `jerk_lon_cmd` | `float64` | $\text{m/s}^3$ | If `0x01` is also set, the maximum jerk used to reach `a_lon_cmd`. If only `0x02` is set, a jerk command that physics integrates. |
 | `steer_angle_cmd` | `float64` | $\text{rad}$ | Front road-wheel steering angle target $\delta_{\text{cmd}}$, positive to the left (valid if `0x04` set). |
 | `steer_rate_cmd` | `float64` | $\text{rad/s}$ | If `0x04` is also set, the maximum rate used to reach `steer_angle_cmd`. If only `0x08` is set, a rate command that physics integrates. |
