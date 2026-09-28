@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.124
+
+* `DynamicSingleTrack` sets $r$ and $v_y$ from the kinematic relation whenever the step starts or ends below 1 m/s, so crossing the regime boundary is defined. Steering holds when no steering bit is set, and `sample_step` must be positive.
+
 ## 0.123
 
 * `select` and `clamp` convert `Int` only when mixed with a quantity, which keeps the example's `valid_mask` an `Int`. Parameter arguments are constants that match by dimension. `fn` parameters and `fmu` have scopes, buffer methods have signatures, and `use` no longer depends on a greedy `ScopedIdent`.
