@@ -1,7 +1,7 @@
 ---
 title: FMU packaging
 section: 7
-version: 0.100
+version: 0.105
 status: draft
 normative: true
 depends_on: [05-checkpoints.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md]
@@ -18,6 +18,7 @@ A `component ... from_fmu("...")` declaration uses one of two modes. The compile
   * Times inside a frame, such as `trajectory` offsets ([§5.1](05-checkpoints.md)), are relative to the `timestamp_ns` that the runtime stamps, which is the tick time $t$ ([§7.1](07-fmu-packaging.md)). The runtime does not shift them.
   * Each `SliceBuffer` port is an `fmi3Binary` variable with MIME type `application/x-driveline.slice-buffer.<slice-type>;version=0.14`. The value is a `dl_slice_buffer_header_t` followed by `count` entries, newest first. Each entry is a `uint64_t t_ns` followed by the slice struct.
   * Initialization uses the `fmi3Binary` input `dl_init_context` (MIME type `application/x-driveline.init-context;version=0.14`), set in initialization mode ([§7.2](07-fmu-packaging.md)). `is_warm_start` tells cold init from warm start.
+  * **Variable names:** Each input port is the FMI variable with the port's manifest name and causality `input`. The output is the single variable named `output` with causality `output`. `dl_init_context` and `own_state` are inputs with those names. A missing variable, or a variable with another type or MIME type, is a compile-time error.
   * Component parameters are FMI parameters with the same names.
   * The actor's own state ([§9.1](09-abi.md)) is the `fmi3Binary` input `own_state` with MIME type `application/x-driveline.kinematic-state;version=0.14`. The runtime sets it on every step.
   * A Mode A manifest's `cardinality` must be `OneToOne`. Any other value is a compile-time error.
@@ -45,7 +46,7 @@ The runtime drives an FMU through the [§6](06-lifecycle.md) states with these F
 | [§6](06-lifecycle.md) Call | FMU Calls |
 | :--- | :--- |
 | `dl_instantiate` | `fmi3InstantiateCoSimulation`. |
-| `dl_set_parameters` | Set each parameter by name with the matching `fmi3Set<Type>` call. |
+| `dl_set_parameters` | Set each parameter by name: a quantity with `fmi3SetFloat64` in SI units, an `Int` with `fmi3SetInt64`, a `Time` with `fmi3SetInt64` in nanoseconds, and a `Bool` with `fmi3SetBoolean`. A parameter whose FMI variable has another type is a compile-time error. |
 | `dl_configure_structure` | None. A Mode A FMU reads buffer depths from each `dl_slice_buffer_header_t`. |
 | `dl_enter_cold_init`, `dl_exit_init_mode` | Initialize at $t = 0$. |
 | `dl_enter_warm_start` (splice) | Initialize at $t_{\text{splice}}$. The new instance has already been instantiated and given its parameters, and the outgoing instance is terminated and freed ([§10](10-composition.md)). |

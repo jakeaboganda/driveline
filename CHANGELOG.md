@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.105
+
+* Mode A binds ports by variable name, and the output is named `output`. FMU parameters use a fixed FMI type for each DSL type, with SI units and nanoseconds for `Time`.
+
 ## 0.104
 
 * Listed every valid `IntentFrame` mask. `s_stop` requires `0x01` and is excluded by a trajectory, and `turn_signal` goes with anything.
