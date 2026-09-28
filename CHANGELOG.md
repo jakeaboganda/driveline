@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.140
+
+* Minor fixes: `let` block scopes, the `rate_of` time difference and endpoint rule, the clamped `at` result time, the PincerHiveMind and AEB ambiguities, the teardown order in groups, partial-output latching, and table precedence over the state diagram.
+
 ## 0.139
 
 * `SliceBuffer` queries and `fmu.out` take positional then named arguments, as builtins do, which covers the example's `eyes.at(...)` and `rate_of(...)`.
