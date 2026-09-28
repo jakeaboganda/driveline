@@ -49,7 +49,17 @@ The C header [`abi/driveline_abi.h`](abi/driveline_abi.h) and the scenario [`exa
 
 ## Checks
 
-`tools/check.py` enforces the versioning rules and checks the artifacts. It verifies front-matter, section cross-references, and links. It compiles the header for 64-bit and 32-bit targets with padding warnings as errors and compares struct sizes. It parses every file in `examples/` with the grammar in section 12, and it recomputes the section 8 test vector.
+`tools/check.py` enforces the versioning rules and checks the artifacts:
+
+* Front-matter, `depends_on` against each document's links, links, and section references down to numbered list items.
+* No spec versions or bare section numbers in prose.
+* The header compiles for 64-bit and 32-bit targets with padding warnings as errors, and struct sizes match.
+* The section 4 and section 5 field tables match the header structs, and the example's tier records match the tier structs.
+* Every file in `examples/` parses with the section 12 grammar. The example's rates divide the base clock, its actor IDs are unique, and each sensor history covers the port it feeds.
+* The section 8 test vector recomputes, and the standard `DynamicSingleTrack` derivatives vanish at that steady state.
+* SipHash reference vectors and the seed vectors pass.
+
+A check that finds nothing to check fails.
 
 ```sh
 python3 -m venv .venv
