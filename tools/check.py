@@ -257,15 +257,7 @@ def check_vehicle_spec_fields():
     scenario = (EXAMPLES / "kanagawa_pinch_test.dline").read_text()
     for tier, struct in (("tier0", "dl_kinematic_params_t"), ("tier1", "dl_single_track_params_t"),
                          ("tier2", "dl_multibody_params_t")):
-        body = re.search(r"typedef struct \{([^{}]*)\} " + struct + ";", header).group(1)
-        body = re.sub(r"/\*.*?\*/", "", body)
-        members = set()
-        for decl in body.split(";"):
-            names = decl.split()[1:] if decl.split() else []
-            for n in " ".join(names).split(","):
-                n = re.sub(r"\[.*\]", "", n).strip()
-                if n and not n.startswith("_") and n != "num_gears":
-                    members.add(n)
+        members = struct_members(header, struct) - {"num_gears"}
         block = re.search(tier + r"\s*=\s*\{(.*?)\};", scenario, re.S).group(1)
         fields = set(re.findall(r"(\w+)\s*:", block))
         if fields != members:
