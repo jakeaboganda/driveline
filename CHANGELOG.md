@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.99
+
+* A promotion or demotion writes its changed fields into the committed state before warm start, so the physics, the re-trimmed controllers, and the next tick's sensors agree. Defined which splices change tier, including ones made through a chain. The balanced-first-step claim holds only when the re-trim matches.
+
 ## 0.98
 
 * `sample_lane_path` continues through the lane link at whichever end it reaches, and handles roads whose reference lines run the other way by keeping `d_offset` on the same side of the path.
