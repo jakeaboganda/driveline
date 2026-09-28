@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.116
+
+* Promotions in a splice window update the committed state before any statement runs, and every warm-start context for that actor gets the new steering angle. Latched frames are hold-filled. Types a component never saw are built from the committed state. Hold history survives splices. Only Stage 2 arbiters are re-trimmed, and spliced Stage 2 components get the trim check.
+
 ## 0.115
 
 * The hold rule's discard applies to hold units, so a turn-signal-only frame keeps a held trajectory. A component whose required unit stays clear after filling returns `DL_STATUS_ERR_UNSUPPORTED_MODE`, and section 17 lists each standard component's units.
