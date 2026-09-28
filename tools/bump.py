@@ -33,6 +33,10 @@ def main(argv):
     if not lines or not docs:
         sys.exit(__doc__)
 
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import sync_deps
+    docs = sorted(set(docs) | set(sync_deps.sync()))
+
     readme = ROOT / "README.md"
     meta = readme.read_text()
     old = re.search(r"^spec_version: (.*)$", meta, re.M).group(1)

@@ -44,7 +44,7 @@ The C header [`abi/driveline_abi.h`](abi/driveline_abi.h) and the scenario [`exa
 * Each document's front-matter `version` is the `spec_version` in which that document last changed.
 * `abi_version` increases when `abi/driveline_abi.h` changes. It equals the `DL_ABI_VERSION_*` macro in the header.
 * [`CHANGELOG.md`](CHANGELOG.md) has one entry per `spec_version`.
-* `depends_on` lists the normative documents that a document links to. `tools/sync_deps.py` derives it.
+* `depends_on` lists the normative documents that a document links to. `tools/sync_deps.py` derives it, and `tools/bump.py` runs it and stamps any document whose `depends_on` changed.
 * `tools/bump.py` applies these rules for one change: `tools/bump.py [--abi] "Changelog line" -- spec/<changed>.md ...`.
 
 ## Checks
