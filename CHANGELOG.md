@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.150
+
+* An FMU warm start begins at the component's first scheduled tick, and its communication points are a running binary64 sum from `startTime`, so they stay contiguous.
+
 ## 0.149
 
 * Minor fixes: held trajectory shifts take the nanosecond difference first, control frames reject unknown mask bits, `rate_of` windows are at least 1, `timestep` is a `Time`, radar `primary_range`/`primary_azimuth` are defined, contact corners are named, and `left_lane_free` matches tracks by lane.

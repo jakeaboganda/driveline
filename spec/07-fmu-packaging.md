@@ -1,7 +1,7 @@
 ---
 title: FMU packaging
 section: 7
-version: 0.145
+version: 0.150
 status: draft
 normative: true
 depends_on: [05-checkpoints.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md]
@@ -33,7 +33,7 @@ In both modes:
 
 * **No map callbacks:** An FMU gets no host map callbacks ([§9.2](09-abi.md)), because the callback table holds in-process pointers. Map context reaches an FMU only through its ports, priors, and `own_state`.
 * **Units:** Every bound `Float64` variable that declares a unit must declare one whose conversion to base units has factor 1 and offset 0 and whose base-unit exponents match the dimension of the value bound to it. Any other unit is a compile-time error, so the runtime never converts units.
-* **Times:** Every FMI time in seconds, such as `currentCommunicationPoint`, `communicationStepSize`, and `startTime`, is the binary64 value nearest to the nanosecond count divided by $10^9$.
+* **Times:** `startTime` and `communicationStepSize` are the binary64 values nearest to their nanosecond counts divided by $10^9$. The first `currentCommunicationPoint` is `startTime`, and each later one is the previous one plus the previous `communicationStepSize` in binary64, so the points are contiguous as FMI 3.0 requires.
 
 ## 7.1 Stepping and Output Timing
 
@@ -55,8 +55,8 @@ The runtime drives an FMU through the [§6](06-lifecycle.md) states with these F
 | `dl_set_parameters` | Set each parameter by name: a quantity with `fmi3SetFloat64` in SI units, an `Int` with `fmi3SetInt64`, a `Time` with `fmi3SetInt64` in nanoseconds, a `Bool` with `fmi3SetBoolean`, and an enum with `fmi3SetInt64` as its numeric value. A parameter whose FMI variable has another type is a compile-time error. |
 | `dl_configure_structure` | None. A Mode A FMU reads buffer depths from each `dl_slice_buffer_header_t`. |
 | `dl_enter_cold_init`, `dl_exit_init_mode` | Initialize at $t = 0$. |
-| `dl_enter_warm_start` (splice) | Initialize at $t_{\text{splice}}$. The new instance has already been instantiated and given its parameters, and the outgoing instance is terminated and freed ([§10](10-composition.md)). |
-| `dl_enter_warm_start` (re-trim, Mode A only) | `fmi3Reset`, set the parameters again, and initialize at the current tick with the re-trim context ([§6.2.4](06-lifecycle.md)). |
+| `dl_enter_warm_start` (splice) | Initialize at $t_{\text{first}}$, the first tick at or after the next tick at which the component is scheduled ([§11](11-execution.md)), so its first `fmi3DoStep` starts at `startTime`. The new instance has already been instantiated and given its parameters, and the outgoing instance is terminated and freed ([§10](10-composition.md)). |
+| `dl_enter_warm_start` (re-trim, Mode A only) | `fmi3Reset`, set the parameters again, and initialize at $t_{\text{first}}$, as for a splice, with the re-trim context ([§6.2.4](06-lifecycle.md)). |
 | `dl_do_step` | `fmi3DoStep` as [§7.1](07-fmu-packaging.md) describes. |
 | `dl_terminate` | `fmi3Terminate`. |
 | `dl_free_instance` | `fmi3FreeInstance`. |
