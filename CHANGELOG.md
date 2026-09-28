@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.121
+
+* `rate_of` selects only top-level slice fields. Track slots reorder every sample, so a `tracks[i]` difference could span two targets.
+
 ## 0.120
 
 * A splice window's tier change is net, and it is applied once. A failed window keeps its committed state update, and a cold-init failure has no committed state. Re-trims exit init mode explicitly in Phase 2 order, warm-start wheel loads use the current grade, `dl_free_instance` is exempt from `ERR_STATE`, and teardown errors do not change the run's outcome.
