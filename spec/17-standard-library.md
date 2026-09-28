@@ -1,7 +1,7 @@
 ---
 title: Standard library
 section: 17
-version: 0.114
+version: 0.115
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 06-lifecycle.md, 08-steady-state.md, 09-abi.md, 11-execution.md, 15-manifest.md]
@@ -63,6 +63,8 @@ $$o_j = \text{pinch\_gap} \cdot \left(j - \tfrac{M-1}{2}\right), \quad \Delta x_
 where $x$ and $v_x$ are the track's `rel_x` and `rel_vx`. Laterally it holds the member's current lane: `LANE_OFFSET` on `(own.road_id, own.lane_id)` with `d_ref = 0`. `valid_mask = 0x03`.
 
 ## 17.4 Stage 2 Components
+
+**Required Units:** After the hold rule ([§5](05-checkpoints.md)), `PIDSpeedController` needs the `IntentFrame` `LON` unit with `0x01` set, `StanleyLat` needs the `LAT` unit, and `JerkLimiter` needs `0x01` of its `KinematicControlFrame` input. Otherwise they return `DL_STATUS_ERR_UNSUPPORTED_MODE`.
 
 All Stage 2 components are `OneToOne`.
 

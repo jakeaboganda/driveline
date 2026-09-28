@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.115
+
+* The hold rule's discard applies to hold units, so a turn-signal-only frame keeps a held trajectory. A component whose required unit stays clear after filling returns `DL_STATUS_ERR_UNSUPPORTED_MODE`, and section 17 lists each standard component's units.
+
 ## 0.114
 
 * A Tier 1 or 2 spawn on a curve now points its rear-axle velocity along the lane, so the actor follows the lane instead of drifting 0.37 m/s off it in the test vector. `StanleyLat` measures heading error against the rear axle's course angle. The cold-init `a_lon` is the steady-circle value.

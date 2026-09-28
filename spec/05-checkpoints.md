@@ -1,7 +1,7 @@
 ---
 title: Checkpoint data contracts
 section: 5
-version: 0.112
+version: 0.115
 status: draft
 normative: true
 depends_on: [02-conventions.md, 06-lifecycle.md, 10-composition.md, 15-manifest.md, 17-standard-library.md]
@@ -27,7 +27,7 @@ Every checkpoint frame carries `timestamp_ns` (`uint64`, simulation time in nano
 | `KinematicControlFrame` | `LON` $\{$`0x01`, `0x02`$\}$, `LAT` $\{$`0x04`, `0x08`$\}$ |
 | `ActuatorControlFrame` | `PEDALS` $\{$`0x01`, `0x02`$\}$, `STEER` $\{$`0x04`, `0x08`$\}$, `GEAR` $\{$`0x10`$\}$ |
 
-**Hold Rule (applied by the runtime):** A frame asserts a unit if it sets any bit of that unit. Before the runtime delivers a frame to a consumer that is not an Arbiter, it fills the frame unit by unit. For a unit that the frame asserts, the unit's bits and fields come from the frame, and a clear bit inside that unit stays clear. For a unit that the frame does not assert, the unit's bits and fields come from the last frame on that input, for the same actor, that asserted it. Before any frame has, they come from the latched frame of the consumer's init context ([§6.2](06-lifecycle.md)). In `IntentFrame`, asserting `COUPLED` discards the held `LON` and `LAT` units, and asserting `LON` or `LAT` discards the held `COUPLED` unit. A discarded unit has its bits clear and its fields zero, so a filled frame never combines `COUPLED` with `LON` or `LAT` (see Valid Masks below). Arbiters receive raw frames ([§10.3](10-composition.md)). Consumers read a field whose bit is clear after filling as not requested. For example, if an intent component emits only a longitudinal deceleration, the controller receives the last lateral target with it.
+**Hold Rule (applied by the runtime):** A frame asserts a unit if it sets any bit of that unit. Before the runtime delivers a frame to a consumer that is not an Arbiter, it fills the frame unit by unit. For a unit that the frame asserts, the unit's bits and fields come from the frame, and a clear bit inside that unit stays clear. For a unit that the frame does not assert, the unit's bits and fields come from the last frame on that input, for the same actor, that asserted it. Before any frame has, they come from the latched frame of the consumer's init context ([§6.2](06-lifecycle.md)). In `IntentFrame`, asserting the `COUPLED` hold unit discards the held `LON` and `LAT` hold units, and asserting the `LON` or `LAT` hold unit discards the held `COUPLED` unit. `AUX` never discards and is never discarded, so a turn-signal-only frame keeps a held trajectory. Hold units, not the field groups above, decide assertion and discard. A discarded unit has its bits clear and its fields zero, so a filled frame never combines `COUPLED` with `LON` or `LAT` (see Valid Masks below). Arbiters receive raw frames ([§10.3](10-composition.md)). Consumers read a field whose bit is clear after filling as not requested. A component that needs a hold unit that is still clear after filling returns `DL_STATUS_ERR_UNSUPPORTED_MODE`. [§17](17-standard-library.md) names the units that each standard component needs. For example, if an intent component emits only a longitudinal deceleration, the controller receives the last lateral target with it.
 
 ## 5.1 Checkpoint 1: `IntentFrame`
 Produced by Stage 1 (Intent) components.
