@@ -1,7 +1,7 @@
 ---
 title: Checkpoint data contracts
 section: 5
-version: 0.67
+version: 0.88
 status: draft
 normative: true
 depends_on: [02-conventions.md, 06-lifecycle.md, 10-composition.md, 15-manifest.md]
@@ -106,8 +106,8 @@ Produced by Stage 3 (Physics) at the end of every simulation step $t + \Delta t$
 * **Resolution of Rear-Axle vs. CG Reference Point:** All pose and twist quantities (`pos_x`, `pos_y`, `pos_z`, `v_lon`, `v_lat`, `a_lon`, `a_lat`) in `KinematicState` are measured at the **rear-axle reference origin** $(x_{\text{ra}}, y_{\text{ra}}, z_{\text{ra}})$. Simultaneously, `slip_angle_beta_cg` stores the sideslip angle at the **Center of Gravity (CG)** $\beta_{\text{cg}}$.
 * **Rigid-Body Transform Between Rear Axle and CG:** Given rear-axle velocities $(v_{\text{lon}}, v_{\text{lat}})$ and yaw rate $\dot{\psi}$, the velocity and sideslip at the CG are related by exact rigid-body kinematics:
   $$v_{x,\text{cg}} = v_{\text{lon}}, \qquad v_{y,\text{cg}} = v_{\text{lat}} + l_r \dot{\psi}, \qquad \beta_{\text{cg}} = \operatorname{atan2}\!\left(\operatorname{sgn}(v_{\text{lon}})\, v_{y,\text{cg}},\ |v_{\text{lon}}|\right)$$
-  with $\operatorname{sgn}(0) = +1$ and $\beta_{\text{cg}} = 0$ when $v_{\text{lon}} = v_{y,\text{cg}} = 0$. This equals $\arctan(v_{y,\text{cg}} / v_{\text{lon}})$ whenever $v_{\text{lon}} \ne 0$, including reverse driving, and stays defined at a standstill.
-  For a non-slipping `KinematicBicycle` (`KS`), rear-axle lateral velocity is genuinely $v_{\text{lat}} = 0$, while yaw rate is $\dot{\psi} = \frac{v_{\text{lon}}}{L}\tan\delta$ and CG sideslip is $\beta_{\text{cg}} = \arctan\!\left(\frac{l_r}{L}\tan\delta\right) \ne 0$ for $v_{\text{lon}} \ne 0$. Reporting rear-axle $v_{\text{lat}} = 0$ alongside the true $\dot{\psi}$ and $\beta_{\text{cg}}$ is physically consistent. It does not by itself make a Tier 0 $\leftrightarrow$ Tier 1/2 swap continuous. [§6.2.4](06-lifecycle.md) defines which fields change during a swap and by how much.
+  with $\operatorname{sgn}(0) = +1$ and $\beta_{\text{cg}} = 0$ when $v_{\text{lon}} = v_{y,\text{cg}} = 0$. $l_r$ is the Tier 1 value. If the actor's `vehicle_spec` has no Tier 1, the CG position is unknown and every producer reports $\beta_{\text{cg}} = 0$. This equals $\arctan(v_{y,\text{cg}} / v_{\text{lon}})$ whenever $v_{\text{lon}} \ne 0$, including reverse driving, and stays defined at a standstill.
+  For a non-slipping `KinematicBicycle` (`KS`), rear-axle lateral velocity is genuinely $v_{\text{lat}} = 0$, while yaw rate is $\dot{\psi} = \frac{v_{\text{lon}}}{L}\tan\delta$ and, with Tier 1 populated, CG sideslip is $\beta_{\text{cg}} = \arctan\!\left(\frac{l_r}{L}\tan\delta\right) \ne 0$ for $v_{\text{lon}} \ne 0$. Reporting rear-axle $v_{\text{lat}} = 0$ alongside the true $\dot{\psi}$ and $\beta_{\text{cg}}$ is physically consistent. It does not by itself make a Tier 0 $\leftrightarrow$ Tier 1/2 swap continuous. [§6.2.4](06-lifecycle.md) defines which fields change during a swap and by how much.
 
 | Field Group | Field Name | Type | Unit | Specification & Semantics |
 | :--- | :--- | :--- | :--- | :--- |

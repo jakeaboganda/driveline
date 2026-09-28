@@ -1,17 +1,17 @@
 ---
 title: Steady-state cornering solution
 section: 8
-version: 0.53
+version: 0.88
 status: draft
 normative: true
-depends_on: [06-lifecycle.md, 13-reference-scenario.md, 14-diagnostics.md]
+depends_on: [05-checkpoints.md, 06-lifecycle.md, 13-reference-scenario.md, 14-diagnostics.md]
 ---
 
 # 8. Steady-State Cornering Solution
 
 Cold init ([§6.2.3](06-lifecycle.md)) and promotion and demotion ([§6.2.4](06-lifecycle.md)) use one steady-state solution. The inputs are $v = v_{\text{lon}}$, the yaw rate $\dot{\psi}$, and the physics tier. The lateral acceleration is $a_y = v \dot{\psi}$.
 
-* **Tier 0 (`KS`), and every tier when $v < 1.0\text{ m/s}$:** $v_{\text{lat,ra}} = 0$, $\delta_{\text{ss}} = \delta_{\text{KS}} = \arctan(L \dot{\psi} / v)$ for $v \ne 0$, and $\delta_{\text{ss}} = 0$ when $v = 0$. The condition $v < 1.0\text{ m/s}$ includes every reverse speed. The slip-angle formulas below are singular as $v \to 0$ and are not defined for reverse driving, so the kinematic solution applies there.
+* **Tier 0 (`KS`), and every tier when $v < 1.0\text{ m/s}$:** $v_{\text{lat,ra}} = 0$, $\delta_{\text{ss}} = \delta_{\text{KS}} = \arctan(L \dot{\psi} / v)$ for $v \ne 0$, and $\delta_{\text{ss}} = 0$ when $v = 0$. $\beta_{\text{cg}}$ follows from the transform of [§5.3](05-checkpoints.md). The condition $v < 1.0\text{ m/s}$ includes every reverse speed. The slip-angle formulas below are singular as $v \to 0$ and are not defined for reverse driving, so the kinematic solution applies there.
 * **Tier 1 and Tier 2 (`ST`, `MB`), linear tires, $v \ge 1.0\text{ m/s}$:**
   $$F_{yf} = m a_y \frac{l_r}{L}, \quad F_{yr} = m a_y \frac{l_f}{L}, \quad \alpha_f = \frac{F_{yf}}{C_{\alpha f}}, \quad \alpha_r = \frac{F_{yr}}{C_{\alpha r}}$$
   $$v_{\text{lat,ra}} = -v \tan\alpha_r, \qquad \delta_{\text{ss}} = \alpha_f + \arctan\!\left(\frac{v_{\text{lat,ra}} + L \dot{\psi}}{v}\right), \qquad \beta_{\text{cg}} = \arctan\!\left(\frac{v_{\text{lat,ra}} + l_r \dot{\psi}}{v}\right)$$

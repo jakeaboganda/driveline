@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.88
+
+* $\beta_{\text{cg}}$ is 0 without Tier 1 and comes from the section 5.3 transform everywhere else. Standard physics reports derivative fields at the new state, so a stopped `DynamicSingleTrack` actor reports no deceleration. The low-speed branch reports the `KinematicBicycle` outputs.
+
 ## 0.87
 
 * Defined one teardown for every run end, including success. It calls terminate only where section 6.1 allows, frees every instantiated instance, orders components within an actor, and continues past errors.
