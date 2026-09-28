@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.161
+
+* Minor fixes: a stopped actor reports no deceleration however the stop rounds, `manual_gear_index` is checked only with `0x10` set, and the radar primary target comes from the slice's kept tracks.
+
 ## 0.160
 
 * Typed `Int` arithmetic and comparison, with truncating division. Literal sums and products take the expected type. `fn` parameters are limited to buffer, prior, and parameter types, with constant arguments, and the `rate_of` window is a constant. Other fixes: `map` and `let` typing, component output types, and the `input` port name for unnamed standard inputs.

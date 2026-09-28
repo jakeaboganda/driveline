@@ -1,7 +1,7 @@
 ---
 title: Standard library
 section: 17
-version: 0.160
+version: 0.161
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 06-lifecycle.md, 08-steady-state.md, 09-abi.md, 11-execution.md, 15-manifest.md]
@@ -48,7 +48,7 @@ Sensors are part of the runtime ([§0](00-conformance.md)). Every standard senso
 | :--- | :--- | :--- | :--- | :--- |
 | `HumanVisualSensor` | `fov: Angle`, `range: Length` | `VisualSlice` | `Windshield` | See below. |
 | `SurroundVisualSensor` | `range: Length` | `VisualSlice` | `Center` | `fov` is $2\pi$. See below. |
-| `MillimeterRadar` | `mount: Mount`, `fov: Angle`, `range: Length = 200m` | `RadarSlice` | `mount` | The primary target is the nearest track, by `range` and then smaller `target_actor_id`, with $x > 0$ and $|y| \le W_{\text{bbox}}/2 + 0.5\text{ m}$ with the ego's $W_{\text{bbox}}$. `primary_target_id` is its `target_actor_id`, `primary_range` its `range`, and `primary_azimuth` its `bearing`. `primary_rcs` is $10\text{ dBsm}$. |
+| `MillimeterRadar` | `mount: Mount`, `fov: Angle`, `range: Length = 200m` | `RadarSlice` | `mount` | The primary target is the nearest of the slice's tracks, by `range` and then smaller `target_actor_id`, with $x > 0$ and $|y| \le W_{\text{bbox}}/2 + 0.5\text{ m}$ with the ego's $W_{\text{bbox}}$. `primary_target_id` is its `target_actor_id`, `primary_range` its `range`, and `primary_azimuth` its `bearing`. `primary_rcs` is $10\text{ dBsm}$. |
 | `MonoCamera` | `mount: Mount`, `fov: Angle`, `range: Length = 120m` | `CameraSlice` | `mount` | `obstacle_confidence` is 1 if a primary target, defined as for the radar, exists and 0 otherwise. `lane_line_confidence` is 1. `d_lane_center_est` is $\sigma \cdot$ `own.frenet_d`. `heading_error_est` is the actor's yaw minus the lane heading in its driving direction, wrapped. |
 | `SurfaceContactSensor` | none | `SurfaceSlice` | none | `mu_fl` through `mu_rr` are $\mu$ at the four contact points: `fl` at $(L, +t/2)$, `fr` at $(L, -t/2)$, `rl` at $(0, +t/2)$, and `rr` at $(0, -t/2)$ in the body frame, with $t$ the Tier 2 track width of that axle (`track_width_f` or `track_width_r`) if present, else $0.85\, W_{\text{bbox}}$. `mu_mean` is their mean. `road_grade`, `road_bank`, and `elevation_z` are map values at the rear-axle origin. |
 
@@ -94,7 +94,7 @@ Both physics components are `OneToOne` and run every tick ([§11](11-execution.m
 1. Update the actuator states $\delta$ and $a$ from the command frame, as below.
 2. Evaluate the derivatives at the state of tick $t$, using the updated $\delta$ and $a$.
 3. Apply one explicit Euler step of length $\Delta t$ to every integrated state.
-4. Clamp $v_{\text{lon}} \leftarrow \max(0, v_{\text{lon}})$. If the clamp changes $v_{\text{lon}}$, also set $a \leftarrow \max(0, a)$, so a stopped actor reports no deceleration. The standard physics does not drive in reverse.
+4. Clamp $v_{\text{lon}} \leftarrow \max(0, v_{\text{lon}})$. If the new $v_{\text{lon}}$ is 0, also set $a \leftarrow \max(0, a)$, so a stopped actor reports no deceleration. The standard physics does not drive in reverse.
 5. Set $Z$ to the map elevation at the new $(X, Y)$, and roll and pitch to 0. The standard physics is planar: neither component applies gravity along the grade or bank.
 6. Report the new state. Reported fields that are derivatives (`yaw_rate` where it is not a state, `a_lon`, `a_lat`) are evaluated at the new state with the $\delta$ and $a$ of steps 1 and 4. `slip_angle_beta_cg` follows [§5.3](05-checkpoints.md), and the map cache is left to the runtime ([§11](11-execution.md)).
 
