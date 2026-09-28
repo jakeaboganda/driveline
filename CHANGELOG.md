@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.171
+
+* Minor fixes: `has_primary_target` is 1 exactly when there is a primary id, and `manual_gear_index` is bounded by `num_gears` in `DRIVE`.
+
 ## 0.170
 
 * Mode B parameters take their names and types from `modelDescription.xml`. A full frame converts to `Lon<T>`/`Lat<T>` where one is expected, but a partial frame becomes `T` only through `+`. `fn` buffer arguments may be per-actor arrays. Other fixes: enum constants take precedence where their type is expected, `select`/`clamp` pass on the expected type, sensor `rate` and `history` are required, and a Mode A body is `;`.

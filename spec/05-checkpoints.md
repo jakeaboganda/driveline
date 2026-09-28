@@ -1,7 +1,7 @@
 ---
 title: Checkpoint data contracts
 section: 5
-version: 0.168
+version: 0.171
 status: draft
 normative: true
 depends_on: [02-conventions.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 15-manifest.md, 17-standard-library.md]
@@ -107,7 +107,7 @@ A component implements trajectories if its manifest's `lat_modes` lists `SPATIOT
 | `steering_wheel_norm` | `float64` | $[-1.0, 1.0]$ | Steering wheel angle normalized against $(\delta_{\max} \cdot i_s)$, positive to the left. |
 | `steering_torque_nm` | `float64` | $\text{N}\cdot\text{m}$ | Optional column steering torque (used when `valid_mask & 0x08` is set). Positive torque turns the wheels left. Setting both `0x04` and `0x08` is invalid. The consumer returns `DL_STATUS_ERR_INVALID_ARG`. |
 | `gear_mode` | `enum` | — | `PARK` ($0$), `REVERSE` ($1$), `NEUTRAL` ($2$), `DRIVE` ($3$). |
-| `manual_gear_index` | `int8` | — | Explicit gear index ($1..$`num_gears`, or $0$ for automatic selection in `DRIVE`). When `0x10` is set, it is $0$ outside `DRIVE`, and any other value makes the consumer return `DL_STATUS_ERR_INVALID_ARG`. Bit `0x10` covers both `gear_mode` and `manual_gear_index`. |
+| `manual_gear_index` | `int8` | — | Explicit gear index ($1..$`num_gears`, or $0$ for automatic selection in `DRIVE`). When `0x10` is set, it is $0$ outside `DRIVE` and at most `num_gears` in `DRIVE` (so $0$ without Tier 2), and any other value makes the consumer return `DL_STATUS_ERR_INVALID_ARG`. Bit `0x10` covers both `gear_mode` and `manual_gear_index`. |
 
 ## 5.3 Checkpoint 3: `KinematicState` & Reference-Point Continuity
 Produced by Stage 3 (Physics) at the end of every simulation step $t + \Delta t$.
