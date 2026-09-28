@@ -1,7 +1,7 @@
 ---
 title: FMU packaging
 section: 7
-version: 0.150
+version: 0.153
 status: draft
 normative: true
 depends_on: [05-checkpoints.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md]
@@ -32,7 +32,7 @@ A `component ... from_fmu("...")` declaration uses one of two modes. The compile
 In both modes:
 
 * **No map callbacks:** An FMU gets no host map callbacks ([§9.2](09-abi.md)), because the callback table holds in-process pointers. Map context reaches an FMU only through its ports, priors, and `own_state`.
-* **Units:** Every bound `Float64` variable that declares a unit must declare one whose conversion to base units has factor 1 and offset 0 and whose base-unit exponents match the dimension of the value bound to it. Any other unit is a compile-time error, so the runtime never converts units.
+* **Units:** Every bound `Float64` variable that declares a unit must declare one whose conversion to base units has factor 1 and offset 0 and whose base-unit exponents match the dimension of the value bound to it, ignoring any `rad` exponent because angles are dimensionless. Any other unit is a compile-time error, so the runtime never converts units.
 * **Times:** `startTime` and `communicationStepSize` are the binary64 values nearest to their nanosecond counts divided by $10^9$. The first `currentCommunicationPoint` is `startTime`, and each later one is the previous one plus the previous `communicationStepSize` in binary64, so the points are contiguous as FMI 3.0 requires.
 
 ## 7.1 Stepping and Output Timing

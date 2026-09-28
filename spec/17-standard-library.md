@@ -1,7 +1,7 @@
 ---
 title: Standard library
 section: 17
-version: 0.152
+version: 0.153
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 06-lifecycle.md, 08-steady-state.md, 09-abi.md, 11-execution.md, 15-manifest.md]
@@ -48,11 +48,11 @@ Sensors are part of the runtime ([§0](00-conformance.md)). Every standard senso
 | :--- | :--- | :--- | :--- | :--- |
 | `HumanVisualSensor` | `fov: Angle`, `range: Length` | `VisualSlice` | `Windshield` | See below. |
 | `SurroundVisualSensor` | `range: Length` | `VisualSlice` | `Center` | `fov` is $2\pi$. See below. |
-| `MillimeterRadar` | `mount: Mount`, `fov: Angle`, `range: Length = 200m` | `RadarSlice` | `mount` | The primary target is the nearest track, by `range`, with $x > 0$ and $|y| \le W_{\text{bbox}}/2 + 0.5\text{ m}$ with the ego's $W_{\text{bbox}}$. `primary_target_id` is its `target_actor_id`, `primary_range` its `range`, and `primary_azimuth` its `bearing`. `primary_rcs` is $10\text{ dBsm}$. |
+| `MillimeterRadar` | `mount: Mount`, `fov: Angle`, `range: Length = 200m` | `RadarSlice` | `mount` | The primary target is the nearest track, by `range` and then smaller `target_actor_id`, with $x > 0$ and $|y| \le W_{\text{bbox}}/2 + 0.5\text{ m}$ with the ego's $W_{\text{bbox}}$. `primary_target_id` is its `target_actor_id`, `primary_range` its `range`, and `primary_azimuth` its `bearing`. `primary_rcs` is $10\text{ dBsm}$. |
 | `MonoCamera` | `mount: Mount`, `fov: Angle`, `range: Length = 120m` | `CameraSlice` | `mount` | `obstacle_confidence` is 1 if a primary target, defined as for the radar, exists and 0 otherwise. `lane_line_confidence` is 1. `d_lane_center_est` is $\sigma \cdot$ `own.frenet_d`. `heading_error_est` is the actor's yaw minus the lane heading in its driving direction, wrapped. |
 | `SurfaceContactSensor` | none | `SurfaceSlice` | none | `mu_fl` through `mu_rr` are $\mu$ at the four contact points: `fl` at $(L, +t/2)$, `fr` at $(L, -t/2)$, `rl` at $(0, +t/2)$, and `rr` at $(0, -t/2)$ in the body frame, with $t$ the Tier 2 track width of that axle (`track_width_f` or `track_width_r`) if present, else $0.85\, W_{\text{bbox}}$. `mu_mean` is their mean. `road_grade`, `road_bank`, and `elevation_z` are map values at the rear-axle origin. |
 
-**`VisualSlice` fields:** `ego_*` come from `own`. `lead_ttc` is the `ttc_lon` of the lead track, which is the track with the smallest positive `rel_x` whose `road_id` and `lane_id` equal the actor's. It is `+INFINITY` if there is none. `left_lane_free` is 1 if the lane to the actor's left in its driving direction exists and has no track whose `road_id` and `lane_id` are that lane's and whose $|$`rel_x`$| \le 20\text{ m}$. That lane is `out_left_lane_id` of `query_lane_topology` at the actor's `(road_id, lane_id, s)` if $\sigma = +1$, and `out_right_lane_id` if $\sigma = -1$ ([§9.2](09-abi.md)). `right_lane_free` works the same way on the other side.
+**`VisualSlice` fields:** `ego_*` come from `own`. `lead_ttc` is the `ttc_lon` of the lead track, which is the track with the smallest positive `rel_x`, then the smaller `target_actor_id`, whose `road_id` and `lane_id` equal the actor's. It is `+INFINITY` if there is none. `left_lane_free` is 1 if the lane to the actor's left in its driving direction exists and has no track whose `road_id` and `lane_id` are that lane's and whose $|$`rel_x`$| \le 20\text{ m}$. That lane is `out_left_lane_id` of `query_lane_topology` at the actor's `(road_id, lane_id, s)` if $\sigma = +1$, and `out_right_lane_id` if $\sigma = -1$ ([§9.2](09-abi.md)). `right_lane_free` works the same way on the other side.
 
 ## 17.3 Stage 1 Components
 
@@ -82,7 +82,7 @@ Output `steer_angle_cmd` $= \delta$ with `valid_mask = 0x04`. On a path that the
 
 **`SimpleDrivetrain`:** Tier 2. Input `ActuatorControlFrame`. Output `KinematicControlFrame`. No parameters. A frame that passes the [§5.2](05-checkpoints.md) checks with `0x08` (steering torque) set returns `DL_STATUS_ERR_UNSUPPORTED_MODE`. After the hold rule, a pedal whose bit is clear counts as 0, and a clear `0x04` gives `steer_angle_cmd` $= 0$. With $v = $ `own.v_lon`:
 * **Gear ratio $i$:** `DRIVE` with `manual_gear_index` $= 0$ uses the highest gear $g$ with $(v / R_{\text{eff}})\, i_g\, i_{\text{fd}} \ge 157.08\text{ rad/s}$, or gear 1 if none qualifies. `DRIVE` with an index $n$ from 1 to `num_gears` uses gear $n$. Any other index, and any index other than 0 with a gear mode other than `DRIVE`, is `DL_STATUS_ERR_INVALID_ARG`. `REVERSE` uses $-i_R$. `NEUTRAL` and `PARK` use no drive force.
-* **Forces:** $F_{\text{drive}} = \text{throttle} \cdot T_{\text{drive,max}}\, i\, i_{\text{fd}} / R_{\text{eff}}$. $F_{\text{brake}} = \text{brake} \cdot T_{\text{brake,max}} / R_{\text{eff}}$, or $T_{\text{brake,max}} / R_{\text{eff}}$ in `PARK`. $F_{\text{res}} = \tfrac{1}{2}\rho_{\text{air}} C_d A_f v |v| + C_{rr}\, m\, g \operatorname{sgn}(v)$, with $\operatorname{sgn}(0) = 0$.
+* **Forces:** $F_{\text{drive}} = \text{throttle} \cdot T_{\text{drive,max}}\, i\, i_{\text{fd}} / R_{\text{eff}}$. $F_{\text{brake}} = \text{brake} \cdot T_{\text{brake,max}} / R_{\text{eff}}$, or $T_{\text{brake,max}} / R_{\text{eff}}$ in `PARK`. $F_{\text{res}} = \tfrac{1}{2}\rho_{\text{air}} C_d A_f v |v| + C_{rr}\, m\, g \operatorname{sgn}(v)$, with $\operatorname{sgn}(0) = 0$ here and in every `SimpleDrivetrain` formula.
 * **Output:** $a = (F_{\text{drive}} - F_{\text{res}} - F_{\text{brake}} \operatorname{sgn}(v)) / m$. If $|v| < 0.01\text{ m/s}$, the brake and rolling resistance instead oppose the drive force: $a = \operatorname{sgn}(F_{\text{drive}}) \max(|F_{\text{drive}}| - F_{\text{brake}} - C_{rr}\, m\, g,\ 0) / m$. `steer_angle_cmd` $= $ `steering_wheel_norm` $\cdot\, \delta_{\max}$. `valid_mask = 0x05`.
 
 **`BrakeOverrideArbiter`:** Tier 0. Inputs `primary` and `secondary`, both `ActuatorControlFrame`. Output `ActuatorControlFrame`. If `secondary.valid_mask & 0x02` is set, `throttle` is the secondary's throttle, or 0 if the secondary's `0x01` is clear, `brake` is the secondary's brake, and the output sets both `0x01` and `0x02`. Otherwise both come from `primary`. The steering fields come from `secondary` if its `0x04` or `0x08` is set, and from `primary` otherwise. The gear fields follow the same rule with `0x10`. The output `valid_mask` holds the bits of the fields taken from each source.
@@ -102,7 +102,7 @@ Both physics components are `OneToOne` and run every tick ([§11](11-execution.m
 
 **Actuator dynamics (both):**
 * **Steering:** If `0x04` is set, $\delta \leftarrow \delta + \operatorname{clamp}(\delta_{\text{cmd}} - \delta, \pm \rho\, \Delta t)$, where $\rho = \dot{\delta}_{\max}$, or $\min(\dot{\delta}_{\max}, |\dot{\delta}_{\text{cmd}}|)$ if `0x08` is also set. If only `0x08` is set, $\delta \leftarrow \delta + \operatorname{clamp}(\dot{\delta}_{\text{cmd}}, \pm\dot{\delta}_{\max})\, \Delta t$. If neither is set, $\delta$ keeps its value. Then $|\delta| \le \delta_{\max}$.
-* **Longitudinal:** If `0x01` is set, $a \leftarrow a_{\text{cmd}}$, or $a$ moves toward $a_{\text{cmd}}$ by at most $|j_{\text{cmd}}|\, \Delta t$ if `0x02` is also set. If only `0x02` is set, $a \leftarrow a + j_{\text{cmd}}\, \Delta t$.
+* **Longitudinal:** If `0x01` is set, $a \leftarrow a_{\text{cmd}}$, or $a$ moves toward $a_{\text{cmd}}$ by at most $|j_{\text{cmd}}|\, \Delta t$ if `0x02` is also set. If only `0x02` is set, $a \leftarrow a + j_{\text{cmd}}\, \Delta t$. If neither is set, $a$ keeps its value.
 
 **`KinematicBicycle`:** Tier 0. Input `KinematicControlFrame`. Output `KinematicState`. With rear-axle speed $v$:
 $$\dot{X} = v\cos\psi, \quad \dot{Y} = v\sin\psi, \quad \dot{\psi} = \frac{v}{L}\tan\delta, \quad \dot{v} = a$$

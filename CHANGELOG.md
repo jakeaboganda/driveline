@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.153
+
+* Minor fixes: `Int * Time` is `Time`, `SimpleDrivetrain` uses sgn(0)=0 throughout, the radar primary target and visual lead track break ties by id, physics holds $a$ with no longitudinal bit, steering commands are positive left, FMU units ignore `rad`, and manifests may declare `Bool` and enum parameters.
+
 ## 0.152
 
 * Sensors are not components and have no manifest. Their §17.2 table is their signature, a sensor call is a `SliceBuffer<S, N>` with a constant `history`, and `sensors` entries must call sensors.
