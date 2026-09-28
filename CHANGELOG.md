@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.89
+
+* `SimpleDrivetrain` treats a pedal with a clear bit as 0 and rejects gear indexes that are out of range. `BrakeOverrideArbiter` asserts both pedal bits when it takes the secondary's pedals.
+
 ## 0.88
 
 * $\beta_{\text{cg}}$ is 0 without Tier 1 and comes from the section 5.3 transform everywhere else. Standard physics reports derivative fields at the new state, so a stopped `DynamicSingleTrack` actor reports no deceleration. The low-speed branch reports the `KinematicBicycle` outputs.

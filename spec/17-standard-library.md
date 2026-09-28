@@ -1,7 +1,7 @@
 ---
 title: Standard library
 section: 17
-version: 0.88
+version: 0.89
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 06-lifecycle.md, 08-steady-state.md, 09-abi.md, 11-execution.md, 15-manifest.md]
@@ -77,12 +77,12 @@ All Stage 2 components are `OneToOne`.
 $$\delta = \operatorname{clamp}\!\left(\arctan(L \kappa_p) + \psi_e + \arctan\!\left(\frac{-k\, e}{k_{\text{soft}} + |\text{own.v\_lon}|}\right),\ \pm\delta_{\max}\right)$$
 Output `steer_angle_cmd` $= \delta$ with `valid_mask = 0x04`. On a path that the rear axle already follows, $e = 0$ and $\psi_e = 0$, so the output is $\arctan(L\kappa_p)$, which is $\delta_{\text{KS}}$ ([§8](08-steady-state.md)). It does not reproduce $\delta_{\text{ss}}$, so a promotion re-trim of `StanleyLat` reports `DL_STATUS_WARN_TRIM_MISMATCH` ([§6.2](06-lifecycle.md)) when $\delta_{\text{ss}}$ and $\delta_{\text{KS}}$ differ by more than its tolerance. A reference path with no points, or a failed `sample_lane_path` call, is `DL_STATUS_ERR_INVALID_ARG`.
 
-**`SimpleDrivetrain`:** Tier 2. Input `ActuatorControlFrame`. Output `KinematicControlFrame`. No parameters. A frame with `0x08` (steering torque) set returns `DL_STATUS_ERR_UNSUPPORTED_MODE`. With $v = $ `own.v_lon`:
-* **Gear ratio $i$:** `DRIVE` with `manual_gear_index` $= 0$ uses the highest gear $g$ with $(v / R_{\text{eff}})\, i_g\, i_{\text{fd}} \ge 157.08\text{ rad/s}$, or gear 1 if none qualifies. `DRIVE` with an index $n$ uses gear $n$. `REVERSE` uses $-i_R$. `NEUTRAL` and `PARK` use no drive force.
+**`SimpleDrivetrain`:** Tier 2. Input `ActuatorControlFrame`. Output `KinematicControlFrame`. No parameters. A frame with `0x08` (steering torque) set returns `DL_STATUS_ERR_UNSUPPORTED_MODE`. After the hold rule, a pedal whose bit is clear counts as 0, and a clear `0x04` gives `steer_angle_cmd` $= 0$. With $v = $ `own.v_lon`:
+* **Gear ratio $i$:** `DRIVE` with `manual_gear_index` $= 0$ uses the highest gear $g$ with $(v / R_{\text{eff}})\, i_g\, i_{\text{fd}} \ge 157.08\text{ rad/s}$, or gear 1 if none qualifies. `DRIVE` with an index $n$ from 1 to `num_gears` uses gear $n$. Any other index, and any index other than 0 with a gear mode other than `DRIVE`, is `DL_STATUS_ERR_INVALID_ARG`. `REVERSE` uses $-i_R$. `NEUTRAL` and `PARK` use no drive force.
 * **Forces:** $F_{\text{drive}} = \text{throttle} \cdot T_{\text{drive,max}}\, i\, i_{\text{fd}} / R_{\text{eff}}$. $F_{\text{brake}} = \text{brake} \cdot T_{\text{brake,max}} / R_{\text{eff}}$, or $T_{\text{brake,max}} / R_{\text{eff}}$ in `PARK`. $F_{\text{res}} = \tfrac{1}{2}\rho_{\text{air}} C_d A_f v |v| + C_{rr}\, m\, g \operatorname{sgn}(v)$, with $\operatorname{sgn}(0) = 0$.
 * **Output:** $a = (F_{\text{drive}} - F_{\text{res}} - F_{\text{brake}} \operatorname{sgn}(v)) / m$. If $|v| < 0.01\text{ m/s}$ and $F_{\text{brake}} \ge |F_{\text{drive}}|$, then $a = 0$. `steer_angle_cmd` $= $ `steering_wheel_norm` $\cdot\, \delta_{\max}$. `valid_mask = 0x05`.
 
-**`BrakeOverrideArbiter`:** Tier 0. Inputs `primary` and `secondary`, both `ActuatorControlFrame`. Output `ActuatorControlFrame`. If `secondary.valid_mask & 0x02` is set, `throttle` is the secondary's throttle, or 0 if the secondary's `0x01` is clear, and `brake` is the secondary's brake. Otherwise both come from `primary`. The steering fields come from `secondary` if its `0x04` or `0x08` is set, and from `primary` otherwise. The gear fields follow the same rule with `0x10`. The output `valid_mask` holds the bits of the fields taken from each source.
+**`BrakeOverrideArbiter`:** Tier 0. Inputs `primary` and `secondary`, both `ActuatorControlFrame`. Output `ActuatorControlFrame`. If `secondary.valid_mask & 0x02` is set, `throttle` is the secondary's throttle, or 0 if the secondary's `0x01` is clear, `brake` is the secondary's brake, and the output sets both `0x01` and `0x02`. Otherwise both come from `primary`. The steering fields come from `secondary` if its `0x04` or `0x08` is set, and from `primary` otherwise. The gear fields follow the same rule with `0x10`. The output `valid_mask` holds the bits of the fields taken from each source.
 
 ## 17.5 Stage 3 Components
 
