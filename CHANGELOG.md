@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.87
+
+* Defined one teardown for every run end, including success. It calls terminate only where section 6.1 allows, frees every instantiated instance, orders components within an actor, and continues past errors.
+
 ## 0.86
 
 * Latched frames prefer the component's own last output, which settles `JerkLimiter`. When no frame of a type has flowed, the runtime builds the frame from the committed state by the cold-init rules.
