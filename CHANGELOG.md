@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.62
+
+* Fixed two stale Stage 3 phrases. Physics runs on every tick, so Phase 3 no longer says "scheduled".
+
 ## 0.61
 
 * The section 5 frame tables use the header's field names: `pos_x`…`yaw` instead of `position` and `orientation`, and they now list `num_waypoints` and `num_traj_points`. `tools/check.py` compares every table with its header struct.
