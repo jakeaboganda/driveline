@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.151
+
+* Lane sections are half-open in $s$, and `sample_lane_path` keeps its direction across a lane-section boundary. It reverses only by a road link's contact point. `frenet_to_world` names its error code.
+
 ## 0.150
 
 * An FMU warm start begins at the component's first scheduled tick, and its communication points are a running binary64 sum from `startTime`, so they stay contiguous.
