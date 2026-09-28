@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.148
+
+* Manifest parameter types map to DSL types (`f64` with a unit is a quantity, `i64` is `Int`, `Time` is `Time`) for every call site. A bare pipe identifier must name a chain.
+
 ## 0.147
 
 * Components with no data path between them run in source order after `fn` substitution, so call, error, and teardown order are total. A Mode B FMU in a re-trim set keeps its last output, and the latched powertrain gear is `DRIVE`.

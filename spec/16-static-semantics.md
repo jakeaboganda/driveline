@@ -1,7 +1,7 @@
 ---
 title: DSL static semantics
 section: 16
-version: 0.146
+version: 0.148
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 07-fmu-packaging.md, 09-abi.md, 10-composition.md, 11-execution.md, 12-grammar.md, 15-manifest.md, 17-standard-library.md]
@@ -68,7 +68,7 @@ Names resolve from the innermost scope outward. A name declared twice in one sco
 * **`+`:** Both branches receive the same pipe input ([§10.2](10-composition.md)).
 * **`Arbitrate(p, s, via: A())`:** `p` and `s` must have the same chain type `Chain<X, T>`. `T` must be `IntentFrame`, `KinematicControlFrame`, or `ActuatorControlFrame` ([§10](10-composition.md)). The arbiter `A` must have exactly the input ports `primary: T` and `secondary: T`, both unbound in the call, and output `T`. The result has type `Chain<X, T>`. If `X` is not `()`, the pipe input goes to both `p` and `s`.
 * **Grouping:** `(P)` with no `+` has the chain type of `P`.
-* **Named chains:** An `Ident` in a pipe expression names a chain declared earlier in the same actor body. Each named chain must be used exactly once, in the actor's `physics` declaration or in another chain.
+* **Named chains:** An `Ident` in a pipe expression must name a chain declared earlier in the same actor body. Any other name there, including a component written without `(...)`, is a compile-time error. Each named chain must be used exactly once, in the actor's `physics` declaration or in another chain.
 * **`fn`:** A call to a `fn` substitutes its body chain. In `A >> f(...)`, the value from `A` goes to the body chain's pipe input, and `fn` parameters are never pipe inputs. `fn` parameters bind by name to values, such as sensor buffers. The body's type must equal the declared `Chain<A, B>`. A `fn` must not call itself, directly or through other `fn`s.
 * **Physics and groups:** An actor's `physics` declaration, and the chain in a `bind` statement, must have type `Chain<(), KinematicState>`.
 * **Component forms:** A `component` declaration has one of these forms. Any other combination is a compile-time error.
@@ -80,7 +80,7 @@ Names resolve from the innermost scope outward. A name declared twice in one sco
   | Mode B FMU ([§7](07-fmu-packaging.md)) | Present | A block with exactly one `bind_inputs` and exactly one `bind_outputs`, and nothing else. |
 
 * **Declaration clauses:** An omitted `required_tier` clause means `required_tier: 0`. Its value must be 0, 1, or 2. An omitted `rate` clause means the base rate ([§11](11-execution.md)).
-* **`param`:** A parameter's type must be a quantity type, `Time`, `Int`, `Bool`, or an enum. Its initializer must have that type and be a constant expression: literals, enum constants, and arithmetic on them, with no names. A call-site argument for a parameter must have the parameter's type, where quantity types match by dimension, and must be a constant expression. An actor's `id` counts as a constant.
+* **`param`:** A parameter's type must be a quantity type, `Time`, `Int`, `Bool`, or an enum. Its initializer must have that type and be a constant expression: literals, enum constants, and arithmetic on them, with no names. A manifest parameter ([§15](15-manifest.md)) of type `f64` with unit $u$ is a quantity of $u$'s dimension, `i64` is `Int`, and `Time` is `Time`. A call-site argument for a parameter, of a declared or a library component, must have the parameter's type, where quantity types match by dimension, and must be a constant expression. An actor's `id` counts as a constant.
 * **`step`:** Its signature must be `step(t: Time, dt: Time) -> T`, with `T` the component's output type. `t` is the tick time and `dt` the component's period ([§9.1](09-abi.md)). The block must return a value of type `T` on every path. `let` names are immutable. Each `{ ... }` block opens a nested scope. A postfix `.name`, `(...)`, or `[...]` that no rule in this section types is a compile-time error.
 * **`bind_inputs`:** Each expression must be a quantity, an `Int`, or a `Bool`. The runtime writes it to the `Float64` pin as its SI value, as the integer's value, or as 1.0 for true and 0.0 for false. Each pin name must be an input variable in the FMU's `modelDescription.xml`.
 * **`bind_outputs`:** `fmu.out("name")` is the value of the named output variable after `fmi3DoStep` ([§7.1](07-fmu-packaging.md)), as a dimensionless quantity. It is allowed only inside `bind_outputs`, and the name must be an output variable of the FMU. In `bind_outputs -> T`, `T` must be the component's output type, and each assigned name must be a field of `T`, assigned at most once. Unassigned fields, including `valid_mask`, follow [§7](07-fmu-packaging.md). Each assignment's value must have the field's type, except that a dimensionless quantity may be assigned to a quantity field and is taken as SI.
