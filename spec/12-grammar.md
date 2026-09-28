@@ -1,7 +1,7 @@
 ---
 title: DSL grammar
 section: 12
-version: 0.53
+version: 0.94
 status: draft
 normative: true
 depends_on: [16-static-semantics.md]
@@ -21,7 +21,8 @@ RateClause       ::= "(" "rate" ":" FreqLit ")"
 TierClause       ::= "(" "required_tier" ":" IntLit ")"
 PortList         ::= PortDecl ("," PortDecl)*
 PortDecl         ::= (Ident ":")? TypeSpec
-TypeSpec         ::= Ident ("<" TypeSpec ("," (TypeSpec | IntLit))* ">")?
+TypeSpec         ::= Ident ("<" TypeArg ("," TypeArg)* ">")?
+TypeArg          ::= TypeSpec | IntLit | "(" ")"
 
 FnDecl           ::= "fn" Ident "(" PortList? ")" "->" TypeSpec "{" "return" PipeExpr ";" "}"
 Block            ::= "{" (ParamDecl | BindInputsBlock | BindOutputsBlock | StepBlock)* "}"

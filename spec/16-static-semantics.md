@@ -1,7 +1,7 @@
 ---
 title: DSL static semantics
 section: 16
-version: 0.75
+version: 0.94
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 07-fmu-packaging.md, 09-abi.md, 10-composition.md, 11-execution.md, 12-grammar.md, 15-manifest.md, 17-standard-library.md]
@@ -17,10 +17,11 @@ depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-
 * **Named quantity types:** `Scalar` (dimensionless), `Angle` (dimensionless), `Length` (m), `Velocity` (m/s), `Acceleration` (m/s²), `Jerk` (m/s³), `AngularVelocity` (1/s), `Frequency` (1/s), `Mass` (kg), `Force` (N), `Torque` (N·m), and `Pressure` (Pa).
 * **`Time`:** A signed 64-bit count of nanoseconds ([§2](02-conventions.md)). It has dimension s but is an integer type.
 * **Other scalar types:** `Int` (signed 64-bit), `Bool`, and `String`.
-* **Structured types:** The checkpoint frames of [§5](05-checkpoints.md), the slice types of [§4.3](04-perception.md), `Timestamped<T>`, `SliceBuffer<T, N>`, `Rate`, and `RouteNodes`. A struct field has the type its table gives. A `float64` field is a quantity with the dimension of its unit column, an integer field is `Int`, a `char[]` field is `String`, and an enum field has its enum type.
+* **Structured types:** The checkpoint frames of [§5](05-checkpoints.md), the slice types of [§4.3](04-perception.md), `Timestamped<T>`, `SliceBuffer<T, N>`, `Rate`, and `RouteNodes`. `Timestamped<T>` has the members `t` (`Time`) and `data` (`T`), and `x.f` means `x.data.f` for every field `f` of `T` ([§4.2](04-perception.md)). A struct field has the type its table gives. A `float64` field is a quantity with the dimension of its unit column, an integer field is `Int`, a `char[]` field is `String`, and an enum field has its enum type.
 * **Enum types:** `LonMode`, `LatMode`, `TurnSignal`, `GearMode`, `InterpMode` (`Interpolate`, `Floor`), and `Mount` (`FrontBumper`, `Windshield`, `Center`), with the constants listed in [§4](04-perception.md), [§5](05-checkpoints.md), and [§17](17-standard-library.md).
 * **`VehicleSpec`:** The type of a `vehicle_spec` name ([§16.6](16-static-semantics.md)). **`OpenDriveMap`:** The type of `load_xodr`, a world-truth type ([§0](00-conformance.md)).
-* **`Chain<A, B>`:** A chain whose pipe input has type `A` and whose output has type `B`. A chain whose head binds every input port by name is a source chain, with type `Chain<(), B>`.
+* **`Chain<A, B>`:** A chain whose pipe input has type `A` and whose output has type `B`. A chain whose head binds every input port by name is a source chain, with type `Chain<(), B>`. `()` is written only as the first argument of `Chain`.
+* **Arrays:** `[T]` is an array of `T`. An array literal has type `[T]` when every element has type `T`. Arrays are allowed only where a signature or rule names an array type: `RouteNodes(nodes: [String])`, `gear_ratios`, and per-actor arguments of a group chain ([§10](10-composition.md)). Any other array literal is a compile-time error.
 * **Actor:** An actor name has the members `id` (`Int`), `state` (`KinematicState`), and `sensors.<name>` (the sensor's `SliceBuffer<T, N>`).
 
 ## 16.2 Literals

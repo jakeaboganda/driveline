@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.94
+
+* Completed the type list: `Timestamped<T>` members, a grammar spelling for `Chain<(), B>`, and array types `[T]` with the places they are allowed.
+
 ## 0.93
 
 * Mode A defines the byte order and float format of every `fmi3Binary` value, and a MIME type for prior ports. Times inside frames are relative to the stamped tick time.
