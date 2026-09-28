@@ -1,7 +1,7 @@
 ---
 title: DSL static semantics
 section: 16
-version: 0.164
+version: 0.167
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 07-fmu-packaging.md, 09-abi.md, 10-composition.md, 11-execution.md, 12-grammar.md, 15-manifest.md, 17-standard-library.md]
@@ -31,14 +31,14 @@ depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-
 * A `QuantityLit` has the dimension of its unit, and its value is converted to SI.
 * A `QuantityLit` with dimension s has type `Time` where the expected type is `Time`. The expected type of an operand of `+`, `-`, or a comparison is the type of the other operand, so `t - 0.1s` is `Time`. When both operands of `+` or `-` are literals, both take the expected type of the whole expression, and in `*` or `/` with an `Int`, the other operand takes it, so `0.1s + 0.08s` and `0.09s * 2` are `Time` where `Time` is expected. Elsewhere it is a quantity. A `Time` literal must be a whole number of nanoseconds.
 * An `IntLit` or `HexLit` has type `Int`. Where a quantity is expected, an `Int` converts to a dimensionless quantity.
-* A `FloatLit` is a dimensionless quantity.
+* A `FloatLit` is a dimensionless quantity, a `StringLit` is a `String`, and a `BoolLit` is a `Bool`.
 
 ## 16.3 Expressions
 
 * A postfix `.name`, `(...)`, or `[...]` that no rule of [§16](16-static-semantics.md) types is a compile-time error, in every expression.
 * `+` and `-` require two `Time` values, which give a `Time`, or two quantities of the same dimension. A `Time` and a quantity of dimension s is a compile-time error, because the result would need rounding to nanoseconds. A literal of dimension s takes `Time` from the other operand ([§16.2](16-static-semantics.md)). `*` and `/` multiply and divide dimensions. `Time * Int`, `Int * Time`, and `Time / Int` are `Time`. When `Time` meets any other operand of `*` or `/`, it converts to a quantity in seconds, so `v * dt` is a `Length`, and `Time / Time` is a dimensionless quantity.
 * `+`, `-`, `*`, and `/` on two `Int` operands give an `Int`. `/` on `Int` or `Time` truncates toward zero, and a zero divisor or an overflow makes the step return `DL_STATUS_ERR_NUMERIC`.
-* Comparisons require two `Int` operands or operands of the same dimension. When a `Time` meets a quantity of dimension s, the `Time` converts to seconds.
+* Comparisons require two `Int` operands or operands of the same dimension. An `Int` operand of `+`, `-`, or a comparison whose other operand is a quantity converts to a dimensionless quantity. When a `Time` meets a quantity of dimension s, the `Time` converts to seconds.
 * `-x` has the type of `x`, and `x` gets the expected type of `-x`, so `-0.1s` is `Time` where `Time` is expected.
 * Comparisons have type `Bool`. `and`, `or`, and `not` take and return `Bool`. `==` and `!=` also accept `Int`, `Bool`, `String`, and enum operands of the same type.
 * The condition of `if`, `on`, and `terminate when` must have type `Bool`.
@@ -61,7 +61,7 @@ Names resolve from the innermost scope outward. A name declared twice in one sco
 * **Imports:** `use std::m::{...}` must name a module of [§17](17-standard-library.md) and components or sensors that its section lists. A sensor or standard component is usable only if imported. Other imports follow [§15.2](15-manifest.md).
 * **Actors:** An actor name is visible in the whole scenario, including before its declaration. `a.sensors.n` may appear only in `a`'s own actor body, in a `bind` statement whose list contains `a`, or in a `splice` whose target belongs to `a`. Any other use is a compile-time error.
 * **World Separation:** `actor.state`, `sim_time`, and calls to `collision` are allowed only in `terminate when` and `on` conditions. `any` is allowed only as the second argument of `collision`. Using them anywhere else, including as a component argument, is a compile-time error. Components see the World only through sensors, priors, host map callbacks, and their own actor's `own_state` ([§1.1](01-scope.md)).
-* **Field Selectors:** The first argument of `rate_of` is a field name of the buffer's slice type, resolved in that type's scope. It must name a top-level `float64` field of the slice type, so track fields inside `tracks[]` cannot be selected. `window` must be an `Int` of at least 1. `Rate.value` has the field's dimension divided by time, and `Rate.valid` is `Bool`.
+* **Field Selectors:** The first argument of `rate_of` is a field name of the buffer's slice type, resolved in that type's scope. It must name a top-level `float64` field of the slice type, so track fields inside `tracks[]` cannot be selected. `window` must be a constant `Int` of at least 1. `Rate.value` has the field's dimension divided by time, and `Rate.valid` is `Bool`.
 * **`spawn`:** Every actor initializer must be a `spawn` call, and `spawn` may appear nowhere else.
 * **Actor IDs:** Every `spawn` must pass `id:` as an `Int` literal of at least 1. IDs must be unique within the scenario. `0` means "no actor" in frame fields such as `gap_target_actor_id`.
 
@@ -95,5 +95,5 @@ Names resolve from the innermost scope outward. A name declared twice in one sco
 * **`environment`:** The block may contain `default_friction = ...;` at most once and any number of `friction_zone(...)` calls ([§17.1](17-standard-library.md)), and nothing else. Every $\mu$ must be a constant expression ([§16.5](16-static-semantics.md)) in $[0, 2]$. A `friction_zone` must name a road of the map and have `s_start` < `s_end`.
 * **Actor bodies:** Names in one actor's `sensors` block are unique, and so are names in its `priors` block. Each `sensors` entry must call a sensor of [§17.2](17-standard-library.md), with named arguments of the types its table gives. A chain may not be named `physics_model`, which [§10.4](10-composition.md) reserves as a splice target. Each prior value must be a `RouteNodes(...)` call with constant arguments, since `RouteNodes` is the only prior type ([§4.1](04-perception.md)).
 * **`vehicle_spec` keys:** The only keys are `tier0`, `tier1`, `tier2`, and `tier3`. `tier0` is required, `tier2` requires `tier1`, and `tier3` requires `tier1`. A present key populates that tier, and the tier rules of [§3](03-vehicle-parameters.md) apply.
-* **Tier 0–2 records:** Each value is a record literal. Its field names must be exactly the member names of `dl_kinematic_params_t`, `dl_single_track_params_t`, or `dl_multibody_params_t` in [`abi/driveline_abi.h`](../abi/driveline_abi.h). Padding members and `num_gears` are excluded. Each value must have the dimension of the unit in that member's header comment. `gear_ratios` is an array literal of 1 to 10 dimensionless values, and `num_gears` is its length.
+* **Tier 0–2 records:** Each value is a record literal. Its field names must be exactly the member names of `dl_kinematic_params_t`, `dl_single_track_params_t`, or `dl_multibody_params_t` in [`abi/driveline_abi.h`](../abi/driveline_abi.h). Padding members and `num_gears` are excluded. Each value must have the dimension of the unit in that member's header comment, where `[-]` means dimensionless. `gear_ratios` is an array literal of 1 to 10 dimensionless values, and `num_gears` is its length.
 * **Tier 3 record:** Fields `deck_type` (`"PACEJKA_TIR"` or `"SOLVER_URI"`), `precedence_mode` (`"SUPPLEMENT_ONLY"` or `"OVERRIDE_TIER1_2"`), and `uri` (a `String`, with the length limit of [§3](03-vehicle-parameters.md)).

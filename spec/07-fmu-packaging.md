@@ -1,7 +1,7 @@
 ---
 title: FMU packaging
 section: 7
-version: 0.165
+version: 0.167
 status: draft
 normative: true
 depends_on: [05-checkpoints.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md]
@@ -51,12 +51,12 @@ The runtime drives an FMU through the [§6](06-lifecycle.md) states with these F
 
 | [§6](06-lifecycle.md) Call | FMU Calls |
 | :--- | :--- |
-| `dl_instantiate` | `fmi3InstantiateCoSimulation`. |
+| `dl_instantiate` | `fmi3InstantiateCoSimulation`. A null instance is `DL_STATUS_ERR_FMU`. |
 | `dl_set_parameters` | Set each parameter by name: a quantity with `fmi3SetFloat64` in SI units, an `Int` with `fmi3SetInt64`, a `Time` with `fmi3SetInt64` in nanoseconds, a `Bool` with `fmi3SetBoolean`, and an enum with `fmi3SetInt64` as its numeric value. A parameter whose FMI variable has another type is a compile-time error. |
 | `dl_configure_structure` | None. A Mode A FMU reads buffer depths from each `dl_slice_buffer_header_t`. |
 | `dl_enter_cold_init` | Initialize at $t = 0$. |
 | `dl_exit_init_mode` | `fmi3ExitInitializationMode`, after cold init, a splice, or a re-trim alike. |
-| `dl_enter_warm_start` (splice) | Initialize at $t_{\text{first}}$, the earliest tick time $t' \ge t$ at which the component is scheduled ([§11](11-execution.md)), where $t$ is the tick after the window, so its first `fmi3DoStep` starts at `startTime`. The new instance has already been instantiated and given its parameters, and the outgoing instance is terminated and freed ([§10](10-composition.md)). |
+| `dl_enter_warm_start` (splice) | Initialize at $t_{\text{first}}$, the earliest tick time $t' \ge t$ at which the component is scheduled ([§11](11-execution.md)), where $t$ is the tick after the window, so its first `fmi3DoStep` starts at `startTime`. The context's `sim_time_ns` stays $t$, the time of the committed state it describes ([§6.2.4](06-lifecycle.md)). The new instance has already been instantiated and given its parameters, and the outgoing instance is terminated and freed ([§10](10-composition.md)). |
 | `dl_enter_warm_start` (re-trim, Mode A only) | `fmi3Reset`, set the parameters again, and initialize at $t_{\text{first}}$, as for a splice, with the re-trim context ([§6.2.4](06-lifecycle.md)). |
 | `dl_do_step` | `fmi3DoStep` as [§7.1](07-fmu-packaging.md) describes. |
 | `dl_terminate` | `fmi3Terminate`. |

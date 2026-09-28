@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.167
+
+* Minor fixes: string and bool literal types, `Int` meeting a quantity in sums and comparisons, a constant `rate_of` window, `FreqLit` sensor rates, `[-]` header units, error codes for `world_to_frenet` and null FMU instances, the FMU context time, the complex-eigenvalue Euler bound, and a §8 typo.
+
 ## 0.166
 
 * A splice window solves all tier-change updates in `actor_id` order before it writes any of them, so a failed solve leaves the committed state unchanged. §10 links the Mode A `OneToOne` rule.
