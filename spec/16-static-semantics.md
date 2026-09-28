@@ -1,7 +1,7 @@
 ---
 title: DSL static semantics
 section: 16
-version: 0.131
+version: 0.136
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 07-fmu-packaging.md, 09-abi.md, 10-composition.md, 11-execution.md, 12-grammar.md, 15-manifest.md, 17-standard-library.md]
@@ -63,12 +63,12 @@ Names resolve from the innermost scope outward. A name declared twice in one sco
 
 ## 16.5 Calls and Chains
 
-* **Component calls** take named arguments only. A named argument is either an input port of the component or a parameter ([§15.4](15-manifest.md)). Builtin functions and constructors take their arguments positionally in the order of their [§17](17-standard-library.md) signature, optionally followed by named arguments. An argument given both ways, or missing without a default, is a compile-time error. `select` and `clamp` need arguments of one type `T`, which for `clamp` must be a quantity type. Only if at least one of those arguments is a quantity does an `Int` argument convert to a dimensionless quantity, so `select(c, 0x03, 0x00)` is an `Int` and `clamp(n, 0, 5)` with an `Int` `n` is a compile-time error. Buffer methods take the arguments of [§4.2](04-perception.md): `at(t_query: Time, mode: InterpMode)` and `rate_of(field, window: Int = 1)`.
-* **Pipe input:** In `A >> B(...)`, the value from `A` goes to the one input port of `B` that the call does not bind by name. If the number of unbound ports is not exactly one, that is a compile-time error. The head of a source chain binds every input port by name. The head of any other chain, and the head of each `+` branch, leaves exactly one port unbound, and that port is the chain's pipe input.
+* **Component calls** take named arguments only. A named argument is either an input port of the component or a parameter ([§15.4](15-manifest.md)). Builtin functions and constructors take zero or more arguments positionally in the order of their [§17](17-standard-library.md) signature, followed by any named arguments. An argument given both ways, or missing without a default, is a compile-time error. `select` and `clamp` need arguments of one type `T`, which for `clamp` must be a quantity type. Only if at least one of those arguments is a quantity does an `Int` argument convert to a dimensionless quantity, so `select(c, 0x03, 0x00)` is an `Int` and `clamp(n, 0, 5)` with an `Int` `n` is a compile-time error. A `SliceBuffer<T, N>` port has exactly the queries of [§4.2](04-perception.md): `latest()`, `b[k]` and `history(k)` with an `Int` `k`, `at(t_query: Time, mode: InterpMode)`, and `rate_of(field, window: Int = 1)`, plus the member `count` (`Int`). A constant `k` outside $[0, N)$ is a compile-time error. A `Timestamped<T>`'s `t` is the sample's `t_ns` as a `Time`.
+* **Pipe input:** In `A >> B(...)` where `B` is a component, the value from `A` goes to the one input port of `B` that the call does not bind by name. If the number of unbound ports is not exactly one, that is a compile-time error. The head of a source chain binds every input port by name. The head of any other chain, and the head of each `+` branch, leaves exactly one port unbound, and that port is the chain's pipe input.
 * **`+`:** Both branches receive the same pipe input ([§10.2](10-composition.md)).
 * **`Arbitrate(p, s, via: A())`:** `p` and `s` must have the same chain type `Chain<X, T>`. `T` must be `IntentFrame`, `KinematicControlFrame`, or `ActuatorControlFrame` ([§10](10-composition.md)). The arbiter `A` must have exactly the input ports `primary: T` and `secondary: T`, both unbound in the call, and output `T`. The result has type `Chain<X, T>`. If `X` is not `()`, the pipe input goes to both `p` and `s`.
 * **Named chains:** An `Ident` in a pipe expression names a chain declared earlier in the same actor body. Each named chain must be used exactly once, in the actor's `physics` declaration or in another chain.
-* **`fn`:** A call to a `fn` substitutes its body chain. `fn` parameters bind by name to values, such as sensor buffers. The body's type must equal the declared `Chain<A, B>`. A `fn` must not call itself, directly or through other `fn`s.
+* **`fn`:** A call to a `fn` substitutes its body chain. In `A >> f(...)`, the value from `A` goes to the body chain's pipe input, and `fn` parameters are never pipe inputs. `fn` parameters bind by name to values, such as sensor buffers. The body's type must equal the declared `Chain<A, B>`. A `fn` must not call itself, directly or through other `fn`s.
 * **Physics and groups:** An actor's `physics` declaration, and the chain in a `bind` statement, must have type `Chain<(), KinematicState>`.
 * **Component forms:** A `component` declaration has one of these forms. Any other combination is a compile-time error.
 

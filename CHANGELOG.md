@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.136
+
+* A `fn` call in a pipe feeds its body's pipe input, which keeps the example's `>> kinematic_coupled_control()` valid. `SliceBuffer` queries have static types and bounds, and builtins may take only named arguments.
+
 ## 0.135
 
 * Only a net tier change across a window triggers a re-trim, and the re-trim set holds only instances that serve the changed actor. Each instance gets init contexts only for the actors it serves. §11 explains why an actor never ties with its group in the Phase 2 order.
