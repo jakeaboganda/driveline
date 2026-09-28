@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.107
+
+* Defined the defaults and range of the `required_tier` and `rate` clauses, `param` types and constant initializers, unary minus typing, and the frame types that `Arbitrate` allows.
+
 ## 0.106
 
 * Defined the measured gap for `GAP_PROFILE` as the track's `rel_x`, the quantity that the gap targets refer to. A missing gap target falls back to `v_ref`.
