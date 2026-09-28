@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.102
+
+* `world_to_frenet` succeeds for every finite point, so the Phase 4 map cache update cannot fail when an actor leaves the road.
+
 ## 0.101
 
 * Defined the splice window. Each statement finishes, from terminate to exit init, before the next starts. One re-trim follows, and it skips new instances. Latched frames come from the outgoing target's boundary, and a replacement holds its latched frame until its first step.
