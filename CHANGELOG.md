@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.78
+
+* Defined the dependency condition once. Interpolation falls back to the older sample only for the dependent fields, not the whole sample. `rate_of` is invalid when no primary target exists.
+
 ## 0.77
 
 * Defined section references that name numbered list items, such as §6.2.4. `tools/check.py` verifies that each referenced item exists.

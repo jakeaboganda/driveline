@@ -1,7 +1,7 @@
 ---
 title: Priors, sensors, and SliceBuffer
 section: 4
-version: 0.74
+version: 0.78
 status: draft
 normative: true
 depends_on: [02-conventions.md, 06-lifecycle.md, 09-abi.md]
@@ -27,7 +27,7 @@ All `SliceBuffer<T, N>` ports enforce deterministic edge-case semantics across f
    * **Early-Tick Clamp ($k \ge \text{count}$):** Before $k+1$ samples have been recorded (e.g., on Tick 0 when $\text{count} == 1$), `buffer[k]` returns the oldest available sample `buffer[count - 1]`. `buffer.count` is the number of valid samples, from $1$ to $N$. A component that must not use clamped samples checks `k < buffer.count` first. Queries do not change the buffer.
 3. `buffer.rate_of(field_selector, window: k = 1) -> Rate`: Finite-difference derivative helper. `Rate` is `{ float64 value; bool valid; }`. With $m = \min(k, \text{count}-1)$:
    $$\text{rate\_of}(f, k) = \begin{cases} \{0.0, \text{false}\} & \text{if } \text{count} < 2 \\ \left\{\dfrac{s[0].f - s[m].f}{s[0].t - s[m].t}, \text{true}\right\} & \text{otherwise} \end{cases}$$
-   `valid` is also false if $f$ has a dependency field ([§4.3](04-perception.md)) whose value differs between $s[0]$ and $s[m]$, because the difference would then span two targets or two roads. Whenever `valid` is false, `value` is $0.0$. The timestamp invariant makes the denominator positive whenever $\text{count} \ge 2$. Consumers must check `valid`. A `value` of $0.0$ with `valid = false` means "no estimate", not "no motion".
+   `valid` is also false if the dependency condition of $f$ ([§4.3](04-perception.md)) fails between $s[0]$ and $s[m]$, because the difference would then span two targets or two roads, or no target at all. Whenever `valid` is false, `value` is $0.0$. The timestamp invariant makes the denominator positive whenever $\text{count} \ge 2$. Consumers must check `valid`. A `value` of $0.0$ with `valid = false` means "no estimate", not "no motion".
 4. `buffer.at(t_query, mode: Interpolate | Floor) -> Timestamped<T>`:
    * **Clamping:** If $t_{\text{query}} \ge s[0].t$, returns $s[0]$. If $t_{\text{query}} \le s[\text{count}-1].t$, returns $s[\text{count}-1]$. `t_query` is a signed `Time` and may be negative. A negative query returns the oldest sample.
    * **`Floor` Mode:** Returns the newest sample $s[k]$ where $s[k].t \le t_{\text{query}}$.
@@ -35,7 +35,7 @@ All `SliceBuffer<T, N>` ports enforce deterministic edge-case semantics across f
      * **`LINEAR`:** $(1 - \alpha) v_{k+1} + \alpha v_k$.
      * **`ANGLE`:** Linear interpolation along the shorter arc, wrapped to $(-\pi, \pi]$.
      * **`HOLD`:** Value from $s[k+1]$. Every integer, enum, flag, and `char[]` field is `HOLD`.
-     * **Road-Relative Fields:** A `LINEAR` field marked with a road dependency (for example `ego_s` depends on `ego_road_id`) is interpolated only when the dependency fields are equal in both samples. Otherwise the whole sample is taken from $s[k+1]$.
+     * **Dependent Fields:** A field with a dependency ([§4.3](04-perception.md)) is interpolated only when its dependency condition holds between $s[k+1]$ and $s[k]$. Otherwise that field takes its value from $s[k+1]$, as its `HOLD` dependency fields do.
      * **Non-Finite Values:** If a `LINEAR` or `ANGLE` field is not finite in either sample, the field takes its value from $s[k+1]$.
      * **Target Track Arrays (`TargetTrack[32]`):** Matched across $s[k+1]$ and $s[k]$ by `target_actor_id`. Tracks present in both samples interpolate field by field under the rules above. Tracks present in only one sample are taken from $s[k+1]$, or dropped if absent from $s[k+1]$.
 
@@ -54,4 +54,4 @@ Driveline defines four standard sensor slice payloads and one track element type
 
 **Interpolation Classes:** Every `float64` field is `LINEAR` unless listed here. Integer, enum, flag, and `char[]` fields are `HOLD`.
 * `ANGLE`: `rel_yaw`, `bearing`, `primary_azimuth`, `heading_error_est`.
-* Road-relative `LINEAR` fields: `ego_s` depends on `ego_road_id`. `ego_d` depends on `ego_road_id` and `ego_lane_id`. `primary_range`, `primary_azimuth`, and `primary_rcs` depend on `primary_target_id`, which must be nonzero and equal in both samples.
+* Dependent fields: `ego_s` depends on `ego_road_id`. `ego_d` depends on `ego_road_id` and `ego_lane_id`. `primary_range`, `primary_azimuth`, and `primary_rcs` depend on `primary_target_id`. The **dependency condition** of a field holds between two samples if each of its dependency fields is equal in both, and `primary_target_id` is also nonzero.
