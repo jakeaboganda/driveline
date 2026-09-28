@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.97
+
+* `any` is a reserved word allowed only as `collision`'s second argument, and `collision` reads the World, so it is allowed only in `on` and `terminate when` conditions.
+
 ## 0.96
 
 * Defined the three valid component forms (native, Mode A, and Mode B), the `step` signature, and the target type of `bind_outputs`.
