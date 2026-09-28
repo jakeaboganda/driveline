@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.106
+
+* Defined the measured gap for `GAP_PROFILE` as the track's `rel_x`, the quantity that the gap targets refer to. A missing gap target falls back to `v_ref`.
+
 ## 0.105
 
 * Mode A binds ports by variable name, and the output is named `output`. FMU parameters use a fixed FMI type for each DSL type, with SI units and nanoseconds for `Time`.

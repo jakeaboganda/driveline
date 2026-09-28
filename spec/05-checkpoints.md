@@ -1,10 +1,10 @@
 ---
 title: Checkpoint data contracts
 section: 5
-version: 0.104
+version: 0.106
 status: draft
 normative: true
-depends_on: [02-conventions.md, 06-lifecycle.md, 10-composition.md, 15-manifest.md]
+depends_on: [02-conventions.md, 06-lifecycle.md, 10-composition.md, 15-manifest.md, 17-standard-library.md]
 ---
 
 # 5. Canonical Checkpoint Data Contracts
@@ -77,7 +77,7 @@ A component implements trajectories if its manifest's `lat_modes` lists `SPATIOT
 
 **Stop Distance:** `s_stop` is the distance along the actor's intended path from its rear-axle origin to the point where the rear-axle origin must stop.
 
-**Measured Gap for `GAP_PROFILE`:** `IntentFrame` carries the gap target and the desired gap. It does not carry the measured gap. A Stage 2 component that tracks `GAP_PROFILE` must declare a `SliceBuffer` input port whose slice type contains `tracks[]`. It reads the measured gap from the track whose `target_actor_id` equals `gap_target_actor_id`.
+**Measured Gap for `GAP_PROFILE`:** `IntentFrame` carries the gap target and the desired gap. It does not carry the measured gap. A Stage 2 component that tracks `GAP_PROFILE` must declare a `SliceBuffer` input port whose slice type contains `tracks[]`. It reads the measured gap $g$ from the track whose `target_actor_id` equals `gap_target_actor_id`: $g$ is that track's `rel_x`, the distance along the sensor's $x$ axis from the mount point to the target's footprint center ([§17.2](17-standard-library.md)). `distance_gap_min` and `time_gap_ref` are targets for this same $g$, so they include the sensor's offset from the front bumper and half the target's length. If no such track exists, the component treats the gap target as absent and tracks `v_ref`.
 
 **Unsupported Modes:** A component's manifest lists the modes it implements ([§15](15-manifest.md)). If a Stage 2 component receives a `lon_mode` or `lat_mode` that it does not implement, `dl_do_step` returns `DL_STATUS_ERR_UNSUPPORTED_MODE`, and the runtime stops the scenario.
 
