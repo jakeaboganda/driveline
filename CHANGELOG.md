@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.117
+
+* Completed expression typing: positional builtin arguments (which the example uses), `Time` in `*` and `/`, `select`/`clamp` unification, record literals only in `vehicle_spec`, the `Actor` and `Lon<T>`/`Lat<T>` types, `std` import checks, and named ports.
+
 ## 0.116
 
 * Promotions in a splice window update the committed state before any statement runs, and every warm-start context for that actor gets the new steering angle. Latched frames are hold-filled. Types a component never saw are built from the committed state. Hold history survives splices. Only Stage 2 arbiters are re-trimmed, and spliced Stage 2 components get the trim check.

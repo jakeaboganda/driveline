@@ -1,7 +1,7 @@
 ---
 title: DSL grammar
 section: 12
-version: 0.97
+version: 0.117
 status: draft
 normative: true
 depends_on: [16-static-semantics.md]
@@ -20,7 +20,7 @@ FmuClause        ::= "from_fmu" "(" StringLit ")"
 RateClause       ::= "(" "rate" ":" FreqLit ")"
 TierClause       ::= "(" "required_tier" ":" IntLit ")"
 PortList         ::= PortDecl ("," PortDecl)*
-PortDecl         ::= (Ident ":")? TypeSpec
+PortDecl         ::= Ident ":" TypeSpec
 TypeSpec         ::= Ident ("<" TypeArg ("," TypeArg)* ">")?
 TypeArg          ::= TypeSpec | IntLit | "(" ")"
 

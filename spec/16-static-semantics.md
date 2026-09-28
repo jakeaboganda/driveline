@@ -1,7 +1,7 @@
 ---
 title: DSL static semantics
 section: 16
-version: 0.108
+version: 0.117
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 07-fmu-packaging.md, 09-abi.md, 10-composition.md, 11-execution.md, 12-grammar.md, 15-manifest.md, 17-standard-library.md]
@@ -22,7 +22,9 @@ depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-
 * **`VehicleSpec`:** The type of a `vehicle_spec` name ([§16.6](16-static-semantics.md)). **`OpenDriveMap`:** The type of `load_xodr`, a world-truth type ([§0](00-conformance.md)).
 * **`Chain<A, B>`:** A chain whose pipe input has type `A` and whose output has type `B`. A chain whose head binds every input port by name is a source chain, with type `Chain<(), B>`. `()` is written only as the first argument of `Chain`.
 * **Arrays:** `[T]` is an array of `T`. An array literal has type `[T]` when every element has type `T`. Arrays are allowed only where a signature or rule names an array type: `RouteNodes(nodes: [String])`, `gear_ratios`, and per-actor arguments of a group chain ([§10](10-composition.md)). Any other array literal is a compile-time error.
-* **Actor:** An actor name has the members `id` (`Int`), `state` (`KinematicState`), and `sensors.<name>` (the sensor's `SliceBuffer<T, N>`).
+* **`Lon<T>` and `Lat<T>`:** Partial frame types ([§10.2](10-composition.md)). They may be a component's output type or a port type.
+* **Records:** A record literal is allowed only as a `vehicle_spec` tier value ([§16.6](16-static-semantics.md)). Any other record literal is a compile-time error.
+* **`Actor`:** The type of an actor name. It has the members `id` (`Int`), `state` (`KinematicState`), and `sensors.<name>` (the sensor's `SliceBuffer<T, N>`).
 
 ## 16.2 Literals
 
@@ -33,7 +35,7 @@ depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-
 
 ## 16.3 Expressions
 
-* `+` and `-` require operands of the same dimension, or two `Time` values. `*` and `/` multiply and divide dimensions. `Time * Int` and `Time / Int` are `Time`.
+* `+` and `-` require operands of the same dimension, or two `Time` values. `*` and `/` multiply and divide dimensions. `Time * Int` and `Time / Int` are `Time`. When `Time` meets any other operand of `*` or `/`, it converts to a quantity in seconds, so `v * dt` is a `Length`, and `Time / Time` is a dimensionless quantity.
 * Comparisons require operands of the same dimension. When a `Time` meets a quantity of dimension s, the `Time` converts to seconds.
 * `-x` has the type of `x`, and `x` gets the expected type of `-x`, so `-0.1s` is `Time` where `Time` is expected.
 * Comparisons have type `Bool`. `and`, `or`, and `not` take and return `Bool`. `==` and `!=` also accept `Int`, `String`, and enum operands of the same type.
@@ -52,13 +54,14 @@ Names resolve from the innermost scope outward. A name declared twice in one sco
 | Actor body | `sensors.<name>`, `priors.<name>`, and the actor's chain names. |
 | Component body | Input port names and `param` names. Inside `bind_inputs` and `step`, also `own_state` (`KinematicState`, the actor's own committed state, [§9.1](09-abi.md)). Inside `step`, also its parameters and `let` names. |
 
+* **Imports:** `use std::m::{...}` must name a module and components of [§17](17-standard-library.md). Other imports follow [§15.2](15-manifest.md).
 * **World Separation:** `actor.state`, `sim_time`, and calls to `collision` are allowed only in `terminate when` and `on` conditions. `any` is allowed only as the second argument of `collision`. Using them anywhere else, including as a component argument, is a compile-time error. Components see the World only through sensors, priors, host map callbacks, and their own actor's `own_state` ([§1.1](01-scope.md)).
 * **Field Selectors:** The first argument of `rate_of` is a field name of the buffer's slice type, resolved in that type's scope. It must name a `float64` field. `window` must be an `Int` of at least 1. `Rate.value` has the field's dimension divided by time, and `Rate.valid` is `Bool`.
 * **Actor IDs:** Every `spawn` must pass `id:` as an `Int` literal of at least 1. IDs must be unique within the scenario. `0` means "no actor" in frame fields such as `gap_target_actor_id`.
 
 ## 16.5 Calls and Chains
 
-* **Component calls** take named arguments only. A named argument is either an input port of the component or a parameter ([§15.4](15-manifest.md)). Builtin functions and constructors take the positional or named arguments that the standard library defines for each of them.
+* **Component calls** take named arguments only. A named argument is either an input port of the component or a parameter ([§15.4](15-manifest.md)). Builtin functions and constructors take their arguments positionally in the order of their [§17](17-standard-library.md) signature, optionally followed by named arguments. An argument given both ways, or missing without a default, is a compile-time error. `select` and `clamp` need arguments of one type `T` after `Int` converts to a dimensionless quantity.
 * **Pipe input:** In `A >> B(...)`, the value from `A` goes to the one input port of `B` that the call does not bind by name. If the number of unbound ports is not exactly one, that is a compile-time error. The head of a source chain binds every input port by name. The head of any other chain, and the head of each `+` branch, leaves exactly one port unbound, and that port is the chain's pipe input.
 * **`+`:** Both branches receive the same pipe input ([§10.2](10-composition.md)).
 * **`Arbitrate(p, s, via: A())`:** `p` and `s` must have the same chain type `Chain<X, T>`. `T` must be `IntentFrame`, `KinematicControlFrame`, or `ActuatorControlFrame` ([§10](10-composition.md)). The arbiter `A` must have exactly the input ports `primary: T` and `secondary: T`, both unbound in the call, and output `T`. The result has type `Chain<X, T>`.
