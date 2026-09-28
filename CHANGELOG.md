@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.158
+
+* `dl_exit_init_mode` maps to `fmi3ExitInitializationMode` after every initialization. This removes a reading that re-initialized warm-started FMUs at $t = 0$. $t_{\text{first}}$ has a precise definition, and Mode B splices initialize there.
+
 ## 0.157
 
 * Minor fixes: the re-trim set is defined by data paths to the physics instance, low-speed `DynamicSingleTrack` reports its clamped acceleration, opposing neighbors don't count as free lanes, the ring layout is in-process only, and a Mode B `valid_mask` that §5 forbids is a compile-time error.
