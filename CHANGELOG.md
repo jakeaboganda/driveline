@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.137
+
+* Minor fixes: latched frames count as the asserting frame for the hold rule, FMU output reading does not shift times, `DynamicSingleTrack` clamps longitudinal acceleration in both regimes, and unused route nodes are zero.
+
 ## 0.136
 
 * A `fn` call in a pipe feeds its body's pipe input, which keeps the example's `>> kinematic_coupled_control()` valid. `SliceBuffer` queries have static types and bounds, and builtins may take only named arguments.

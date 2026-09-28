@@ -1,7 +1,7 @@
 ---
 title: FMU packaging
 section: 7
-version: 0.128
+version: 0.137
 status: draft
 normative: true
 depends_on: [05-checkpoints.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md]
@@ -15,7 +15,7 @@ A `component ... from_fmu("...")` declaration uses one of two modes. The compile
   * Each checkpoint port is an `fmi3Binary` variable with MIME type `application/x-driveline.<checkpoint-type>;version=0.14`. The value is the [§9](09-abi.md) struct layout in the byte order below.
   * Each prior port, such as `RouteNodes`, is an `fmi3Binary` variable with MIME type `application/x-driveline.<prior-type>;version=0.14`, holding its struct (`dl_route_t` for `RouteNodes`). The runtime sets it in initialization mode.
   * Every `fmi3Binary` value uses little-endian byte order and IEEE 754 binary64 for `double`, whatever the host.
-  * Times inside a frame, such as `trajectory` offsets ([§5.1](05-checkpoints.md)), are relative to the `timestamp_ns` that the runtime stamps, which is the tick time $t$ ([§7.1](07-fmu-packaging.md)). The runtime does not shift them.
+  * Times inside a frame, such as `trajectory` offsets ([§5.1](05-checkpoints.md)), are relative to the `timestamp_ns` that the runtime stamps, which is the tick time $t$ ([§7.1](07-fmu-packaging.md)). The runtime does not shift them when it reads the output. Only the hold rule of [§5](05-checkpoints.md) shifts a held trajectory.
   * Each `SliceBuffer` port is an `fmi3Binary` variable with MIME type `application/x-driveline.slice-buffer.<slice-type>;version=0.14`. The value is a `dl_slice_buffer_header_t` followed by `count` entries, newest first. Each entry is a `uint64_t t_ns` followed by the slice struct.
   * Initialization uses the `fmi3Binary` input `dl_init_context` (MIME type `application/x-driveline.init-context;version=0.14`), set in initialization mode ([§7.2](07-fmu-packaging.md)). `is_warm_start` tells cold init from warm start.
   * **Variable names:** Each input port is the FMI variable with the port's manifest name and causality `input`. The output is the single variable named `output` with causality `output`. `dl_init_context` and `own_state` are inputs with those names. A missing variable, or a variable with another type or MIME type, is a compile-time error.
