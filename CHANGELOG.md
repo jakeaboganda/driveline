@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.113
+
+* Tightened physics rules. Jerk limits use $|j_{\text{cmd}}|$, the contact points use each axle's track width, `ttc_lon` is never negative, and `DynamicSingleTrack` states its Euler stability limit.
+
 ## 0.112
 
 * Tightened data rules. Positive steering torque turns left, a port's ring has exactly $N_c$ entries, `at` defines the time of its result, and parameter names fit `dl_param_t`.
