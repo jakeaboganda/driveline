@@ -1,10 +1,10 @@
 ---
 title: Priors, sensors, and SliceBuffer
 section: 4
-version: 0.78
+version: 0.79
 status: draft
 normative: true
-depends_on: [02-conventions.md, 06-lifecycle.md, 09-abi.md]
+depends_on: [00-conformance.md, 02-conventions.md, 06-lifecycle.md, 09-abi.md]
 ---
 
 # 4. Actor Perception: Priors, Sensors, & `SliceBuffer<T, N>`
@@ -12,7 +12,7 @@ depends_on: [02-conventions.md, 06-lifecycle.md, 09-abi.md]
 Pipeline components cannot access the global World state. Actors perceive external reality solely through mounted **Priors** and **Sensors**:
 
 ## 4.1 Priors (`priors`)
-Static or slow-updating contextual memory mounted on the actor:
+Actor-mounted data that does not change during a run ([§0](00-conformance.md)):
 * `RouteNodes`: Ordered array of up to 64 lanes (`dl_route_t`, [§9](09-abi.md)) that the actor intends to drive through. Each node is a `dl_lane_ref_t` `(road_id, lane_id)`. The DSL writes nodes as lane reference strings ([§2](02-conventions.md)).
 
 ## 4.2 Timestamped Ring Buffers (`SliceBuffer<T, N>`)
@@ -44,7 +44,7 @@ Driveline defines four standard sensor slice payloads and one track element type
 
 | Slice Type | C-ABI Struct | Fields & Semantics | ASAM OSI Equivalent |
 | :--- | :--- | :--- | :--- |
-| **`TargetTrack`** *(Element)* | `dl_target_track_t` | `target_actor_id` (`uint64`), `rel_x`, `rel_y`, `rel_z` ($\text{m}$, sensor frame), `rel_vx`, `rel_vy` ($\text{m/s}$), `rel_yaw` ($\text{rad}$), `range` $r$ ($\text{m}$), `bearing` ($\text{rad}$), `ttc_lon` ($\text{s}$, `+INFINITY` when the gap is not closing), `road_id` (`char[64]`), `lane_id` (`int32`), `object_class` (`uint32`), `confidence` ($[0,1]$). | `osi3::DetectedMovingObject` / `osi3::MovingObject` |
+| **`TargetTrack`** *(Element)* | `dl_target_track_t` | `target_actor_id` (`uint64`), `rel_x`, `rel_y`, `rel_z` ($\text{m}$, sensor frame), `rel_vx`, `rel_vy` ($\text{m/s}$), `rel_yaw` ($\text{rad}$), `range` $r$ ($\text{m}$), `bearing` ($\text{rad}$), `ttc_lon` ($\text{s}$, `+INFINITY` when the gap is not closing), `road_id` (`char[64]`), `lane_id` (`int32`), `object_class` (`uint32`, values in the header comment), `confidence` ($[0,1]$). | `osi3::DetectedMovingObject` / `osi3::MovingObject` |
 | **`VisualSlice`** | `dl_visual_slice_t` | `ego_road_id` (`char[64]`), `ego_lane_id` (`int32`), `ego_s`, `ego_d` ($\text{m}$), `left_lane_free`, `right_lane_free` (`uint8`), `lead_ttc` ($\text{s}$, `+INFINITY` when there is no lead vehicle or the gap is not closing), `num_tracks` (`uint32`), `tracks[32]` (`dl_target_track_t`). | `osi3::SensorView` (Host + MovingObjects + LaneBoundary) |
 | **`RadarSlice`** | `dl_radar_slice_t` | `has_primary_target` (`uint8`), `primary_target_id` (`uint64`, 0 when there is none), `primary_range` ($\text{m}$), `primary_azimuth` ($\text{rad}$), `primary_rcs` ($\text{dBsm}$), `num_tracks` (`uint32`), `tracks[32]` (`dl_target_track_t`). | `osi3::RadarSensorView` / `osi3::DetectedMovingObject` |
 | **`CameraSlice`** | `dl_camera_slice_t` | `obstacle_confidence` ($[0,1]$), `lane_line_confidence` ($[0,1]$), `d_lane_center_est` ($\text{m}$), `heading_error_est` ($\text{rad}$), `num_tracks` (`uint32`), `tracks[32]` (`dl_target_track_t`). | `osi3::CameraSensorView` / `osi3::DetectedLaneBoundary` |

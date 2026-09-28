@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.79
+
+* Priors no longer read as slow-updating, matching the section 0 definition. `object_class` points to its values in the header.
+
 ## 0.78
 
 * Defined the dependency condition once. Interpolation falls back to the older sample only for the dependent fields, not the whole sample. `rate_of` is invalid when no primary target exists.
