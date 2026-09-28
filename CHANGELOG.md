@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.165
+
+* The runtime, not physics, writes `KinematicState`'s map cache, and `KinematicState` outputs ignore the physics values. A Mode A output of the wrong length is `DL_STATUS_ERR_FMU`, and inputs are always exact sizes.
+
 ## 0.164
 
 * Builtins live in a prelude scope that user names cannot shadow. Sensors and standard components must be imported from their own section. `spawn` appears only as an actor initializer, and per-actor array elements follow the port's binding and capacity rules.

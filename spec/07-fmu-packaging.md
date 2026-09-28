@@ -1,7 +1,7 @@
 ---
 title: FMU packaging
 section: 7
-version: 0.163
+version: 0.165
 status: draft
 normative: true
 depends_on: [05-checkpoints.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md]
@@ -12,7 +12,7 @@ depends_on: [05-checkpoints.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 1
 A `component ... from_fmu("...")` declaration uses one of two modes. The compiler picks the mode from the declaration. A declaration with `bind_inputs` or `bind_outputs` blocks is Mode B. A declaration without them is Mode A.
 
 * **Mode A (Driveline-Aware FMU):** The FMU implements the FMI 3.0 layered standard `org.driveline.dcm`. It ships a manifest at `extra/org.driveline.dcm/manifest.json` in the format of [§15](15-manifest.md). A Mode A declaration whose FMU has no manifest is a compile-time error.
-  * Each checkpoint port is an `fmi3Binary` variable with MIME type `application/x-driveline.<checkpoint-type>;version=0.14`. The value is the [§9](09-abi.md) struct layout in the byte order below.
+  * Each checkpoint port is an `fmi3Binary` variable with MIME type `application/x-driveline.<checkpoint-type>;version=0.14`. The value is the [§9](09-abi.md) struct layout in the byte order below. An `output` value whose length is not the struct's size is `DL_STATUS_ERR_FMU`, and every input value the runtime sets has exactly its struct's size, or $16 + \text{count} \cdot$ `entry_size` bytes for a `SliceBuffer`.
   * Each prior port, such as `RouteNodes`, is an `fmi3Binary` variable with MIME type `application/x-driveline.<prior-type>;version=0.14`, holding its struct (`dl_route_t` for `RouteNodes`). The runtime sets it in initialization mode.
   * Every `fmi3Binary` value uses little-endian byte order and IEEE 754 binary64 for `double`, whatever the host.
   * Times inside a frame, such as `trajectory` offsets ([§5.1](05-checkpoints.md)), are relative to the `timestamp_ns` that the runtime stamps, which is the tick time $t$ ([§7.1](07-fmu-packaging.md)). The runtime does not shift them when it reads the output. Only the hold rule of [§5](05-checkpoints.md) shifts a held trajectory.

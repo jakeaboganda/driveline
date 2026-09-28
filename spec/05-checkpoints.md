@@ -1,15 +1,15 @@
 ---
 title: Checkpoint data contracts
 section: 5
-version: 0.163
+version: 0.165
 status: draft
 normative: true
-depends_on: [02-conventions.md, 06-lifecycle.md, 10-composition.md, 15-manifest.md, 17-standard-library.md]
+depends_on: [02-conventions.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 15-manifest.md, 17-standard-library.md]
 ---
 
 # 5. Canonical Checkpoint Data Contracts
 
-Every checkpoint frame carries `timestamp_ns` (`uint64`, simulation time in nanoseconds) and `actor_id` (`uint64`). `IntentFrame`, `KinematicControlFrame`, and `ActuatorControlFrame` also carry a `valid_mask` bitmask, so a consumer can tell an asserted `0.0` from a field that the producer does not request. `KinematicState` has no `valid_mask` because physics fills every field.
+Every checkpoint frame carries `timestamp_ns` (`uint64`, simulation time in nanoseconds) and `actor_id` (`uint64`). `IntentFrame`, `KinematicControlFrame`, and `ActuatorControlFrame` also carry a `valid_mask` bitmask, so a consumer can tell an asserted `0.0` from a field that the producer does not request. `KinematicState` has no `valid_mask` because physics fills every field except the header and the map cache, which the runtime writes ([§9.1](09-abi.md)).
 
 **Field Groups:** Each `valid_mask` bit belongs to one field group. The `+` operator ([§10.2](10-composition.md)) uses these groups.
 
