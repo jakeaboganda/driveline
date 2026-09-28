@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.125
+
+* Every latched frame rebuilt after tick 0 uses the committed speed, offset, and wheel angle. A replacement spliced again before it steps passes on its latched frames.
+
 ## 0.124
 
 * `DynamicSingleTrack` sets $r$ and $v_y$ from the kinematic relation whenever the step starts or ends below 1 m/s, so crossing the regime boundary is defined. Steering holds when no steering bit is set, and `sample_step` must be positive.
