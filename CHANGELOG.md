@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.119
+
+* Promotion and demotion keep the rear-axle course angle instead of the yaw, as spawn does, so the actor keeps its path. `StanleyLat`'s re-trim mismatch is then exactly $\delta_{\text{ss}} - \delta_{\text{KS}}$.
+
 ## 0.118
 
 * Dropped `String` parameters, which `dl_param_t` cannot carry. `Bool` and enum parameters pass as integers natively and have a defined FMI type.
