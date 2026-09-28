@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.160
+
+* Typed `Int` arithmetic and comparison, with truncating division. Literal sums and products take the expected type. `fn` parameters are limited to buffer, prior, and parameter types, with constant arguments, and the `rate_of` window is a constant. Other fixes: `map` and `let` typing, component output types, and the `input` port name for unnamed standard inputs.
+
 ## 0.159
 
 * `sample_lane_path` continues through road links and junction connections as well as lane links, the same way the successor rule does.
