@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.98
+
+* `sample_lane_path` continues through the lane link at whichever end it reaches, and handles roads whose reference lines run the other way by keeping `d_offset` on the same side of the path.
+
 ## 0.97
 
 * `any` is a reserved word allowed only as `collision`'s second argument, and `collision` reads the World, so it is allowed only in `on` and `terminate when` conditions.

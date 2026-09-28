@@ -1,7 +1,7 @@
 ---
 title: C-ABI
 section: 9
-version: 0.66
+version: 0.98
 status: draft
 normative: true
 depends_on: [05-checkpoints.md, 06-lifecycle.md, 07-fmu-packaging.md, 11-execution.md]
@@ -32,5 +32,5 @@ The runtime implements these callbacks over the scenario's OpenDRIVE map. A lane
 
 * **`world_to_frenet(X, Y, psi, hint_road_id)`:** Returns the lane whose area contains $(X, Y)$, with `s` on that road's reference line, `d` from that lane's centerline, and `psi_lane`, the lane heading at `s`. If several lanes contain the point, as in a junction, the callback prefers `hint_road_id`, then the lane whose heading is closest to `psi`, then the smallest `(road_id, lane_id)` in byte order. If no lane contains the point, it returns the lane with the nearest centerline, using the same tie-breaks.
 * **`frenet_to_world(road_id, lane_id, s, d)`:** Returns the point at offset `d` from the lane centerline at `s`, `Z` as the road elevation there, and `psi_lane` and `kappa_lane` of the lane centerline at `s`. An `s` outside $[0, \text{road length}]$ is invalid.
-* **`sample_lane_path(road_id, lane_id, s_start, d_offset, ds, count, out)`:** Writes `count` points at $s = s_{\text{start}} + k \cdot ds$. A negative `ds` samples toward decreasing $s$. Each point's heading and curvature are in the sampling direction. When sampling passes the end of the lane in the sampling direction, it continues on the successor lane (toward decreasing $s$, on the predecessor), choosing the smallest `(road_id, lane_id)` if there are several. If there is no successor, the remaining points repeat the last point.
+* **`sample_lane_path(road_id, lane_id, s_start, d_offset, ds, count, out)`:** Writes `count` points at $s = s_{\text{start}} + k \cdot ds$. A negative `ds` samples toward decreasing $s$. Each point's heading and curvature are in the sampling direction. When sampling passes the end of the lane in the sampling direction, it continues on the lane that the OpenDRIVE lane link at that end names: the successor link at the lane's end of greater $s$, and the predecessor link at its end of smaller $s$. If several lanes qualify, it takes the smallest `(road_id, lane_id)`. On the new lane, sampling moves away from the shared end, toward increasing $s$ if the link joins at that road's start and toward decreasing $s$ otherwise. When this reverses the sampling direction relative to $s$, `d_offset` changes sign, so the points stay on the same side of the path. If there is no successor, the remaining points repeat the last point.
 * **`query_lane_topology(road_id, lane_id, s, ...)`:** Returns the neighboring lanes in the lane section that contains `s`. `out_left_lane_id` is the neighbor on the side of increasing lane ID and `out_right_lane_id` the neighbor on the side of decreasing lane ID, skipping lane 0, with 0 meaning none. Successors are the lane's successors as defined above, sorted by `(road_id, lane_id)`. The callback writes at most `max_successors` of them and sets `out_num_successors` to the total.
