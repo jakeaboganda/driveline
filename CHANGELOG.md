@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.157
+
+* Minor fixes: the re-trim set is defined by data paths to the physics instance, low-speed `DynamicSingleTrack` reports its clamped acceleration, opposing neighbors don't count as free lanes, the ring layout is in-process only, and a Mode B `valid_mask` that §5 forbids is a compile-time error.
+
 ## 0.156
 
 * Splice typing compares the pipe-input and output types, and other ports must be bound by name, as in the example's `DynamicSingleTrack` splice. Array literals of constants are constant, which covers the example's `RouteNodes` prior. Other fixes: a computed negative buffer index is an error, `fn` arguments are named, `[]` takes its expected type, and the untyped-postfix rule covers every expression.

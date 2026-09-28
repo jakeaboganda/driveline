@@ -1,7 +1,7 @@
 ---
 title: Priors, sensors, and SliceBuffer
 section: 4
-version: 0.140
+version: 0.157
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 06-lifecycle.md, 09-abi.md, 16-static-semantics.md]
@@ -16,7 +16,7 @@ Actor-mounted data that does not change during a run ([§0](00-conformance.md)):
 * `RouteNodes`: Ordered array of up to 64 lanes (`dl_route_t`, [§9](09-abi.md), with nodes beyond `count` zero-filled) that the actor intends to drive through. Each node is a `dl_lane_ref_t` `(road_id, lane_id)`. The DSL writes nodes as lane reference strings ([§2](02-conventions.md)).
 
 ## 4.2 Timestamped Ring Buffers (`SliceBuffer<T, N>`)
-Every mounted sensor has a compile-time capacity $N \in [1, 64]$ declared in its port signature `SliceBuffer<T, N>`. A sensor with capacity $N_s$ can bind to any component input port expecting `SliceBuffer<T, N_c>` provided $N_s \ge N_c$. The component sees only the port's view: its buffer has `capacity` $= N_c$ and `count` $\le N_c$, holding the newest $\min(\text{count}_s, N_c)$ samples, natively and in Mode A alike. `port_history_depths` in `dl_structural_config_t` gives $N_c$. The runtime lays out the port's samples as a ring of exactly $N_c$ entries, so the ring formula in the header uses `capacity` $= N_c$. Each entry is a `Timestamped<T>` struct containing `{ uint64 t_ns; T data; }`. In the DSL, `slice.t` is the entry's `Time`, and `slice.field` is shorthand for `slice.data.field`. [§9](09-abi.md) defines the memory layout (`dl_slice_buffer_view_t`).
+Every mounted sensor has a compile-time capacity $N \in [1, 64]$ declared in its port signature `SliceBuffer<T, N>`. A sensor with capacity $N_s$ can bind to any component input port expecting `SliceBuffer<T, N_c>` provided $N_s \ge N_c$. The component sees only the port's view: its buffer has `capacity` $= N_c$ and `count` $\le N_c$, holding the newest $\min(\text{count}_s, N_c)$ samples, natively and in Mode A alike. `port_history_depths` in `dl_structural_config_t` gives $N_c$. In process, the runtime lays out the port's samples as a ring of exactly $N_c$ entries, so the ring formula in the header uses `capacity` $= N_c$. Each entry is a `Timestamped<T>` struct containing `{ uint64 t_ns; T data; }`. In the DSL, `slice.t` is the entry's `Time`, and `slice.field` is shorthand for `slice.data.field`. [§9](09-abi.md) defines the memory layout (`dl_slice_buffer_view_t`).
 
 **Timestamp Invariant:** Timestamps in a buffer strictly decrease from $s[0]$ to $s[\text{count}-1]$. The runtime never pushes two samples with the same `t_ns`. Cold initialization ([§6.2](06-lifecycle.md)) relies on this rule.
 
