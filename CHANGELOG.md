@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.129
+
+* String fields compare up to the null. The runtime zeroes the bytes after it and every padding member, so byte comparisons and FMU payloads are deterministic.
+
 ## 0.128
 
 * FMUs get no host map callbacks. Bound FMI variables must use SI units, FMI times are the nearest binary64 seconds, and Mode A values follow the struct layout in little-endian order.
