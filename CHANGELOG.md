@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.155
+
+* `fmi3DoStep` uses the running communication point from §7 Times. At initialization, FMU checkpoint ports hold the latched frames, and buffer ports, `own_state`, and `bind_inputs` read the current state.
+
 ## 0.154
 
 * At a standstill, `SimpleDrivetrain` decelerates toward zero, capped by the brake and rolling resistance, when the drive force cannot overcome them. Under the previous rule a braking car crept forward below 1 cm/s indefinitely.

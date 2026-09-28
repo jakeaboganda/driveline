@@ -1,7 +1,7 @@
 ---
 title: FMU packaging
 section: 7
-version: 0.153
+version: 0.155
 status: draft
 normative: true
 depends_on: [05-checkpoints.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md]
@@ -40,14 +40,14 @@ In both modes:
 Both modes use FMI 3.0 Co-Simulation. On each tick $t$ where the component is scheduled, with period $h = k_{\text{div}} \cdot \Delta t_{\text{base}}$ ([§11](11-execution.md)), the runtime does three things in order:
 
 1. It sets the inputs for tick $t$.
-2. It calls `fmi3DoStep` with `currentCommunicationPoint` $= t$ and `communicationStepSize` $= h$.
+2. It calls `fmi3DoStep` with the `currentCommunicationPoint` of tick $t$ by the Times rule of [§7](07-fmu-packaging.md) and `communicationStepSize` $= h$.
 3. It reads the outputs and uses them as the component's output for tick $t$. An FMI return of `fmi3Warning` counts as `fmi3OK`. Any worse return is `DL_STATUS_ERR_FMU` ([§14](14-diagnostics.md)).
 
 The outputs read in step 3 describe the FMU at $t + h$ computed from inputs held over $[t, t + h)$. An FMU component therefore reacts to its inputs one period later than a native component with the same logic. Scenario authors who compare FMU and native components must account for this delay of $h$.
 
 ## 7.2 Lifecycle Mapping
 
-The runtime drives an FMU through the [§6](06-lifecycle.md) states with these FMI 3.0 calls. "Initialize at $t$" means: call `fmi3EnterInitializationMode` with `startTime` $= t$, set the inputs, and call `fmi3ExitInitializationMode`. A Mode A FMU's inputs are `dl_init_context`, `own_state`, its ports, and its prior variables, so a re-trim after `fmi3Reset` sets the priors again. A Mode B FMU's inputs are the `bind_inputs` expressions evaluated at $t$.
+The runtime drives an FMU through the [§6](06-lifecycle.md) states with these FMI 3.0 calls. "Initialize at $t$" means: call `fmi3EnterInitializationMode` with `startTime` $= t$, set the inputs, and call `fmi3ExitInitializationMode`. A Mode A FMU's inputs are `dl_init_context`, `own_state`, its ports, and its prior variables, so a re-trim after `fmi3Reset` sets the priors again. A Mode B FMU's inputs are the `bind_inputs` expressions. At initialization, each checkpoint port holds the context's latched frame of its type ([§6.2](06-lifecycle.md)), each `SliceBuffer` port holds the actor's latest buffer, and `own_state` and `bind_inputs` read the committed state, as they stand when the runtime initializes the FMU.
 
 | [§6](06-lifecycle.md) Call | FMU Calls |
 | :--- | :--- |
