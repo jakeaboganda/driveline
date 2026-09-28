@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.84
+
+* Defined the re-trim set: every non-`Lon<T>` Stage 2 instance upstream of the new physics component. The trim check skips `Lon<T>` outputs, which carry no steering. A Mode B FMU is skipped with a warning.
+
 ## 0.83
 
 * Section 10 had its own, different summary of `BrakeOverrideArbiter`'s steering rule. It now points to the definition in section 17.
