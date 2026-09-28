@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.85
+
+* A `physics_model` splice of an actor whose physics is a shared group instance is a compile-time error. Per-actor `OneToOne` instances in a group can still be spliced, as the example does.
+
 ## 0.84
 
 * Defined the re-trim set: every non-`Lon<T>` Stage 2 instance upstream of the new physics component. The trim check skips `Lon<T>` outputs, which carry no steering. A Mode B FMU is skipped with a warning.
