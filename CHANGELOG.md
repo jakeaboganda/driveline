@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.67
+
+* Trajectory Exclusivity no longer asks for `lat_mode` under a clear `LAT` bit. Bit `0x08` alone requests a trajectory. The hold rule zeroes discarded units and keeps its memory per actor.
+
 ## 0.66
 
 * A map road ID longer than 63 bytes is a compile-time error, so every callback's road ID fits `char[64]`.

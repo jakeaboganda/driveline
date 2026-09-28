@@ -1,7 +1,7 @@
 ---
 title: Checkpoint data contracts
 section: 5
-version: 0.62
+version: 0.67
 status: draft
 normative: true
 depends_on: [02-conventions.md, 06-lifecycle.md, 10-composition.md, 15-manifest.md]
@@ -27,7 +27,7 @@ Every checkpoint frame carries `timestamp_ns` (`uint64`, simulation time in nano
 | `KinematicControlFrame` | `LON` $\{$`0x01`, `0x02`$\}$, `LAT` $\{$`0x04`, `0x08`$\}$ |
 | `ActuatorControlFrame` | `PEDALS` $\{$`0x01`, `0x02`$\}$, `STEER` $\{$`0x04`, `0x08`$\}$, `GEAR` $\{$`0x10`$\}$ |
 
-**Hold Rule (applied by the runtime):** A frame asserts a unit if it sets any bit of that unit. Before the runtime delivers a frame to a consumer that is not an Arbiter, it fills the frame unit by unit. For a unit that the frame asserts, the unit's bits and fields come from the frame, and a clear bit inside that unit stays clear. For a unit that the frame does not assert, the unit's bits and fields come from the last frame on that input that asserted it. Before any frame has, they come from the latched frame of the consumer's init context ([§6.2](06-lifecycle.md)). In `IntentFrame`, asserting `COUPLED` discards the held `LON` and `LAT` units, and asserting `LON` or `LAT` discards the held `COUPLED` unit, so a filled frame always meets the trajectory exclusivity rule below. Arbiters receive raw frames ([§10.3](10-composition.md)). Consumers read a field whose bit is clear after filling as not requested. For example, if an intent component emits only a longitudinal deceleration, the controller receives the last lateral target with it.
+**Hold Rule (applied by the runtime):** A frame asserts a unit if it sets any bit of that unit. Before the runtime delivers a frame to a consumer that is not an Arbiter, it fills the frame unit by unit. For a unit that the frame asserts, the unit's bits and fields come from the frame, and a clear bit inside that unit stays clear. For a unit that the frame does not assert, the unit's bits and fields come from the last frame on that input, for the same actor, that asserted it. Before any frame has, they come from the latched frame of the consumer's init context ([§6.2](06-lifecycle.md)). In `IntentFrame`, asserting `COUPLED` discards the held `LON` and `LAT` units, and asserting `LON` or `LAT` discards the held `COUPLED` unit. A discarded unit has its bits clear and its fields zero, so a filled frame always meets the trajectory exclusivity rule below. Arbiters receive raw frames ([§10.3](10-composition.md)). Consumers read a field whose bit is clear after filling as not requested. For example, if an intent component emits only a longitudinal deceleration, the controller receives the last lateral target with it.
 
 ## 5.1 Checkpoint 1: `IntentFrame`
 Produced by Stage 1 (Intent) components.
@@ -64,7 +64,7 @@ Produced by Stage 1 (Intent) components.
 | `0x10` | `LAT` | `turn_signal` |
 | `0x08` | `COUPLED` | `num_traj_points`, `trajectory` |
 
-**Trajectory Exclusivity:** If `0x08` is set, `trajectory` governs both longitudinal and lateral motion. Then `lat_mode` must be `SPATIOTEMPORAL_TRAJECTORY`, and `0x01` and `0x02` must be clear. If `0x08` is clear, `lat_mode` must not be `SPATIOTEMPORAL_TRAJECTORY`. Any other combination is invalid, and the consumer returns `DL_STATUS_ERR_INVALID_ARG`.
+**Trajectory Exclusivity:** If `0x08` is set, `trajectory` governs both longitudinal and lateral motion, and `0x01` and `0x02` must be clear. The frame then requests `SPATIOTEMPORAL_TRAJECTORY` by the bit alone, and consumers ignore `lon_mode` and `lat_mode`. If `0x02` is set, `lat_mode` must not be `SPATIOTEMPORAL_TRAJECTORY`. Any other combination is invalid, and the consumer returns `DL_STATUS_ERR_INVALID_ARG`. A component implements trajectories if its manifest's `lat_modes` lists `SPATIOTEMPORAL_TRAJECTORY` ([§15](15-manifest.md)).
 
 **Array Semantics:** `path_points` holds `num_waypoints` entries and `trajectory` holds `num_traj_points` entries, each at most 64. Entries beyond the count are ignored. A count above 64 is invalid. Both arrays are in the World frame and ordered along the direction of travel. Each `trajectory` time $t_k$ is in seconds after the frame's `timestamp_ns`, starts at $t_0 \ge 0$, and strictly increases.
 
