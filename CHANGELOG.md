@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.80
+
+* `StanleyLat` measures its error at the rear axle. At the front axle, the heading error and the curvature term both counted $\delta_{\text{KS}}$, so every curved spawn failed the trim check. An empty path is `DL_STATUS_ERR_INVALID_ARG`.
+
 ## 0.79
 
 * Priors no longer read as slow-updating, matching the section 0 definition. `object_class` points to its values in the header.

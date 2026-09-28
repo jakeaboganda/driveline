@@ -1,7 +1,7 @@
 ---
 title: Standard library
 section: 17
-version: 0.71
+version: 0.80
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 06-lifecycle.md, 08-steady-state.md, 09-abi.md, 11-execution.md, 15-manifest.md]
@@ -73,9 +73,9 @@ All Stage 2 components are `OneToOne`.
 
 **`JerkLimiter`:** Tier 0. Input and output `Lon<KinematicControlFrame>`. Parameter `max_jerk: f64 [m/s^3]`. Output $a_k = a_{k-1} + \operatorname{clamp}(a_{\text{in}} - a_{k-1}, \pm \text{max\_jerk} \cdot dt)$. Initialization sets $a_{k-1}$ to the latched `a_lon_cmd`. Output `a_lon_cmd` $= a_k$ with `valid_mask = 0x01`.
 
-**`StanleyLat`:** Tier 0. Input `IntentFrame`. Output `Lat<KinematicControlFrame>`. Parameters `k: f64 [1]`, `sample_step: f64 [m]`, `k_soft: f64 [m/s] = 1.0`. Modes `LANE_OFFSET`, `POLYLINE_PATH`. The reference path is `path_points` for `POLYLINE_PATH`. For `LANE_OFFSET`, it is 64 points from `sample_lane_path` on the target lane at `d_offset = d_ref`, with `ds` $= \sigma_t \cdot$ `sample_step`, where $\sigma_t$ is the target lane's direction sign. Sampling starts at `s_start = own.frenet_s` if the target road is the actor's road, and otherwise at the start of the target lane in its driving direction. The front-axle point is $(x_f, y_f) = (X + L\cos\psi,\ Y + L\sin\psi)$. Let $p = (x_p, y_p)$ be the path point nearest to it, with the smallest index winning ties, and let $\psi_p$ and $\kappa_p$ be its heading and curvature. Then $e = -\sin\psi_p\,(x_f - x_p) + \cos\psi_p\,(y_f - y_p)$ is the lateral offset of the front axle, positive to the path's left, and $\psi_e = \psi_p - \psi$, wrapped to $(-\pi, \pi]$. Then
+**`StanleyLat`:** Tier 0. Input `IntentFrame`. Output `Lat<KinematicControlFrame>`. Parameters `k: f64 [1]`, `sample_step: f64 [m]`, `k_soft: f64 [m/s] = 1.0`. Modes `LANE_OFFSET`, `POLYLINE_PATH`. The reference path is `path_points` for `POLYLINE_PATH`. For `LANE_OFFSET`, it is 64 points from `sample_lane_path` on the target lane at `d_offset = d_ref`, with `ds` $= \sigma_t \cdot$ `sample_step`, where $\sigma_t$ is the target lane's direction sign. Sampling starts at `s_start = own.frenet_s` if the target road is the actor's road, and otherwise at the start of the target lane in its driving direction. The reference point is the rear-axle origin $(X, Y)$. Let $p = (x_p, y_p)$ be the path point nearest to it, with the smallest index winning ties, and let $\psi_p$ and $\kappa_p$ be its heading and curvature. Then $e = -\sin\psi_p\,(X - x_p) + \cos\psi_p\,(Y - y_p)$ is the lateral offset of the rear axle, positive to the path's left, and $\psi_e = \psi_p - \psi$, wrapped to $(-\pi, \pi]$. Then
 $$\delta = \operatorname{clamp}\!\left(\arctan(L \kappa_p) + \psi_e + \arctan\!\left(\frac{-k\, e}{k_{\text{soft}} + |\text{own.v\_lon}|}\right),\ \pm\delta_{\max}\right)$$
-Output `steer_angle_cmd` $= \delta$ with `valid_mask = 0x04`. The curvature term reproduces $\delta_{\text{KS}}$ ([§8](08-steady-state.md)) on a path it already follows.
+Output `steer_angle_cmd` $= \delta$ with `valid_mask = 0x04`. On a path that the rear axle already follows, $e = 0$ and $\psi_e = 0$, so the output is $\arctan(L\kappa_p)$, which is $\delta_{\text{KS}}$ ([§8](08-steady-state.md)). It does not reproduce $\delta_{\text{ss}}$, so a promotion re-trim of `StanleyLat` reports `DL_STATUS_WARN_TRIM_MISMATCH` ([§6.2](06-lifecycle.md)) when $\delta_{\text{ss}}$ and $\delta_{\text{KS}}$ differ by more than its tolerance. A reference path with no points, or a failed `sample_lane_path` call, is `DL_STATUS_ERR_INVALID_ARG`.
 
 **`SimpleDrivetrain`:** Tier 2. Input `ActuatorControlFrame`. Output `KinematicControlFrame`. No parameters. A frame with `0x08` (steering torque) set returns `DL_STATUS_ERR_UNSUPPORTED_MODE`. With $v = $ `own.v_lon`:
 * **Gear ratio $i$:** `DRIVE` with `manual_gear_index` $= 0$ uses the highest gear $g$ with $(v / R_{\text{eff}})\, i_g\, i_{\text{fd}} \ge 157.08\text{ rad/s}$, or gear 1 if none qualifies. `DRIVE` with an index $n$ uses gear $n$. `REVERSE` uses $-i_R$. `NEUTRAL` and `PARK` use no drive force.
