@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.118
+
+* Dropped `String` parameters, which `dl_param_t` cannot carry. `Bool` and enum parameters pass as integers natively and have a defined FMI type.
+
 ## 0.117
 
 * Completed expression typing: positional builtin arguments (which the example uses), `Time` in `*` and `/`, `select`/`clamp` unification, record literals only in `vehicle_spec`, the `Actor` and `Lon<T>`/`Lat<T>` types, `std` import checks, and named ports.

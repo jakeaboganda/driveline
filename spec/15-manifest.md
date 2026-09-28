@@ -1,7 +1,7 @@
 ---
 title: Component manifests and packaging
 section: 15
-version: 0.76
+version: 0.118
 status: draft
 normative: true
 depends_on: [00-conformance.md, 03-vehicle-parameters.md, 07-fmu-packaging.md, 10-composition.md, 12-grammar.md, 17-standard-library.md]
@@ -51,4 +51,4 @@ A manifest is one UTF-8 JSON object with these members. Every member is required
 
 ## 15.4 Parameter Passing
 
-At each call site, the compiler checks every named argument that is not an input port against `parameters`. An unknown name, a missing mandatory parameter, or a unit whose dimension differs from `unit` is a compile-time error. The runtime passes each parameter through `dl_set_parameters` in SI units. An `f64` parameter becomes `type = 0` with the SI value. An `i64` parameter becomes `type = 1`. A `Time` parameter becomes `type = 1` with the value in nanoseconds.
+At each call site, the compiler checks every named argument that is not an input port against `parameters`. An unknown name, a missing mandatory parameter, or a unit whose dimension differs from `unit` is a compile-time error. The runtime passes each parameter through `dl_set_parameters` in SI units. An `f64` parameter becomes `type = 0` with the SI value. An `i64` parameter becomes `type = 1`. A `Time` parameter becomes `type = 1` with the value in nanoseconds. A declared component's `Bool` parameter becomes `type = 1` with 0 or 1, and an enum parameter becomes `type = 1` with the enum's numeric value.

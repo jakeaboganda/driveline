@@ -1,7 +1,7 @@
 ---
 title: FMU packaging
 section: 7
-version: 0.105
+version: 0.118
 status: draft
 normative: true
 depends_on: [05-checkpoints.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md]
@@ -46,7 +46,7 @@ The runtime drives an FMU through the [§6](06-lifecycle.md) states with these F
 | [§6](06-lifecycle.md) Call | FMU Calls |
 | :--- | :--- |
 | `dl_instantiate` | `fmi3InstantiateCoSimulation`. |
-| `dl_set_parameters` | Set each parameter by name: a quantity with `fmi3SetFloat64` in SI units, an `Int` with `fmi3SetInt64`, a `Time` with `fmi3SetInt64` in nanoseconds, and a `Bool` with `fmi3SetBoolean`. A parameter whose FMI variable has another type is a compile-time error. |
+| `dl_set_parameters` | Set each parameter by name: a quantity with `fmi3SetFloat64` in SI units, an `Int` with `fmi3SetInt64`, a `Time` with `fmi3SetInt64` in nanoseconds, a `Bool` with `fmi3SetBoolean`, and an enum with `fmi3SetInt64` as its numeric value. A parameter whose FMI variable has another type is a compile-time error. |
 | `dl_configure_structure` | None. A Mode A FMU reads buffer depths from each `dl_slice_buffer_header_t`. |
 | `dl_enter_cold_init`, `dl_exit_init_mode` | Initialize at $t = 0$. |
 | `dl_enter_warm_start` (splice) | Initialize at $t_{\text{splice}}$. The new instance has already been instantiated and given its parameters, and the outgoing instance is terminated and freed ([§10](10-composition.md)). |
