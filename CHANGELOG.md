@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.93
+
+* Mode A defines the byte order and float format of every `fmi3Binary` value, and a MIME type for prior ports. Times inside frames are relative to the stamped tick time.
+
 ## 0.92
 
 * `turn_signal` has its own `AUX` hold unit, so a trajectory frame can signal and a turn-signal-only frame no longer discards a held trajectory. It stays in the `LAT` field group for `+`.
