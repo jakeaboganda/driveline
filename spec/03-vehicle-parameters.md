@@ -1,7 +1,7 @@
 ---
 title: Vehicle parameter tiers
 section: 3
-version: 0.53
+version: 0.69
 status: draft
 normative: true
 depends_on: [06-lifecycle.md, 08-steady-state.md, 15-manifest.md]
@@ -31,3 +31,4 @@ Tiers 0–2 describe a two-axle vehicle with a steered front axle and four wheel
    * `SUPPLEMENT_ONLY`: The deck adds behavior that Tiers 1–2 do not describe, such as tire force beyond the linear region. Where the deck and Tiers 1–2 describe the same quantity, the Tier 1–2 value applies. A physics component that does not support the deck ignores it.
    * `OVERRIDE_TIER1_2`: Inside a supporting physics component, deck values replace Tier 1–2 values for every quantity the deck defines. Binding a physics component that does not support the deck is a compile-time error.
    * **Never Overridden:** Tier 0 geometry, which World collision checks use, and the Tier 1 values that the steady-state solve of [§8](08-steady-state.md) uses.
+6. **Runtime Encoding:** The runtime passes each actor's `vehicle_spec` as `dl_vehicle_spec_t`. Bit $k$ of `populated_tiers_mask` is set if and only if Tier $k$ is populated. Every field of an unpopulated tier is zero. `num_gears` is the number of `gear_ratios` values, and the unused entries are zero. `deck_type` and `precedence_mode` hold the header's numeric values for the enum names. `uri` holds the path after resolution against the scenario directory, and a resolved path longer than 255 bytes is a compile-time error.

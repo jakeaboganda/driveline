@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.69
+
+* Defined how the runtime encodes `vehicle_spec`: `populated_tiers_mask`, zeroed absent tiers, `num_gears`, Tier 3 enum values, and the resolved `uri`. `tier2` and `tier3` require `tier1`.
+
 ## 0.68
 
 * A conforming runtime also follows sections 4, 5, 7, and 14, and provides the section 17 standard library.
