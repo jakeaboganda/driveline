@@ -1,7 +1,7 @@
 ---
 title: DSL static semantics
 section: 16
-version: 0.167
+version: 0.170
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 07-fmu-packaging.md, 09-abi.md, 10-composition.md, 11-execution.md, 12-grammar.md, 15-manifest.md, 17-standard-library.md]
@@ -22,7 +22,7 @@ depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-
 * **`VehicleSpec`:** The type of a `vehicle_spec` name ([§16.6](16-static-semantics.md)). **`OpenDriveMap`:** The type of `load_xodr`, a world-truth type ([§0](00-conformance.md)).
 * **`Chain<A, B>`:** A chain whose pipe input has type `A` and whose output has type `B`. A chain whose head binds every input port by name is a source chain, with type `Chain<(), B>`. `()` is written only as the first argument of `Chain`.
 * **Arrays:** `[T]` is an array of `T`. An array literal has type `[T]` when every element has type `T`, and `[]` takes its type from the expected array type. Arrays are allowed only where a signature or rule names an array type: `RouteNodes(nodes: [String])`, `gear_ratios`, and per-actor arguments of a group chain ([§10](10-composition.md)). Any other array literal is a compile-time error.
-* **`Lon<T>` and `Lat<T>`:** Partial frame types ([§10.2](10-composition.md)), where `T` is `IntentFrame` or `KinematicControlFrame`. They may be a component's output type, a port type, or a `Chain` type argument.
+* **`Lon<T>` and `Lat<T>`:** Partial frame types ([§10.2](10-composition.md)), where `T` is `IntentFrame` or `KinematicControlFrame`. They may be a component's output type, a port type, or a `Chain` type argument. A value of type `T` converts to `Lon<T>` or `Lat<T>` where one is expected, as a `step` result or at a port, and the runtime clears the other group's bits. A partial frame converts to `T` only through `+`.
 * **Records:** A record literal is allowed only as a `vehicle_spec` tier value ([§16.6](16-static-semantics.md)). Any other record literal is a compile-time error.
 * **`Actor`:** The type of an actor name. It has the members `id` (`Int`), `state` (`KinematicState`), and `sensors.<name>` (the sensor's `SliceBuffer<T, N>`).
 
@@ -42,7 +42,7 @@ depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-
 * `-x` has the type of `x`, and `x` gets the expected type of `-x`, so `-0.1s` is `Time` where `Time` is expected.
 * Comparisons have type `Bool`. `and`, `or`, and `not` take and return `Bool`. `==` and `!=` also accept `Int`, `Bool`, `String`, and enum operands of the same type.
 * The condition of `if`, `on`, and `terminate when` must have type `Bool`.
-* An unqualified enum constant, such as `Interpolate`, is allowed where the expected type is that enum. Elsewhere it must be qualified, as in `GearMode::DRIVE`.
+* An unqualified enum constant, such as `Interpolate`, is allowed where the expected type is that enum, and there it takes precedence over any other name. The arguments of `select` and `clamp` get the call's expected type. Elsewhere it must be qualified, as in `GearMode::DRIVE`.
 * A dimension mismatch, or an operand of the wrong type, is a compile-time error.
 
 ## 16.4 Names and Scopes
@@ -73,7 +73,7 @@ Names resolve from the innermost scope outward. A name declared twice in one sco
 * **`Arbitrate(p, s, via: A())`:** `p` and `s` must have the same chain type `Chain<X, T>`. `T` must be `IntentFrame`, `KinematicControlFrame`, or `ActuatorControlFrame` ([§10](10-composition.md)). The arbiter `A` must have exactly the input ports `primary: T` and `secondary: T`, both unbound in the call, and output `T`. The result has type `Chain<X, T>`. If `X` is not `()`, the pipe input goes to both `p` and `s`.
 * **Grouping:** `(P)` with no `+` has the chain type of `P`.
 * **Named chains:** An `Ident` in a pipe expression must name a chain declared earlier in the same actor body. Any other name there, including a component written without `(...)`, is a compile-time error. Each named chain must be used exactly once, in the actor's `physics` declaration or in another chain.
-* **`fn`:** A call to a `fn` substitutes its body chain. In `A >> f(...)`, the value from `A` goes to the body chain's pipe input, and `fn` parameters are never pipe inputs. `fn` parameters bind by name, never positionally, to values of a `SliceBuffer` type, a prior type, or a parameter type, such as sensor buffers. A parameter-type argument must be a constant expression, and inside the body its name counts as one. The body's type must equal the declared `Chain<A, B>`. A `fn` must not call itself, directly or through other `fn`s.
+* **`fn`:** A call to a `fn` substitutes its body chain. In `A >> f(...)`, the value from `A` goes to the body chain's pipe input, and `fn` parameters are never pipe inputs. `fn` parameters bind by name, never positionally, to values of a `SliceBuffer` type, a prior type, or a parameter type, such as sensor buffers. A parameter-type argument must be a constant expression, and inside the body its name counts as one. In a group chain, a `SliceBuffer` argument may be a per-actor array when the parameter reaches only input ports, by the Per-Actor Arguments rule of [§10](10-composition.md). The body's type must equal the declared `Chain<A, B>`. A `fn` must not call itself, directly or through other `fn`s.
 * **Physics and groups:** An actor's `physics` declaration, and the chain in a `bind` statement, must have type `Chain<(), KinematicState>`.
 * **Component forms:** A `component` declaration has one of these forms. Any other combination is a compile-time error.
 
@@ -93,7 +93,7 @@ Names resolve from the innermost scope outward. A name declared twice in one sco
 
 * **World statements:** A scenario has exactly one `map` of type `OpenDriveMap`, exactly one `timestep`, a `Time` above zero, at most one `seed` (an `Int` from 0 to $2^{63} - 1$), and at most one `environment`.
 * **`environment`:** The block may contain `default_friction = ...;` at most once and any number of `friction_zone(...)` calls ([§17.1](17-standard-library.md)), and nothing else. Every $\mu$ must be a constant expression ([§16.5](16-static-semantics.md)) in $[0, 2]$. A `friction_zone` must name a road of the map and have `s_start` < `s_end`.
-* **Actor bodies:** Names in one actor's `sensors` block are unique, and so are names in its `priors` block. Each `sensors` entry must call a sensor of [§17.2](17-standard-library.md), with named arguments of the types its table gives. A chain may not be named `physics_model`, which [§10.4](10-composition.md) reserves as a splice target. Each prior value must be a `RouteNodes(...)` call with constant arguments, since `RouteNodes` is the only prior type ([§4.1](04-perception.md)).
+* **Actor bodies:** Names in one actor's `sensors` block are unique, and so are names in its `priors` block. Each `sensors` entry must call a sensor of [§17.2](17-standard-library.md), with named arguments of the types its table gives. `rate` and `history` are required. A chain may not be named `physics_model`, which [§10.4](10-composition.md) reserves as a splice target. Each prior value must be a `RouteNodes(...)` call with constant arguments, since `RouteNodes` is the only prior type ([§4.1](04-perception.md)).
 * **`vehicle_spec` keys:** The only keys are `tier0`, `tier1`, `tier2`, and `tier3`. `tier0` is required, `tier2` requires `tier1`, and `tier3` requires `tier1`. A present key populates that tier, and the tier rules of [§3](03-vehicle-parameters.md) apply.
 * **Tier 0–2 records:** Each value is a record literal. Its field names must be exactly the member names of `dl_kinematic_params_t`, `dl_single_track_params_t`, or `dl_multibody_params_t` in [`abi/driveline_abi.h`](../abi/driveline_abi.h). Padding members and `num_gears` are excluded. Each value must have the dimension of the unit in that member's header comment, where `[-]` means dimensionless. `gear_ratios` is an array literal of 1 to 10 dimensionless values, and `num_gears` is its length.
 * **Tier 3 record:** Fields `deck_type` (`"PACEJKA_TIR"` or `"SOLVER_URI"`), `precedence_mode` (`"SUPPLEMENT_ONLY"` or `"OVERRIDE_TIER1_2"`), and `uri` (a `String`, with the length limit of [§3](03-vehicle-parameters.md)).

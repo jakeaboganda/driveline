@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.170
+
+* Mode B parameters take their names and types from `modelDescription.xml`. A full frame converts to `Lon<T>`/`Lat<T>` where one is expected, but a partial frame becomes `T` only through `+`. `fn` buffer arguments may be per-actor arrays. Other fixes: enum constants take precedence where their type is expected, `select`/`clamp` pass on the expected type, sensor `rate` and `history` are required, and a Mode A body is `;`.
+
 ## 0.169
 
 * When several calls fail, the reported error is the first in §11 order, so parallel and sequential runtimes agree. Other fixes: the §14 `ERR_FMU` row lists every trigger, a spawn at or past the center of curvature is an error, and the KS heading clause reads as either-or.
