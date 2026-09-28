@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.109
+
+* At standstill, cold init steers to the spawn curvature and a tier swap keeps the committed steering angle, instead of snapping to 0.
+
 ## 0.108
 
 * Defined what an `environment` block may contain and the range of $\mu$. The `spawn` and sensor signatures type `spec` and `mount`.
