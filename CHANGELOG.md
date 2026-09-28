@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.138
+
+* The pre-Pass-1 calls run per instance in Phase 2 order, so the first error and the teardown set are fixed. A re-trimmed rate-divided component holds its latched frame until its next step.
+
 ## 0.137
 
 * Minor fixes: latched frames count as the asserting frame for the hold rule, FMU output reading does not shift times, `DynamicSingleTrack` clamps longitudinal acceleration in both regimes, and unused route nodes are zero.
