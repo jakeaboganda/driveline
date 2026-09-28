@@ -1,7 +1,7 @@
 ---
 title: Standard library
 section: 17
-version: 0.153
+version: 0.154
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 06-lifecycle.md, 08-steady-state.md, 09-abi.md, 11-execution.md, 15-manifest.md]
@@ -83,7 +83,7 @@ Output `steer_angle_cmd` $= \delta$ with `valid_mask = 0x04`. On a path that the
 **`SimpleDrivetrain`:** Tier 2. Input `ActuatorControlFrame`. Output `KinematicControlFrame`. No parameters. A frame that passes the [§5.2](05-checkpoints.md) checks with `0x08` (steering torque) set returns `DL_STATUS_ERR_UNSUPPORTED_MODE`. After the hold rule, a pedal whose bit is clear counts as 0, and a clear `0x04` gives `steer_angle_cmd` $= 0$. With $v = $ `own.v_lon`:
 * **Gear ratio $i$:** `DRIVE` with `manual_gear_index` $= 0$ uses the highest gear $g$ with $(v / R_{\text{eff}})\, i_g\, i_{\text{fd}} \ge 157.08\text{ rad/s}$, or gear 1 if none qualifies. `DRIVE` with an index $n$ from 1 to `num_gears` uses gear $n$. Any other index, and any index other than 0 with a gear mode other than `DRIVE`, is `DL_STATUS_ERR_INVALID_ARG`. `REVERSE` uses $-i_R$. `NEUTRAL` and `PARK` use no drive force.
 * **Forces:** $F_{\text{drive}} = \text{throttle} \cdot T_{\text{drive,max}}\, i\, i_{\text{fd}} / R_{\text{eff}}$. $F_{\text{brake}} = \text{brake} \cdot T_{\text{brake,max}} / R_{\text{eff}}$, or $T_{\text{brake,max}} / R_{\text{eff}}$ in `PARK`. $F_{\text{res}} = \tfrac{1}{2}\rho_{\text{air}} C_d A_f v |v| + C_{rr}\, m\, g \operatorname{sgn}(v)$, with $\operatorname{sgn}(0) = 0$ here and in every `SimpleDrivetrain` formula.
-* **Output:** $a = (F_{\text{drive}} - F_{\text{res}} - F_{\text{brake}} \operatorname{sgn}(v)) / m$. If $|v| < 0.01\text{ m/s}$, the brake and rolling resistance instead oppose the drive force: $a = \operatorname{sgn}(F_{\text{drive}}) \max(|F_{\text{drive}}| - F_{\text{brake}} - C_{rr}\, m\, g,\ 0) / m$. `steer_angle_cmd` $= $ `steering_wheel_norm` $\cdot\, \delta_{\max}$. `valid_mask = 0x05`.
+* **Output:** $a = (F_{\text{drive}} - F_{\text{res}} - F_{\text{brake}} \operatorname{sgn}(v)) / m$. If $|v| < 0.01\text{ m/s}$, the brake and rolling resistance instead oppose the drive force. With $F_{\text{hold}} = F_{\text{brake}} + C_{rr}\, m\, g$: if $|F_{\text{drive}}| > F_{\text{hold}}$, then $a = \operatorname{sgn}(F_{\text{drive}}) (|F_{\text{drive}}| - F_{\text{hold}}) / m$. Otherwise $a = -\min(v / \Delta t,\ (F_{\text{hold}} - |F_{\text{drive}}|) / m)$, so the actor comes to rest instead of creeping. `steer_angle_cmd` $= $ `steering_wheel_norm` $\cdot\, \delta_{\max}$. `valid_mask = 0x05`.
 
 **`BrakeOverrideArbiter`:** Tier 0. Inputs `primary` and `secondary`, both `ActuatorControlFrame`. Output `ActuatorControlFrame`. If `secondary.valid_mask & 0x02` is set, `throttle` is the secondary's throttle, or 0 if the secondary's `0x01` is clear, `brake` is the secondary's brake, and the output sets both `0x01` and `0x02`. Otherwise both come from `primary`. The steering fields come from `secondary` if its `0x04` or `0x08` is set, and from `primary` otherwise. The gear fields follow the same rule with `0x10`. The output `valid_mask` holds the bits of the fields taken from each source.
 
