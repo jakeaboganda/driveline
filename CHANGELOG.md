@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.159
+
+* `sample_lane_path` continues through road links and junction connections as well as lane links, the same way the successor rule does.
+
 ## 0.158
 
 * `dl_exit_init_mode` maps to `fmi3ExitInitializationMode` after every initialization. This removes a reading that re-initialized warm-started FMUs at $t = 0$. $t_{\text{first}}$ has a precise definition, and Mode B splices initialize there.
