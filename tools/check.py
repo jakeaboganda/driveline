@@ -300,7 +300,24 @@ def check_scenario_rules():
                     fail(f"scenario: {actor}.{sensor} history {have} < {comp}.{port} capacity {need}")
     if checked == 0:
         fail("scenario: no sensor-to-port bindings found to check")
+    std = (SPEC / "17-standard-library.md").read_text()
+    dimensioned = {}
+    for comp, para in re.findall(r"^\*\*`(\w+)`:\*\*(.*)$", std, re.M):
+        for name, unit in re.findall(r"`(\w+): f64 \[([^\]]+)\]", para):
+            if unit != "1":
+                dimensioned.setdefault(comp, set()).add(name)
+    args_checked = 0
+    for comp, names in dimensioned.items():
+        for args in re.findall(r"\b" + comp + r"\(([^()]*)\)", scenario):
+            for name, value in re.findall(r"(\w+):\s*([^,]+)", args):
+                if name in names:
+                    args_checked += 1
+                    if not re.fullmatch(r"[0-9.]+[A-Za-z][\w*/^]*", value.strip()):
+                        fail(f"scenario: {comp}({name}: {value.strip()}) needs a unit")
+    if args_checked == 0:
+        fail("scenario: no dimensioned std parameters found to check")
     notes.append(f"scenario: rates divide the base clock, ids {sorted(ids)} unique, "
+                 f"{args_checked} dimensioned std arguments carry units, "
                  f"{checked} buffer bindings fit their capacities")
 
 

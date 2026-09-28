@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.82
+
+* The example gives the PID gains their units (`1.8Hz`, `0.1Hz^2`). Bare numbers are dimensionless, so the example did not compile. `tools/check.py` now requires units on dimensioned std arguments in the example.
+
 ## 0.81
 
 * The primary-target clause of the dependency condition applies only to the `primary_*` fields, so `ego_s` and `ego_d` interpolate again. Primary fields are zero when there is no primary target.
