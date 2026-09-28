@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.95
+
+* A time literal takes type `Time` when the other operand of `+`, `-`, or a comparison is `Time`.
+
 ## 0.94
 
 * Completed the type list: `Timestamped<T>` members, a grammar spelling for `Chain<(), B>`, and array types `[T]` with the places they are allowed.

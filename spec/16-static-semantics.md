@@ -1,7 +1,7 @@
 ---
 title: DSL static semantics
 section: 16
-version: 0.94
+version: 0.95
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 07-fmu-packaging.md, 09-abi.md, 10-composition.md, 11-execution.md, 12-grammar.md, 15-manifest.md, 17-standard-library.md]
@@ -27,7 +27,7 @@ depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-
 ## 16.2 Literals
 
 * A `QuantityLit` has the dimension of its unit, and its value is converted to SI.
-* A `QuantityLit` with dimension s has type `Time` where the expected type is `Time`. Elsewhere it is a quantity. A `Time` literal must be a whole number of nanoseconds.
+* A `QuantityLit` with dimension s has type `Time` where the expected type is `Time`. The expected type of an operand of `+`, `-`, or a comparison is the type of the other operand, so `t - 0.1s` is `Time`. Elsewhere it is a quantity. A `Time` literal must be a whole number of nanoseconds.
 * An `IntLit` or `HexLit` has type `Int`. Where a quantity is expected, an `Int` converts to a dimensionless quantity.
 * A `FloatLit` is a dimensionless quantity.
 
