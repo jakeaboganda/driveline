@@ -1,7 +1,7 @@
 ---
 title: DSL static semantics
 section: 16
-version: 0.148
+version: 0.149
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 07-fmu-packaging.md, 09-abi.md, 10-composition.md, 11-execution.md, 12-grammar.md, 15-manifest.md, 17-standard-library.md]
@@ -63,7 +63,7 @@ Names resolve from the innermost scope outward. A name declared twice in one sco
 
 ## 16.5 Calls and Chains
 
-* **Component calls** take named arguments only. A named argument is either an input port of the component or a parameter ([§15.4](15-manifest.md)). Builtin functions and constructors take zero or more arguments positionally in the order of their [§17](17-standard-library.md) signature, followed by any named arguments. `SliceBuffer` queries, whose signatures follow, and `fmu.out(name: String)` take arguments the same way. An argument given both ways, or missing without a default, is a compile-time error. `select` and `clamp` need arguments of one type `T`, which for `clamp` must be a quantity type. Only if at least one of those arguments is a quantity does an `Int` argument convert to a dimensionless quantity, so `select(c, 0x03, 0x00)` is an `Int` and `clamp(n, 0, 5)` with an `Int` `n` is a compile-time error. A `SliceBuffer<T, N>` port has exactly the queries of [§4.2](04-perception.md): `latest()`, `b[k]` and `history(k)` with an `Int` `k`, `at(t_query: Time, mode: InterpMode)`, and `rate_of(field, window: Int = 1)`, plus the member `count` (`Int`). A constant `k` outside $[0, N)$ is a compile-time error. A `Timestamped<T>`'s `t` is the sample's `t_ns` as a `Time`.
+* **Component calls** take named arguments only. A named argument is either an input port of the component or a parameter ([§15.4](15-manifest.md)). Builtin functions and constructors take zero or more arguments positionally in the order of their [§17](17-standard-library.md) signature, followed by any named arguments. `SliceBuffer` queries, whose signatures follow, and `fmu.out(name: String)` take arguments the same way. An argument given both ways, or missing without a default, is a compile-time error. `select` and `clamp` need arguments of one type `T`, which for `clamp` must be a quantity type. Only if at least one of those arguments is a quantity does an `Int` argument convert to a dimensionless quantity, so `select(c, 0x03, 0x00)` is an `Int` and `clamp(n, 0, 5)` with an `Int` `n` is a compile-time error. A `SliceBuffer<T, N>` port has exactly the queries of [§4.2](04-perception.md): `latest()`, `b[k]` and `history(k)` with an `Int` `k`, `at(t_query: Time, mode: InterpMode)`, and `rate_of(field, window: Int = 1)` with a `window` of at least 1, plus the member `count` (`Int`). A constant `k` outside $[0, N)$ is a compile-time error. A `Timestamped<T>`'s `t` is the sample's `t_ns` as a `Time`.
 * **Pipe input:** In `A >> B(...)` where `B` is a component, the value from `A` goes to the one input port of `B` that the call does not bind by name. If the number of unbound ports is not exactly one, that is a compile-time error. The head of a source chain binds every input port by name. The head of any other chain, and the head of each `+` branch, leaves exactly one port unbound, and that port is the chain's pipe input.
 * **`+`:** Both branches receive the same pipe input ([§10.2](10-composition.md)).
 * **`Arbitrate(p, s, via: A())`:** `p` and `s` must have the same chain type `Chain<X, T>`. `T` must be `IntentFrame`, `KinematicControlFrame`, or `ActuatorControlFrame` ([§10](10-composition.md)). The arbiter `A` must have exactly the input ports `primary: T` and `secondary: T`, both unbound in the call, and output `T`. The result has type `Chain<X, T>`. If `X` is not `()`, the pipe input goes to both `p` and `s`.
@@ -87,7 +87,7 @@ Names resolve from the innermost scope outward. A name declared twice in one sco
 
 ## 16.6 Scenario and Vehicle Specification Rules
 
-* **World statements:** A scenario has exactly one `map`, exactly one `timestep` with a value above zero, at most one `seed` (an `Int` from 0 to $2^{63} - 1$), and at most one `environment`.
+* **World statements:** A scenario has exactly one `map`, exactly one `timestep`, a `Time` above zero, at most one `seed` (an `Int` from 0 to $2^{63} - 1$), and at most one `environment`.
 * **`environment`:** The block may contain `default_friction = ...;` at most once and any number of `friction_zone(...)` calls ([§17.1](17-standard-library.md)), and nothing else. Every $\mu$ must be a constant expression ([§16.5](16-static-semantics.md)) in $[0, 2]$. A `friction_zone` must name a road of the map and have `s_start` < `s_end`.
 * **Actor bodies:** Names in one actor's `sensors` block are unique, and so are names in its `priors` block. A chain may not be named `physics_model`, which [§10.4](10-composition.md) reserves as a splice target. Each prior value must be a `RouteNodes(...)` call with constant arguments, since `RouteNodes` is the only prior type ([§4.1](04-perception.md)).
 * **`vehicle_spec` keys:** The only keys are `tier0`, `tier1`, `tier2`, and `tier3`. `tier0` is required, `tier2` requires `tier1`, and `tier3` requires `tier1`. A present key populates that tier, and the tier rules of [§3](03-vehicle-parameters.md) apply.

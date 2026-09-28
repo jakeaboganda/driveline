@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.149
+
+* Minor fixes: held trajectory shifts take the nanosecond difference first, control frames reject unknown mask bits, `rate_of` windows are at least 1, `timestep` is a `Time`, radar `primary_range`/`primary_azimuth` are defined, contact corners are named, and `left_lane_free` matches tracks by lane.
+
 ## 0.148
 
 * Manifest parameter types map to DSL types (`f64` with a unit is a quantity, `i64` is `Int`, `Time` is `Time`) for every call site. A bare pipe identifier must name a chain.
