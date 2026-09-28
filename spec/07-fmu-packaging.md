@@ -1,7 +1,7 @@
 ---
 title: FMU packaging
 section: 7
-version: 0.137
+version: 0.145
 status: draft
 normative: true
 depends_on: [05-checkpoints.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md]
@@ -47,7 +47,7 @@ The outputs read in step 3 describe the FMU at $t + h$ computed from inputs held
 
 ## 7.2 Lifecycle Mapping
 
-The runtime drives an FMU through the [§6](06-lifecycle.md) states with these FMI 3.0 calls. "Initialize at $t$" means: call `fmi3EnterInitializationMode` with `startTime` $= t$, set the inputs, and call `fmi3ExitInitializationMode`. A Mode A FMU's inputs are `dl_init_context`, `own_state`, and its ports. A Mode B FMU's inputs are the `bind_inputs` expressions evaluated at $t$.
+The runtime drives an FMU through the [§6](06-lifecycle.md) states with these FMI 3.0 calls. "Initialize at $t$" means: call `fmi3EnterInitializationMode` with `startTime` $= t$, set the inputs, and call `fmi3ExitInitializationMode`. A Mode A FMU's inputs are `dl_init_context`, `own_state`, its ports, and its prior variables, so a re-trim after `fmi3Reset` sets the priors again. A Mode B FMU's inputs are the `bind_inputs` expressions evaluated at $t$.
 
 | [§6](06-lifecycle.md) Call | FMU Calls |
 | :--- | :--- |
