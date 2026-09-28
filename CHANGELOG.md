@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.86
+
+* Latched frames prefer the component's own last output, which settles `JerkLimiter`. When no frame of a type has flowed, the runtime builds the frame from the committed state by the cold-init rules.
+
 ## 0.85
 
 * A `physics_model` splice of an actor whose physics is a shared group instance is a compile-time error. Per-actor `OneToOne` instances in a group can still be spliced, as the example does.
