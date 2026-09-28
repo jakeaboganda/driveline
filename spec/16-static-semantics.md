@@ -1,7 +1,7 @@
 ---
 title: DSL static semantics
 section: 16
-version: 0.123
+version: 0.126
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 07-fmu-packaging.md, 09-abi.md, 10-composition.md, 11-execution.md, 12-grammar.md, 15-manifest.md, 17-standard-library.md]
@@ -17,12 +17,12 @@ depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-
 * **Named quantity types:** `Scalar` (dimensionless), `Angle` (dimensionless), `Length` (m), `Velocity` (m/s), `Acceleration` (m/s²), `Jerk` (m/s³), `AngularVelocity` (1/s), `Frequency` (1/s), `Mass` (kg), `Force` (N), `Torque` (N·m), and `Pressure` (Pa).
 * **`Time`:** A signed 64-bit count of nanoseconds ([§2](02-conventions.md)). It has dimension s but is an integer type.
 * **Other scalar types:** `Int` (signed 64-bit), `Bool`, and `String`.
-* **Structured types:** The checkpoint frames of [§5](05-checkpoints.md), the slice types of [§4.3](04-perception.md), `Timestamped<T>`, `SliceBuffer<T, N>`, `Rate`, and `RouteNodes`. `Timestamped<T>` has the members `t` (`Time`) and `data` (`T`), and `x.f` means `x.data.f` for every field `f` of `T` ([§4.2](04-perception.md)). A struct field has the type its table gives. A `float64` field is a quantity with the dimension of its unit column, an integer field is `Int`, a `char[]` field is `String`, and an enum field has its enum type.
+* **Structured types:** The checkpoint frames of [§5](05-checkpoints.md), the slice types of [§4.3](04-perception.md), `Timestamped<T>`, `SliceBuffer<T, N>`, `Rate`, and `RouteNodes`. `Timestamped<T>` has the members `t` (`Time`) and `data` (`T`), and `x.f` means `x.data.f` for every field `f` of `T` ([§4.2](04-perception.md)). A struct field has the type its table gives. A `float64` field is a quantity with the dimension of its unit column, an integer field is `Int`, a `bool` field is `Bool`, a `char[]` field is `String`, an enum field has its enum type, and a struct field has its struct type. An array field `f[N]` of a struct is read only as `x.f[i]`, where `i` is an `Int`. A constant `i` outside $[0, N)$ is a compile-time error, and a computed one makes the step return `DL_STATUS_ERR_INVALID_ARG`. Entries at or beyond `num_tracks` are zero-filled ([§4.3](04-perception.md)).
 * **Enum types:** `LonMode`, `LatMode`, `TurnSignal`, `GearMode`, `InterpMode` (`Interpolate`, `Floor`), and `Mount` (`FrontBumper`, `Windshield`, `Center`), with the constants listed in [§4](04-perception.md), [§5](05-checkpoints.md), and [§17](17-standard-library.md).
 * **`VehicleSpec`:** The type of a `vehicle_spec` name ([§16.6](16-static-semantics.md)). **`OpenDriveMap`:** The type of `load_xodr`, a world-truth type ([§0](00-conformance.md)).
 * **`Chain<A, B>`:** A chain whose pipe input has type `A` and whose output has type `B`. A chain whose head binds every input port by name is a source chain, with type `Chain<(), B>`. `()` is written only as the first argument of `Chain`.
 * **Arrays:** `[T]` is an array of `T`. An array literal has type `[T]` when every element has type `T`. Arrays are allowed only where a signature or rule names an array type: `RouteNodes(nodes: [String])`, `gear_ratios`, and per-actor arguments of a group chain ([§10](10-composition.md)). Any other array literal is a compile-time error.
-* **`Lon<T>` and `Lat<T>`:** Partial frame types ([§10.2](10-composition.md)). They may be a component's output type or a port type.
+* **`Lon<T>` and `Lat<T>`:** Partial frame types ([§10.2](10-composition.md)), where `T` is `IntentFrame` or `KinematicControlFrame`. They may be a component's output type, a port type, or a `Chain` type argument.
 * **Records:** A record literal is allowed only as a `vehicle_spec` tier value ([§16.6](16-static-semantics.md)). Any other record literal is a compile-time error.
 * **`Actor`:** The type of an actor name. It has the members `id` (`Int`), `state` (`KinematicState`), and `sensors.<name>` (the sensor's `SliceBuffer<T, N>`).
 
@@ -35,7 +35,7 @@ depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-
 
 ## 16.3 Expressions
 
-* `+` and `-` require operands of the same dimension, or two `Time` values. `*` and `/` multiply and divide dimensions. `Time * Int` and `Time / Int` are `Time`. When `Time` meets any other operand of `*` or `/`, it converts to a quantity in seconds, so `v * dt` is a `Length`, and `Time / Time` is a dimensionless quantity.
+* `+` and `-` require two `Time` values, which give a `Time`, or two quantities of the same dimension. A `Time` and a quantity of dimension s is a compile-time error, because the result would need rounding to nanoseconds. A literal of dimension s takes `Time` from the other operand ([§16.2](16-static-semantics.md)). `*` and `/` multiply and divide dimensions. `Time * Int` and `Time / Int` are `Time`. When `Time` meets any other operand of `*` or `/`, it converts to a quantity in seconds, so `v * dt` is a `Length`, and `Time / Time` is a dimensionless quantity.
 * Comparisons require operands of the same dimension. When a `Time` meets a quantity of dimension s, the `Time` converts to seconds.
 * `-x` has the type of `x`, and `x` gets the expected type of `-x`, so `-0.1s` is `Time` where `Time` is expected.
 * Comparisons have type `Bool`. `and`, `or`, and `not` take and return `Bool`. `==` and `!=` also accept `Int`, `String`, and enum operands of the same type.
@@ -62,7 +62,7 @@ Names resolve from the innermost scope outward. A name declared twice in one sco
 
 ## 16.5 Calls and Chains
 
-* **Component calls** take named arguments only. A named argument is either an input port of the component or a parameter ([§15.4](15-manifest.md)). Builtin functions and constructors take their arguments positionally in the order of their [§17](17-standard-library.md) signature, optionally followed by named arguments. An argument given both ways, or missing without a default, is a compile-time error. `select` and `clamp` need arguments of one type `T`. Only if at least one of those arguments is a quantity does an `Int` argument convert to a dimensionless quantity, so `select(c, 0x03, 0x00)` is an `Int`. Buffer methods take the arguments of [§4.2](04-perception.md): `at(t_query: Time, mode: InterpMode)` and `rate_of(field, window: Int = 1)`.
+* **Component calls** take named arguments only. A named argument is either an input port of the component or a parameter ([§15.4](15-manifest.md)). Builtin functions and constructors take their arguments positionally in the order of their [§17](17-standard-library.md) signature, optionally followed by named arguments. An argument given both ways, or missing without a default, is a compile-time error. `select` and `clamp` need arguments of one type `T`, which for `clamp` must be a quantity type. Only if at least one of those arguments is a quantity does an `Int` argument convert to a dimensionless quantity, so `select(c, 0x03, 0x00)` is an `Int` and `clamp(n, 0, 5)` with an `Int` `n` is a compile-time error. Buffer methods take the arguments of [§4.2](04-perception.md): `at(t_query: Time, mode: InterpMode)` and `rate_of(field, window: Int = 1)`.
 * **Pipe input:** In `A >> B(...)`, the value from `A` goes to the one input port of `B` that the call does not bind by name. If the number of unbound ports is not exactly one, that is a compile-time error. The head of a source chain binds every input port by name. The head of any other chain, and the head of each `+` branch, leaves exactly one port unbound, and that port is the chain's pipe input.
 * **`+`:** Both branches receive the same pipe input ([§10.2](10-composition.md)).
 * **`Arbitrate(p, s, via: A())`:** `p` and `s` must have the same chain type `Chain<X, T>`. `T` must be `IntentFrame`, `KinematicControlFrame`, or `ActuatorControlFrame` ([§10](10-composition.md)). The arbiter `A` must have exactly the input ports `primary: T` and `secondary: T`, both unbound in the call, and output `T`. The result has type `Chain<X, T>`.

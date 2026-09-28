@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.126
+
+* Typed `bool`, struct, and array fields and track indexing. `Time` mixed with a seconds quantity in `+`/`-` is an error. `clamp` needs a quantity, and `Lon<T>`/`Lat<T>` are limited to the two frame types but allowed in `Chain`.
+
 ## 0.125
 
 * Every latched frame rebuilt after tick 0 uses the committed speed, offset, and wheel angle. A replacement spliced again before it steps passes on its latched frames.
