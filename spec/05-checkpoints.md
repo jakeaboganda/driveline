@@ -1,7 +1,7 @@
 ---
 title: Checkpoint data contracts
 section: 5
-version: 0.116
+version: 0.122
 status: draft
 normative: true
 depends_on: [02-conventions.md, 06-lifecycle.md, 10-composition.md, 15-manifest.md, 17-standard-library.md]
@@ -125,7 +125,7 @@ Produced by Stage 3 (Physics) at the end of every simulation step $t + \Delta t$
 | **Rear-Axle Twist** | `v_lon` | `float64` | $\text{m/s}$ | Longitudinal velocity $v_{x,\text{ra}}$ at rear-axle origin in Body Frame. |
 | | `v_lat` | `float64` | $\text{m/s}$ | Lateral slip velocity $v_{y,\text{ra}}$ at rear-axle origin ($0$ for non-slip `KS`, $-l_r\dot{\psi} + v_{y,\text{cg}}$ for `ST`/`MB`). |
 | | `yaw_rate` | `float64` | $\text{rad/s}$ | Yaw angular velocity $\dot{\psi}$ about vehicle $+z$ axis. |
-| **Rear-Axle Accel** | `a_lon`, `a_lat` | `float64` | $\text{m/s}^2$ | Achieved accelerations $(a_{x,\text{ra}}, a_{y,\text{ra}})$ at rear-axle origin. |
+| **Rear-Axle Accel** | `a_lon`, `a_lat` | `float64` | $\text{m/s}^2$ | Inertial acceleration of the rear-axle origin in body axes: $a_{\text{lon}} = \dot{v}_{\text{lon}} - v_{\text{lat}}\dot{\psi}$ and $a_{\text{lat}} = \dot{v}_{\text{lat}} + v_{\text{lon}}\dot{\psi}$. |
 | **Chassis Angles** | `front_wheel_angle` | `float64` | $\text{rad}$ | Actual front road-wheel steer angle $\delta$ persisted across ticks. |
 | | `slip_angle_beta_cg` | `float64` | $\text{rad}$ | Sideslip angle at the Center of Gravity $\beta_{\text{cg}}$. |
 | **Map Cache** | `road_id` | `char[64]` | — | Current OpenDRIVE road ID cached by World. |

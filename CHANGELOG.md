@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.122
+
+* Defined `a_lon` and `a_lat` as the rear axle's inertial acceleration in body axes, which is what the standard physics reports. The `KinematicState` timestamp notes that physics runs at the base rate.
+
 ## 0.121
 
 * `rate_of` selects only top-level slice fields. Track slots reorder every sample, so a `tracks[i]` difference could span two targets.
