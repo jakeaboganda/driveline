@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.135
+
+* Only a net tier change across a window triggers a re-trim, and the re-trim set holds only instances that serve the changed actor. Each instance gets init contexts only for the actors it serves. §11 explains why an actor never ties with its group in the Phase 2 order.
+
 ## 0.134
 
 * Minor fixes: StanleyLat `k` is in 1/s (the example now writes `2.5Hz`), `max_jerk` must be positive, enum fields must hold a listed value, `manual_gear_index` is 0 outside `DRIVE`, manifest modes use the enum names, and frame validation comes before `SimpleDrivetrain`'s torque check.

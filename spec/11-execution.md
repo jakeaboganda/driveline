@@ -1,10 +1,10 @@
 ---
 title: Execution model and determinism
 section: 11
-version: 0.87
+version: 0.135
 status: draft
 normative: true
-depends_on: [06-lifecycle.md, 09-abi.md, 10-composition.md, 14-diagnostics.md]
+depends_on: [06-lifecycle.md, 09-abi.md, 10-composition.md, 14-diagnostics.md, 16-static-semantics.md]
 ---
 
 # 11. Deterministic Integer-Tick Execution Model
@@ -23,7 +23,7 @@ depends_on: [06-lifecycle.md, 09-abi.md, 10-composition.md, 14-diagnostics.md]
    4. **Phase 4 (World Commit & Termination Check):** The runtime commits $X(t + \Delta t)$ and updates each actor's map cache (`road_id`, `lane_id`, `frenet_s`, `frenet_d`) with `world_to_frenet` at the new pose, passing the actor's yaw as `psi` and its previous `road_id` as `hint_road_id` ([§9.2](09-abi.md)). Then it evaluates `terminate when`. Inside the predicate, and inside `on` conditions, `sim_time` is $t + \Delta t$ and `actor.state` is the committed `KinematicState`. If the predicate is true, the run ends successfully after this phase, no `on` statement fires on this tick, and the runtime runs teardown ([§14.2](14-diagnostics.md)). Otherwise the runtime evaluates `on` statements ([§10.4](10-composition.md)).
    * **No Contact Model:** The runtime does not model contact between actors. Actors can overlap. `collision(...)` is a predicate on committed state that a scenario can use to end the run.
 3. **Deterministic Intra-Phase Ordering & Seeding:**
-   * Within Phase 1, Phase 2, and Phase 3, actors and groups are evaluated in ascending order of `actor_id` (and topological chain order within each actor). A group sorts by its smallest member `actor_id`, and within a group, per-actor instances run in `bind` order. Because Phase 2 components only read Phase 1 `SliceBuffer` snapshots from $X(t)$ and write to actor-local checkpoint buffers, Phase 2 is data-race-free and parallelizable across actors.
+   * Within Phase 1, Phase 2, and Phase 3, actors and groups are evaluated in ascending order of `actor_id` (and topological chain order within each actor). A group sorts by its smallest member `actor_id`, and within a group, per-actor instances run in `bind` order. An actor in a `bind` statement has no chains of its own, because each named chain must end in its actor's `physics` declaration ([§16.5](16-static-semantics.md)) and the actor's physics comes from the `bind` ([§10](10-composition.md)). No component reads another entity's output within a tick, so this order never delays data. Because Phase 2 components only read Phase 1 `SliceBuffer` snapshots from $X(t)$ and write to actor-local checkpoint buffers, Phase 2 is data-race-free and parallelizable across actors.
    * Each stochastic sensor gets a 64-bit seed per tick: `SipHash-2-4(key, msg)`. The 128-bit `key` is `scenario_seed` as a little-endian `uint64` followed by 8 zero bytes. The 24-byte `msg` is `actor_id` (little-endian `uint64`), `sensor_port_index` (little-endian `uint32`), 4 zero bytes, and `k_tick` (little-endian `uint64`). `sensor_port_index` is the zero-based position of the sensor in its actor's `sensors` block, in source order. `scenario_seed` is the value of the scenario's `seed` statement, or 0 if the scenario has none. The sensor's random generator algorithm is part of the sensor's versioned implementation. Test vectors: `scenario_seed = 42`, `actor_id = 1`, `sensor_port_index = 0`, `k_tick = 0` gives `0x5cc6f959467d3eca`. `scenario_seed = 42`, `actor_id = 3`, `sensor_port_index = 1`, `k_tick = 25` gives `0xb818879e7dfe5b11`.
 4. **Determinism Guarantee & Scope:**
    * **Same Build, Same Platform:** A conforming runtime produces bit-identical results for the same scenario, seed, runtime build, component binaries, and platform.
