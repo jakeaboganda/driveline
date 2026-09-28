@@ -1,7 +1,7 @@
 ---
 title: Checkpoint data contracts
 section: 5
-version: 0.165
+version: 0.168
 status: draft
 normative: true
 depends_on: [02-conventions.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 15-manifest.md, 17-standard-library.md]
@@ -79,7 +79,7 @@ A component implements trajectories if its manifest's `lat_modes` lists `SPATIOT
 
 **Stop Distance:** `s_stop` is the distance along the actor's intended path from its rear-axle origin to the point where the rear-axle origin must stop.
 
-**Measured Gap for `GAP_PROFILE`:** `IntentFrame` carries the gap target and the desired gap. It does not carry the measured gap. A Stage 2 component that tracks `GAP_PROFILE` must declare a `SliceBuffer` input port whose slice type contains `tracks[]`. It reads the measured gap $g$ from the track whose `target_actor_id` equals `gap_target_actor_id`: $g$ is that track's `rel_x`, the distance along the sensor's $x$ axis from the mount point to the target's footprint center ([§17.2](17-standard-library.md)). `distance_gap_min` and `time_gap_ref` are targets for this same $g$, so they include the sensor's offset from the front bumper and half the target's length. If no such track exists, the component treats the gap target as absent and tracks `v_ref`.
+**Measured Gap for `GAP_PROFILE`:** `IntentFrame` carries the gap target and the desired gap. It does not carry the measured gap. A Stage 2 component that tracks `GAP_PROFILE` must declare a `SliceBuffer` input port whose slice type contains `tracks[]`. It reads the measured gap $g$ from the `latest()` sample of its first declared such port, from the track whose `target_actor_id` equals `gap_target_actor_id`: $g$ is that track's `rel_x`, the distance along the sensor's $x$ axis from the mount point to the target's footprint center ([§17.2](17-standard-library.md)). `distance_gap_min` and `time_gap_ref` are targets for this same $g$, so they include the sensor's offset from the front bumper and half the target's length. If no such track exists, the component treats the gap target as absent and tracks `v_ref`.
 
 **Unsupported Modes:** A component's manifest lists the modes it implements ([§15](15-manifest.md)). If a Stage 2 component receives a `lon_mode` or `lat_mode` that it does not implement, `dl_do_step` returns `DL_STATUS_ERR_UNSUPPORTED_MODE`, and the runtime stops the scenario.
 
@@ -91,7 +91,7 @@ A component implements trajectories if its manifest's `lat_modes` lists `SPATIOT
 | `actor_id` | `uint64` | — | Unique actor entity identifier. |
 | `timestamp_ns` | `uint64` | $\text{ns}$ | Simulation timestamp. |
 | `valid_mask` | `uint32` | bitmask | `0x01`: `a_lon_cmd` valid, `0x02`: `jerk_lon_cmd` valid, `0x04`: `steer_angle_cmd` valid, `0x08`: `steer_rate_cmd` valid. A frame with bits outside `0x0F` is invalid (`DL_STATUS_ERR_INVALID_ARG`). |
-| `a_lon_cmd` | `float64` | $\text{m/s}^2$ | Commanded rate of change $\dot{v}_{\text{lon}}$ of the rear-axle body-$x$ speed. In a turn it differs from the reported `a_lon` of [§5.3](05-checkpoints.md) by $v_{\text{lat}} \dot{\psi}$. |
+| `a_lon_cmd` | `float64` | $\text{m/s}^2$ | Commanded rate of change $\dot{v}_{\text{lon}}$ of `v_lon` ([§5.3](05-checkpoints.md)). In a turn it differs from the reported `a_lon` of [§5.3](05-checkpoints.md) by $v_{\text{lat}} \dot{\psi}$. |
 | `jerk_lon_cmd` | `float64` | $\text{m/s}^3$ | If `0x01` is also set, the maximum jerk used to reach `a_lon_cmd`. If only `0x02` is set, a jerk command that physics integrates. |
 | `steer_angle_cmd` | `float64` | $\text{rad}$ | Front road-wheel steering angle target $\delta_{\text{cmd}}$, positive to the left (valid if `0x04` set). |
 | `steer_rate_cmd` | `float64` | $\text{rad/s}$ | If `0x04` is also set, the maximum rate used to reach `steer_angle_cmd`. If only `0x08` is set, a rate command that physics integrates. |
@@ -124,10 +124,10 @@ Produced by Stage 3 (Physics) at the end of every simulation step $t + \Delta t$
 | | `timestamp_ns` | `uint64` | $\text{ns}$ | Simulation time $t + \Delta t$. |
 | **World Pose** | `pos_x`, `pos_y`, `pos_z` | `float64` | $\text{m}$ | $(X, Y, Z)$ position of the rear-axle origin in the World frame. |
 | | `roll`, `pitch`, `yaw` | `float64` | $\text{rad}$ | $(\phi, \theta, \psi)$ intrinsic $Z\text{-}Y'\text{-}X''$ Euler angles. |
-| **Rear-Axle Twist** | `v_lon` | `float64` | $\text{m/s}$ | Longitudinal velocity $v_{x,\text{ra}}$ at rear-axle origin in Body Frame. |
-| | `v_lat` | `float64` | $\text{m/s}$ | Lateral slip velocity $v_{y,\text{ra}}$ at rear-axle origin ($0$ for non-slip `KS`, $-l_r\dot{\psi} + v_{y,\text{cg}}$ for `ST`/`MB`). |
-| | `yaw_rate` | `float64` | $\text{rad/s}$ | Yaw angular velocity $\dot{\psi}$ about vehicle $+z$ axis. |
-| **Rear-Axle Accel** | `a_lon`, `a_lat` | `float64` | $\text{m/s}^2$ | Inertial acceleration of the rear-axle origin in body axes: $a_{\text{lon}} = \dot{v}_{\text{lon}} - v_{\text{lat}}\dot{\psi}$ and $a_{\text{lat}} = \dot{v}_{\text{lat}} + v_{\text{lon}}\dot{\psi}$. |
+| **Rear-Axle Twist** | `v_lon` | `float64` | $\text{m/s}$ | Longitudinal velocity $v_{x,\text{ra}}$ of the rear-axle origin along the heading frame's $x$ axis ([§2](02-conventions.md)). |
+| | `v_lat` | `float64` | $\text{m/s}$ | Lateral slip velocity $v_{y,\text{ra}}$ of the rear-axle origin along the heading frame's $y$ axis ($0$ for non-slip `KS`, $-l_r\dot{\psi} + v_{y,\text{cg}}$ for `ST`/`MB`). |
+| | `yaw_rate` | `float64` | $\text{rad/s}$ | Yaw rate $\dot{\psi} = d\psi/dt$ of the yaw angle. |
+| **Rear-Axle Accel** | `a_lon`, `a_lat` | `float64` | $\text{m/s}^2$ | Inertial acceleration of the rear-axle origin in heading-frame axes: $a_{\text{lon}} = \dot{v}_{\text{lon}} - v_{\text{lat}}\dot{\psi}$ and $a_{\text{lat}} = \dot{v}_{\text{lat}} + v_{\text{lon}}\dot{\psi}$. |
 | **Chassis Angles** | `front_wheel_angle` | `float64` | $\text{rad}$ | Actual front road-wheel steer angle $\delta$ persisted across ticks. |
 | | `slip_angle_beta_cg` | `float64` | $\text{rad}$ | Sideslip angle at the Center of Gravity $\beta_{\text{cg}}$. |
 | **Map Cache** | `road_id` | `char[64]` | — | Current OpenDRIVE road ID cached by World. |

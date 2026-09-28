@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.168
+
+* `KinematicState` velocities, accelerations, and yaw rate use a new yaw-only heading frame from §2, which removes the roll and pitch ambiguity for multibody physics. The `GAP_PROFILE` gap comes from the latest sample of the first declared track-bearing port.
+
 ## 0.167
 
 * Minor fixes: string and bool literal types, `Int` meeting a quantity in sums and comparisons, a constant `rate_of` window, `FreqLit` sensor rates, `[-]` header units, error codes for `world_to_frenet` and null FMU instances, the FMU context time, the complex-eigenvalue Euler bound, and a §8 typo.
