@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.72
+
+* Splice targets on one actor must not nest, because an earlier splice could remove the later target. Repeated splices of one target are allowed.
+
 ## 0.71
 
 * Defined $\bar{\mu}$ in `DynamicSingleTrack`. Stated that `KinematicBicycle` ignores friction, grade, and bank, and that neither model applies grade gravity. A stopped actor keeps no negative acceleration.
