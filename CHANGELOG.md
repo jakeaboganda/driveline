@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.142
+
+* Typed parenthesized chains without `+`, range- and dBsm-valued fields as dimensionless, and prior values as constant `RouteNodes` calls. `bind_outputs` links to §7 for unassigned fields.
+
 ## 0.141
 
 * Standard-library gains use `Hz` and `Hz^2`, because `1/s` is not a manifest `UnitExpr`. `check.py` now parses every standard-library parameter unit.
