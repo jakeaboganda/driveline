@@ -1,7 +1,7 @@
 ---
 title: DSL static semantics
 section: 16
-version: 0.69
+version: 0.73
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 07-fmu-packaging.md, 09-abi.md, 10-composition.md, 11-execution.md, 12-grammar.md, 15-manifest.md, 17-standard-library.md]
@@ -34,7 +34,8 @@ depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-
 
 * `+` and `-` require operands of the same dimension, or two `Time` values. `*` and `/` multiply and divide dimensions. `Time * Int` and `Time / Int` are `Time`.
 * Comparisons require operands of the same dimension. When a `Time` meets a quantity of dimension s, the `Time` converts to seconds.
-* `and`, `or`, and `not` take `Bool`. `==` and `!=` also accept `Int`, `String`, and enum operands of the same type.
+* Comparisons have type `Bool`. `and`, `or`, and `not` take and return `Bool`. `==` and `!=` also accept `Int`, `String`, and enum operands of the same type.
+* The condition of `if`, `on`, and `terminate when` must have type `Bool`.
 * An unqualified enum constant, such as `Interpolate`, is allowed where the expected type is that enum. Elsewhere it must be qualified, as in `GearMode::DRIVE`.
 * A dimension mismatch, or an operand of the wrong type, is a compile-time error.
 
