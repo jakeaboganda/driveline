@@ -97,7 +97,7 @@ component BoschPCS_v4 from_fmu("fmus/BoschPCS_v4.fmu") (rate: 50Hz) (required_ti
 // PID gains carry units: kp in 1/s (written Hz), ki in 1/s^2, kd dimensionless.
 fn kinematic_coupled_control() -> Chain<IntentFrame, KinematicControlFrame> {
     return ((PIDSpeedController(kp: 1.8Hz, ki: 0.1Hz^2, kd: 0.05) >> JerkLimiter(max_jerk: 4.0m/s^3))
-          + StanleyLat(k: 2.5, sample_step: 1.0m));
+          + StanleyLat(k: 2.5Hz, sample_step: 1.0m));
 }
 
 // ============================================================================

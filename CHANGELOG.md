@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.134
+
+* Minor fixes: StanleyLat `k` is in 1/s (the example now writes `2.5Hz`), `max_jerk` must be positive, enum fields must hold a listed value, `manual_gear_index` is 0 outside `DRIVE`, manifest modes use the enum names, and frame validation comes before `SimpleDrivetrain`'s torque check.
+
 ## 0.133
 
 * Standard physics seeds $a$ from $\dot{v}_{\text{lon}}$ always. The latched command jumped $a$ when a jerk limit was set. At a standstill, `SimpleDrivetrain`'s brake and rolling resistance oppose the drive force, so a partial brake no longer vanishes.
