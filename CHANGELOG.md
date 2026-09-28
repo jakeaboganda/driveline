@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.143
+
+* A lane's driving-direction successors come from its OpenDRIVE `predecessor` link when it drives against $s$. The `world_to_frenet` tie-break compares `psi` with the driving heading.
+
 ## 0.142
 
 * Typed parenthesized chains without `+`, range- and dBsm-valued fields as dimensionless, and prior values as constant `RouteNodes` calls. `bind_outputs` links to §7 for unassigned fields.
