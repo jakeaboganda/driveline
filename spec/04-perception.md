@@ -1,7 +1,7 @@
 ---
 title: Priors, sensors, and SliceBuffer
 section: 4
-version: 0.91
+version: 0.103
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 06-lifecycle.md, 09-abi.md]
@@ -27,13 +27,13 @@ All `SliceBuffer<T, N>` ports enforce deterministic edge-case semantics across f
    * **Early-Tick Clamp ($k \ge \text{count}$):** Before $k+1$ samples have been recorded (e.g., on Tick 0 when $\text{count} == 1$), `buffer[k]` returns the oldest available sample `buffer[count - 1]`. `buffer.count` is the number of valid samples, from $1$ to $N$. A component that must not use clamped samples checks `k < buffer.count` first. Queries do not change the buffer.
 3. `buffer.rate_of(field_selector, window: k = 1) -> Rate`: Finite-difference derivative helper. `Rate` is `{ float64 value; bool valid; }`. With $m = \min(k, \text{count}-1)$:
    $$\text{rate\_of}(f, k) = \begin{cases} \{0.0, \text{false}\} & \text{if } \text{count} < 2 \\ \left\{\dfrac{s[0].f - s[m].f}{s[0].t - s[m].t}, \text{true}\right\} & \text{otherwise} \end{cases}$$
-   Times are in seconds, so `value` has the field's unit per second. `valid` is also false if the dependency condition of $f$ ([§4.3](04-perception.md)) fails between $s[0]$ and $s[m]$, because the difference would then span two targets or two roads, or no target at all. Whenever `valid` is false, `value` is $0.0$. The timestamp invariant makes the denominator positive whenever $\text{count} \ge 2$. Consumers must check `valid`. A `value` of $0.0$ with `valid = false` means "no estimate", not "no motion".
+   Times are in seconds, so `value` has the field's unit per second. For an `ANGLE` field, the difference $s[0].f - s[m].f$ is wrapped to $(-\pi, \pi]$. If $s[0].f$ or $s[m].f$ is not finite, the result is $\{0.0, \text{false}\}$. `valid` is also false if the dependency condition of $f$ ([§4.3](04-perception.md)) fails between $s[0]$ and $s[m]$, because the difference would then span two targets or two roads, or no target at all. Whenever `valid` is false, `value` is $0.0$. The timestamp invariant makes the denominator positive whenever $\text{count} \ge 2$. Consumers must check `valid`. A `value` of $0.0$ with `valid = false` means "no estimate", not "no motion".
 4. `buffer.at(t_query, mode: Interpolate | Floor) -> Timestamped<T>`:
    * **Clamping:** If $t_{\text{query}} \ge s[0].t$, returns $s[0]$. If $t_{\text{query}} \le s[\text{count}-1].t$, returns $s[\text{count}-1]$. `t_query` is a signed `Time` and may be negative. A negative query returns the oldest sample.
    * **`Floor` Mode:** Returns the newest sample $s[k]$ where $s[k].t \le t_{\text{query}}$.
    * **`Interpolate` Mode:** For bracket $s[k+1].t \le t_{\text{query}} < s[k].t$ with $\alpha = \frac{t_{\text{query}} - s[k+1].t}{s[k].t - s[k+1].t} \in [0, 1)$, each field follows its interpolation class from [§4.3](04-perception.md):
      * **`LINEAR`:** $(1 - \alpha) v_{k+1} + \alpha v_k$.
-     * **`ANGLE`:** Linear interpolation along the shorter arc, wrapped to $(-\pi, \pi]$.
+     * **`ANGLE`:** $v_{k+1} + \alpha\, \Delta$, wrapped to $(-\pi, \pi]$, where $\Delta = v_k - v_{k+1}$ wrapped to $(-\pi, \pi]$. A difference of exactly $\pi$ therefore turns positive.
      * **`HOLD`:** Value from $s[k+1]$. Every integer, enum, flag, and `char[]` field is `HOLD`.
      * **Dependent Fields:** A field with a dependency ([§4.3](04-perception.md)) is interpolated only when its dependency condition holds between $s[k+1]$ and $s[k]$. Otherwise that field takes its value from $s[k+1]$, as its `HOLD` dependency fields do.
      * **Non-Finite Values:** If a `LINEAR` or `ANGLE` field is not finite in either sample, the field takes its value from $s[k+1]$.

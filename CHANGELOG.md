@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.103
+
+* `rate_of` wraps angle differences and is invalid across non-finite samples. `ANGLE` interpolation defines the tie at exactly $\pi$.
+
 ## 0.102
 
 * `world_to_frenet` succeeds for every finite point, so the Phase 4 map cache update cannot fail when an actor leaves the road.
