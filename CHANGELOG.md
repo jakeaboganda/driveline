@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.91
+
+* A component sees its port's `SliceBuffer` view with capacity $N_c$, natively and in Mode A. `rate_of` is per second. Interpolated track lists are re-sorted by the track list rules.
+
 ## 0.90
 
 * Defined `PIDSpeedController` state across mode switches. Its integral is rebased on the first velocity step after initialization or `ACCEL_TARGET`, so the output does not jump and no unasserted `v_ref` is read.
