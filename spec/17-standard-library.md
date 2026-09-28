@@ -1,7 +1,7 @@
 ---
 title: Standard library
 section: 17
-version: 0.90
+version: 0.108
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 06-lifecycle.md, 08-steady-state.md, 09-abi.md, 11-execution.md, 15-manifest.md]
@@ -18,7 +18,7 @@ Common notation: $\Delta t = \Delta t_{\text{base}}$, $dt$ is the component's ow
 | Name | Signature | Meaning |
 | :--- | :--- | :--- |
 | `load_xodr` | `(path: String) -> OpenDriveMap` | Loads an ASAM OpenDRIVE file. A relative path resolves against the scenario file's directory. |
-| `spawn` | `(id: Int, spec, road: String, lane: Int, s: Length, d: Length = 0m, v: Velocity = 0m/s) -> Actor` | Places the actor's rear-axle origin at `(road, lane, s, d)`, facing its lane's driving direction, with speed `v` ≥ 0 ([§2](02-conventions.md)). |
+| `spawn` | `(id: Int, spec: VehicleSpec, road: String, lane: Int, s: Length, d: Length = 0m, v: Velocity = 0m/s) -> Actor` | Places the actor's rear-axle origin at `(road, lane, s, d)`, facing its lane's driving direction, with speed `v` ≥ 0 ([§2](02-conventions.md)). |
 | `RouteNodes` | `(nodes: [String]) -> RouteNodes` | At most 64 lane reference strings ([§2](02-conventions.md)). |
 | `friction_zone` | `(road: String, s_start: Length, s_end: Length, mu: Scalar)` | Inside `environment`. Sets $\mu$ on every lane of `road` for $s_{\text{start}} \le s < s_{\text{end}}$. Where zones overlap, the later statement wins. |
 | `default_friction` | `Scalar` | Inside `environment`. $\mu$ everywhere that no zone covers. The default is `1.0`. |
@@ -48,8 +48,8 @@ Sensors are part of the runtime ([§0](00-conformance.md)). Every standard senso
 | :--- | :--- | :--- | :--- | :--- |
 | `HumanVisualSensor` | `fov: Angle`, `range: Length` | `VisualSlice` | `Windshield` | See below. |
 | `SurroundVisualSensor` | `range: Length` | `VisualSlice` | `Center` | `fov` is $2\pi$. See below. |
-| `MillimeterRadar` | `mount`, `fov: Angle`, `range: Length = 200m` | `RadarSlice` | `mount` | The primary target is the nearest track, by `range`, with $x > 0$ and $|y| \le W_{\text{bbox}}/2 + 0.5\text{ m}$. `primary_target_id` is its `target_actor_id`. `primary_rcs` is $10\text{ dBsm}$. |
-| `MonoCamera` | `mount`, `fov: Angle`, `range: Length = 120m` | `CameraSlice` | `mount` | `obstacle_confidence` is 1 if a primary target, defined as for the radar, exists and 0 otherwise. `lane_line_confidence` is 1. `d_lane_center_est` is $\sigma \cdot$ `own.frenet_d`. `heading_error_est` is the actor's yaw minus the lane heading in its driving direction, wrapped. |
+| `MillimeterRadar` | `mount: Mount`, `fov: Angle`, `range: Length = 200m` | `RadarSlice` | `mount` | The primary target is the nearest track, by `range`, with $x > 0$ and $|y| \le W_{\text{bbox}}/2 + 0.5\text{ m}$. `primary_target_id` is its `target_actor_id`. `primary_rcs` is $10\text{ dBsm}$. |
+| `MonoCamera` | `mount: Mount`, `fov: Angle`, `range: Length = 120m` | `CameraSlice` | `mount` | `obstacle_confidence` is 1 if a primary target, defined as for the radar, exists and 0 otherwise. `lane_line_confidence` is 1. `d_lane_center_est` is $\sigma \cdot$ `own.frenet_d`. `heading_error_est` is the actor's yaw minus the lane heading in its driving direction, wrapped. |
 | `SurfaceContactSensor` | none | `SurfaceSlice` | none | `mu_fl` through `mu_rr` are $\mu$ at the four contact points: $x \in \{L, 0\}$ and $y = \pm t/2$, with $t$ the Tier 2 track width if present, else $0.85\, W_{\text{bbox}}$. `mu_mean` is their mean. `road_grade`, `road_bank`, and `elevation_z` are map values at the rear-axle origin. |
 
 **`VisualSlice` fields:** `ego_*` come from `own`. `lead_ttc` is the `ttc_lon` of the lead track, which is the track with the smallest positive `rel_x` whose `road_id` and `lane_id` equal the actor's. It is `+INFINITY` if there is none. `left_lane_free` is 1 if the lane to the actor's left in its driving direction exists and holds no track with $|x| \le 20\text{ m}$. That lane is `out_left_lane_id` of `query_lane_topology` at the actor's `(road_id, lane_id, s)` if $\sigma = +1$, and `out_right_lane_id` if $\sigma = -1$ ([§9.2](09-abi.md)). `right_lane_free` works the same way on the other side.

@@ -1,7 +1,7 @@
 ---
 title: DSL static semantics
 section: 16
-version: 0.107
+version: 0.108
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 07-fmu-packaging.md, 09-abi.md, 10-composition.md, 11-execution.md, 12-grammar.md, 15-manifest.md, 17-standard-library.md]
@@ -82,6 +82,7 @@ Names resolve from the innermost scope outward. A name declared twice in one sco
 ## 16.6 Scenario and Vehicle Specification Rules
 
 * **World statements:** A scenario has exactly one `map`, exactly one `timestep` with a value above zero, at most one `seed` (an `Int` from 0 to $2^{63} - 1$), and at most one `environment`.
+* **`environment`:** The block may contain `default_friction = ...;` at most once and any number of `friction_zone(...)` calls ([§17.1](17-standard-library.md)), and nothing else. Every $\mu$ must be a constant in $[0, 2]$. A `friction_zone` must name a road of the map and have `s_start` < `s_end`.
 * **Actor bodies:** Names in one actor's `sensors` block are unique, and so are names in its `priors` block.
 * **`vehicle_spec` keys:** The only keys are `tier0`, `tier1`, `tier2`, and `tier3`. `tier0` is required, `tier2` requires `tier1`, and `tier3` requires `tier1`. A present key populates that tier, and the tier rules of [§3](03-vehicle-parameters.md) apply.
 * **Tier 0–2 records:** Each value is a record literal. Its field names must be exactly the member names of `dl_kinematic_params_t`, `dl_single_track_params_t`, or `dl_multibody_params_t` in [`abi/driveline_abi.h`](../abi/driveline_abi.h). Padding members and `num_gears` are excluded. Each value must have the dimension of the unit in that member's header comment. `gear_ratios` is an array literal of 1 to 10 dimensionless values, and `num_gears` is its length.

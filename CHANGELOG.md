@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.108
+
+* Defined what an `environment` block may contain and the range of $\mu$. The `spawn` and sensor signatures type `spec` and `mount`.
+
 ## 0.107
 
 * Defined the defaults and range of the `required_tier` and `rate` clauses, `param` types and constant initializers, unary minus typing, and the frame types that `Arbitrate` allows.
