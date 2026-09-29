@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.199
+
+* Minor fixes: reverse warm-start powertrain values, the map cache unchanged by a tier change, teardown reports reuse the ending error's tick, and PIDSpeedController ignores `s_stop`.
+
 ## 0.198
 
 * Fixed two contradictions from v0.186 and v0.194. Nanosecond `uint64` fields are only `Time`, and a `select`/`clamp` call's expected type never converts `Int` arguments. Pipe calls must name components or `fn`s, and `bind_outputs` cannot assign padding or header fields.
