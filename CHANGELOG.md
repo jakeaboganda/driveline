@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.175
+
+* Input ports are limited to frame, buffer, and route types. Frame ports are fed only by pipes, and by-name port arguments must be sensor buffers or priors. `bind a` means `bind [a]`. Other fixes: qualified component calls are errors, `uint64` fields fit `Int`, and Mode B `Float64` parameters take the dimension of their declared unit.
+
 ## 0.174
 
 * `ttc_lon` runs to bumper contact by subtracting the ego's extent ahead of the mount. Before, Windshield-mounted sensors reported a positive TTC at contact. `JerkLimiter` stores its output as the next step's state.
