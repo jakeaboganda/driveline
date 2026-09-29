@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.195
+
+* `SimpleDrivetrain` converts CG net force to $\dot{v}_{\text{lon}}$ with the CG lateral velocity $v_{\text{lat}} + l_r \dot{\psi}$. The v0.187 form missed $l_r \dot{\psi}^2$, about 0.39 m/s² at 10 m/s on a 20 m radius. Standard physics rejects an init context with negative $v_{\text{lon}}$.
+
 ## 0.194
 
 * Enum-typed frame fields have their named enum type whatever their C type, which keeps the example's `gear_mode = GearMode::DRIVE` valid. Nanosecond `uint64` fields such as `timestamp_ns` are `Time`.
