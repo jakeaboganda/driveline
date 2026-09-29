@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.178
+
+* Minor fixes: splice setup call order, heading-frame contact points, a well-typed `collision` signature, clearer `a_lon` updates, manifest units for `Bool`/enum/`Time`, compile-time map checks for spawns and routes, and `select`/`clamp` pass on `Time` to literals.
+
 ## 0.177
 
 * Wheel slip at a warm start after tick 0 comes from the committed state, with no steady-state solve. Grade and bank signs follow the lane's driving direction, which matches the σ formula. `Time` values reach `Float64` pins and parameters in seconds. FMU initialization inputs are read in the splice window.

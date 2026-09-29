@@ -1,10 +1,10 @@
 ---
 title: Standard library
 section: 17
-version: 0.174
+version: 0.178
 status: draft
 normative: true
-depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 06-lifecycle.md, 08-steady-state.md, 09-abi.md, 11-execution.md, 15-manifest.md]
+depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 06-lifecycle.md, 08-steady-state.md, 09-abi.md, 11-execution.md, 15-manifest.md, 16-static-semantics.md]
 ---
 
 # 17. Standard Library
@@ -18,11 +18,11 @@ An input written without a name, such as the pipe input, is the port named `inpu
 | Name | Signature | Meaning |
 | :--- | :--- | :--- |
 | `load_xodr` | `(path: String) -> OpenDriveMap` | Loads an ASAM OpenDRIVE file. A relative path resolves against the scenario file's directory. |
-| `spawn` | `(id: Int, spec: VehicleSpec, road: String, lane: Int, s: Length, d: Length = 0m, v: Velocity = 0m/s) -> Actor` | Places the actor's rear-axle origin at `(road, lane, s, d)`, moving in its lane's driving direction, with speed `v` ≥ 0 ([§2](02-conventions.md)). |
-| `RouteNodes` | `(nodes: [String]) -> RouteNodes` | At most 64 lane reference strings ([§2](02-conventions.md)). |
+| `spawn` | `(id: Int, spec: VehicleSpec, road: String, lane: Int, s: Length, d: Length = 0m, v: Velocity = 0m/s) -> Actor` | Places the actor's rear-axle origin at `(road, lane, s, d)`, moving in its lane's driving direction, with speed `v` ≥ 0 ([§2](02-conventions.md)). An unknown road or lane, or an `s` off the road, is a compile-time error. |
+| `RouteNodes` | `(nodes: [String]) -> RouteNodes` | At most 64 lane reference strings, each naming a lane of the map. More, or an unknown lane, is a compile-time error ([§2](02-conventions.md)). |
 | `friction_zone` | `(road: String, s_start: Length, s_end: Length, mu: Scalar)` | Inside `environment`. Sets $\mu$ on every lane of `road` for $s_{\text{start}} \le s < s_{\text{end}}$. Where zones overlap, the later statement wins. |
 | `default_friction` | `Scalar` | Inside `environment`. $\mu$ everywhere that no zone covers. The default is `1.0`. |
-| `collision` | `(a: Actor, b: Actor or any) -> Bool` | True if the footprints of `a` and `b` overlap or touch. `any` matches every other actor. A footprint is the $xy$ extent of the Tier 0 bounding box ([§3](03-vehicle-parameters.md)), placed by the committed pose. |
+| `collision` | `(a: Actor, b: Actor) -> Bool`, where `b` may also be `any` ([§16.4](16-static-semantics.md)) | True if the footprints of `a` and `b` overlap or touch. `any` matches every other actor. A footprint is the $xy$ extent of the Tier 0 bounding box ([§3](03-vehicle-parameters.md)), placed by the committed pose. |
 | `select` | `(c: Bool, a: T, b: T) -> T` | `a` if `c`, else `b`. |
 | `clamp` | `(x: T, lo: T, hi: T) -> T` | $\min(\max(x, lo), hi)$ for a quantity type `T`. |
 | `IntentFrame::decelerate` | `(a_ref: Acceleration) -> IntentFrame` | `lon_mode = ACCEL_TARGET`, `a_ref`, `valid_mask = 0x01`. |
@@ -50,7 +50,7 @@ Sensors are part of the runtime ([§0](00-conformance.md)). Every standard senso
 | `SurroundVisualSensor` | `range: Length` | `VisualSlice` | `Center` | `fov` is $2\pi$. See below. |
 | `MillimeterRadar` | `mount: Mount`, `fov: Angle`, `range: Length = 200m` | `RadarSlice` | `mount` | The primary target is the nearest of the slice's tracks, by `range` and then smaller `target_actor_id`, with $x > 0$ and $|y| \le W_{\text{bbox}}/2 + 0.5\text{ m}$ with the ego's $W_{\text{bbox}}$. `primary_target_id` is its `target_actor_id`, `primary_range` its `range`, and `primary_azimuth` its `bearing`. `primary_rcs` is $10\text{ dBsm}$. |
 | `MonoCamera` | `mount: Mount`, `fov: Angle`, `range: Length = 120m` | `CameraSlice` | `mount` | `obstacle_confidence` is 1 if a primary target, defined as for the radar, exists and 0 otherwise. `lane_line_confidence` is 1. `d_lane_center_est` is $\sigma \cdot$ `own.frenet_d`. `heading_error_est` is the actor's yaw minus the lane heading in its driving direction, wrapped. |
-| `SurfaceContactSensor` | none | `SurfaceSlice` | none | `mu_fl` through `mu_rr` are $\mu$ at the four contact points: `fl` at $(L, +t/2)$, `fr` at $(L, -t/2)$, `rl` at $(0, +t/2)$, and `rr` at $(0, -t/2)$ in the body frame, with $t$ the Tier 2 track width of that axle (`track_width_f` or `track_width_r`) if present, else $0.85\, W_{\text{bbox}}$. `mu_mean` is their mean. `road_grade`, `road_bank`, and `elevation_z` are map values at the rear-axle origin. |
+| `SurfaceContactSensor` | none | `SurfaceSlice` | none | `mu_fl` through `mu_rr` are $\mu$ at the four contact points: `fl` at $(L, +t/2)$, `fr` at $(L, -t/2)$, `rl` at $(0, +t/2)$, and `rr` at $(0, -t/2)$ in the heading frame, with $t$ the Tier 2 track width of that axle (`track_width_f` or `track_width_r`) if present, else $0.85\, W_{\text{bbox}}$. `mu_mean` is their mean. `road_grade`, `road_bank`, and `elevation_z` are map values at the rear-axle origin. |
 
 **`VisualSlice` fields:** `ego_*` come from `own`. `lead_ttc` is the `ttc_lon` of the lead track, which is the track with the smallest positive `rel_x`, then the smaller `target_actor_id`, whose `road_id` and `lane_id` equal the actor's. It is `+INFINITY` if there is none. `left_lane_free` is 1 if the lane to the actor's left in its driving direction exists and has no track whose `road_id` and `lane_id` are that lane's and whose $|$`rel_x`$| \le 20\text{ m}$. That lane is `out_left_lane_id` of `query_lane_topology` at the actor's `(road_id, lane_id, s)` if $\sigma = +1$, and `out_right_lane_id` if $\sigma = -1$ ([§9.2](09-abi.md)). A neighbor whose direction sign differs from $\sigma$ counts as absent. `right_lane_free` works the same way on the other side.
 
