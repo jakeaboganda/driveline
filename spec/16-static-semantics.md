@@ -1,7 +1,7 @@
 ---
 title: DSL static semantics
 section: 16
-version: 0.175
+version: 0.177
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 07-fmu-packaging.md, 09-abi.md, 10-composition.md, 11-execution.md, 12-grammar.md, 15-manifest.md, 17-standard-library.md]
@@ -86,7 +86,7 @@ Names resolve from the innermost scope outward. A name declared twice in one sco
 * **Declaration clauses:** An omitted `required_tier` clause means `required_tier: 0`. Its value must be 0, 1, or 2. An omitted `rate` clause means the base rate ([§11](11-execution.md)).
 * **`param`:** A parameter's type must be a quantity type, `Time`, `Int`, `Bool`, or an enum. Its initializer must have that type and be a constant expression: literals, enum constants, arithmetic on them, and array literals of constant expressions, with no names. A manifest parameter ([§15](15-manifest.md)) of type `f64` with unit $u$ is a quantity of $u$'s dimension, `i64` is `Int`, `Time` is `Time`, `Bool` is `Bool`, and an enum name is that enum type. A call-site argument for a parameter, of a declared or a library component, must have the parameter's type, where quantity types match by dimension, and must be a constant expression, which here also admits an actor's `id`.
 * **`step`:** Its signature must be `step(t: Time, dt: Time) -> T`, with `T` the component's output type, which for every component form is a checkpoint frame, a partial frame of [§16.1](16-static-semantics.md), or `KinematicState`. `t` is the tick time and `dt` the component's period ([§9.1](09-abi.md)). The block must return a value of type `T` on every path. `let x = e;` gives `x` the type of `e`, which must not be a `Chain` or an array type. `let` names are immutable. Each `{ ... }` block opens a nested scope.
-* **`bind_inputs`:** Each expression must be a quantity, an `Int`, or a `Bool`. The runtime writes it to the `Float64` pin as its SI value, as the integer's value, or as 1.0 for true and 0.0 for false. Each pin name must be an input variable in the FMU's `modelDescription.xml`.
+* **`bind_inputs`:** Each expression must be a quantity, a `Time`, an `Int`, or a `Bool`. The runtime writes it to the `Float64` pin as its SI value, a `Time` as the binary64 value nearest its nanoseconds over $10^9$, as the integer's value, or as 1.0 for true and 0.0 for false. Each pin name must be an input variable in the FMU's `modelDescription.xml`.
 * **`bind_outputs`:** `fmu.out("name")` is the value of the named output variable after `fmi3DoStep` ([§7.1](07-fmu-packaging.md)), as a dimensionless quantity. It is allowed only inside `bind_outputs`, and the name must be an output variable of the FMU. In `bind_outputs -> T`, `T` must be the component's output type, and each assigned name must be a field of `T`, assigned at most once. Unassigned fields, including `valid_mask`, follow [§7](07-fmu-packaging.md). Each assignment's value must have the field's type, except that a dimensionless quantity may be assigned to a quantity field and is taken as SI.
 
 ## 16.6 Scenario and Vehicle Specification Rules

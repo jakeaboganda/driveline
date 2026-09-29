@@ -1,7 +1,7 @@
 ---
 title: FMU packaging
 section: 7
-version: 0.175
+version: 0.177
 status: draft
 normative: true
 depends_on: [05-checkpoints.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md, 16-static-semantics.md]
@@ -25,7 +25,7 @@ A `component ... from_fmu("...")` declaration uses one of two modes. The compile
   * **MIME subtype names:** `<checkpoint-type>`, `<slice-type>`, and `<prior-type>` are the type names written in lowercase with a hyphen before each inner capital: `IntentFrame` is `intent-frame`, `KinematicControlFrame` is `kinematic-control-frame`, and `RadarSlice` is `radar-slice`.
 * **Mode B (Scalar-Pin FMU):** A legacy FMU with scalar `Float64` pins. `bind_inputs` maps expressions over the `SliceBuffer` ports and `own_state` onto input pins. `bind_outputs` maps output pins onto a checkpoint frame. A splice starts a new instance that initializes at $t_{\text{first}}$ from `bind_inputs` alone, with no init context ([§7.2](07-fmu-packaging.md)), and the runtime reports `DL_STATUS_WARN_FMU_COLD_SPLICE`.
 
-  In `bind_outputs`, a frame field that no assignment names is zero. If `valid_mask` is not assigned, it is the union of the bits that cover the assigned fields ([§5](05-checkpoints.md)), and a union that [§5](05-checkpoints.md) forbids, such as `0x04` with `0x08`, is a compile-time error. Named call-site arguments that are not input ports are FMI parameters with the same names, set before initialization. Each must name a parameter variable of `modelDescription.xml`, and its type follows that variable: `Float64` takes a quantity of the dimension of its declared unit, or a dimensionless one if it declares none, passed in SI units by the Units rule below, an integer type an `Int`, and `Boolean` a `Bool`. Any other name is a compile-time error.
+  In `bind_outputs`, a frame field that no assignment names is zero. If `valid_mask` is not assigned, it is the union of the bits that cover the assigned fields ([§5](05-checkpoints.md)), and a union that [§5](05-checkpoints.md) forbids, such as `0x04` with `0x08`, is a compile-time error. Named call-site arguments that are not input ports are FMI parameters with the same names, set before initialization. Each must name a parameter variable of `modelDescription.xml`, and its type follows that variable: `Float64` takes a quantity of the dimension of its declared unit, or a dimensionless one if it declares none, passed in SI units by the Units rule below, or a `Time` passed in seconds when the unit is `s`, an integer type an `Int`, and `Boolean` a `Bool`. Any other name is a compile-time error.
 
   A Mode B FMU cannot be re-trimmed ([§6.2.4](06-lifecycle.md)), because it has no input for `dl_init_context_t`.
 
@@ -47,7 +47,7 @@ The outputs read in step 3 describe the FMU at $t + h$ computed from inputs held
 
 ## 7.2 Lifecycle Mapping
 
-The runtime drives an FMU through the [§6](06-lifecycle.md) states with these FMI 3.0 calls. "Initialize at $t$" means: call `fmi3EnterInitializationMode` with `startTime` $= t$ and set the inputs. The following `dl_exit_init_mode` then calls `fmi3ExitInitializationMode`. A Mode A FMU's inputs are `dl_init_context`, `own_state`, its ports, and its prior variables, so a re-trim after `fmi3Reset` sets the priors again. A Mode B FMU's inputs are the `bind_inputs` expressions. At initialization, each checkpoint port holds the context's latched frame of its type ([§6.2](06-lifecycle.md)), each `SliceBuffer` port holds the actor's latest buffer, and `own_state` and `bind_inputs` read the committed state, as they stand when the runtime initializes the FMU.
+The runtime drives an FMU through the [§6](06-lifecycle.md) states with these FMI 3.0 calls. "Initialize at $t$" means: call `fmi3EnterInitializationMode` with `startTime` $= t$ and set the inputs. The following `dl_exit_init_mode` then calls `fmi3ExitInitializationMode`. A Mode A FMU's inputs are `dl_init_context`, `own_state`, its ports, and its prior variables, so a re-trim after `fmi3Reset` sets the priors again. A Mode B FMU's inputs are the `bind_inputs` expressions. At initialization, each checkpoint port holds the context's latched frame of its type ([§6.2](06-lifecycle.md)), each `SliceBuffer` port holds the actor's latest buffer, and `own_state` and `bind_inputs` read the committed state, as they stand in the window where the runtime makes the initialization calls. That is the inter-tick window of the splice or re-trim even when `startTime` is a later $t_{\text{first}}$.
 
 | [§6](06-lifecycle.md) Call | FMU Calls |
 | :--- | :--- |

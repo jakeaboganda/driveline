@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.177
+
+* Wheel slip at a warm start after tick 0 comes from the committed state, with no steady-state solve. Grade and bank signs follow the lane's driving direction, which matches the σ formula. `Time` values reach `Float64` pins and parameters in seconds. FMU initialization inputs are read in the splice window.
+
 ## 0.176
 
 * Minor fixes: splice teardown and instantiation order, per-actor physics in `bind` order, §14 FMU teardown links §7.2, oversized array counts name their error, `a_ref` and trajectory $a_k$ are speed rates, path curvature is positive left, trajectory speeds are non-negative, and pitch excludes the gimbal points.
