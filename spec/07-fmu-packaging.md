@@ -1,7 +1,7 @@
 ---
 title: FMU packaging
 section: 7
-version: 0.179
+version: 0.182
 status: draft
 normative: true
 depends_on: [05-checkpoints.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md, 16-static-semantics.md]
@@ -27,7 +27,7 @@ A `component ... from_fmu("...")` declaration uses one of two modes. The compile
 
   In `bind_outputs`, a frame field that no assignment names is zero. If `valid_mask` is not assigned, it is the union of the bits that cover the assigned fields ([§5](05-checkpoints.md)), and a union that [§5](05-checkpoints.md) forbids, such as `0x04` with `0x08`, is a compile-time error. Named call-site arguments that are not input ports are FMI parameters with the same names, set before initialization. Each must name a parameter variable of `modelDescription.xml`, and its type follows that variable: `Float64` takes a quantity of the dimension of its declared unit, or a dimensionless one if it declares none, passed in SI units by the Units rule below, or a `Time` passed in seconds when the unit is `s`, `Int64` takes an `Int`, and `Boolean` takes a `Bool`. A variable of any other type, or an argument of another type, is a compile-time error. Any other name is a compile-time error.
 
-  A Mode B FMU cannot be re-trimmed ([§6.2.4](06-lifecycle.md)), because it has no input for `dl_init_context_t`.
+  A Mode B FMU cannot be re-trimmed ([§6.2.4](06-lifecycle.md)), because it has no input for `dl_init_context_t`. For the same reason its output type must not be `KinematicState`, so it is never a physics component.
 
 In both modes:
 
@@ -39,7 +39,7 @@ In both modes:
 
 Both modes use FMI 3.0 Co-Simulation. On each tick $t$ where the component is scheduled, with period $h = k_{\text{div}} \cdot \Delta t_{\text{base}}$ ([§11](11-execution.md)), the runtime does three things in order:
 
-1. It sets the inputs for tick $t$.
+1. It sets the inputs for tick $t$. Before that, it applies to each filled checkpoint input the checks that [§5](05-checkpoints.md) assigns to a consumer: the valid-mask rules and, for a Mode A FMU, the manifest's `lon_modes` and `lat_modes`. A failed check is reported with the code [§5](05-checkpoints.md) names, as a native consumer would return it, and `fmi3DoStep` is not called.
 2. It calls `fmi3DoStep` with the `currentCommunicationPoint` of tick $t$ by the Times rule of [§7](07-fmu-packaging.md) and `communicationStepSize` $= h$.
 3. It reads the outputs and uses them as the component's output for tick $t$. An FMI return of `fmi3Warning` counts as `fmi3OK`. Any worse return, or a step that sets `terminateSimulation` or `earlyReturn`, is `DL_STATUS_ERR_FMU` ([§14](14-diagnostics.md)). The runtime instantiates every FMU with `eventModeUsed` and `earlyReturnAllowed` false and enters initialization with no tolerance and no stop time.
 

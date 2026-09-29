@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.182
+
+* A Mode B FMU cannot be physics, because it has no init context. For FMU consumers, the runtime runs the §5 validity and mode checks before stepping and reports the same codes a native consumer returns.
+
 ## 0.181
 
 * Minor fixes: `DynamicSingleTrack` reports kinematic outputs on any step with the low-speed reset, which removes the one-tick `a_lat` drop. A `struct_size` mismatch names its error, jerk and steer-rate limits must be positive, and the pitch sign covers vehicles facing against their lane.
