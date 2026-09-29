@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.176
+
+* Minor fixes: splice teardown and instantiation order, per-actor physics in `bind` order, §14 FMU teardown links §7.2, oversized array counts name their error, `a_ref` and trajectory $a_k$ are speed rates, path curvature is positive left, trajectory speeds are non-negative, and pitch excludes the gimbal points.
+
 ## 0.175
 
 * Input ports are limited to frame, buffer, and route types. Frame ports are fed only by pipes, and by-name port arguments must be sensor buffers or priors. `bind a` means `bind [a]`. Other fixes: qualified component calls are errors, `uint64` fields fit `Int`, and Mode B `Float64` parameters take the dimension of their declared unit.

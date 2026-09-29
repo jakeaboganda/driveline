@@ -1,7 +1,7 @@
 ---
 title: Checkpoint data contracts
 section: 5
-version: 0.171
+version: 0.176
 status: draft
 normative: true
 depends_on: [02-conventions.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 15-manifest.md, 17-standard-library.md]
@@ -38,7 +38,7 @@ Produced by Stage 1 (Intent) components.
 | | `timestamp_ns` | `uint64` | $\text{ns}$ | Simulation time when the intent frame was evaluated. |
 | | `valid_mask` | `uint32` | bitmask | `0x01`: Lon active, `0x02`: Lat active, `0x04`: `s_stop` valid, `0x08`: `trajectory` valid, `0x10`: `turn_signal` active. |
 | **Longitudinal** | `lon_mode` | `enum` | — | `ACCEL_TARGET` ($0$), `VELOCITY_TARGET` ($1$), or `GAP_PROFILE` ($2$). |
-| | `a_ref` | `float64` | $\text{m/s}^2$ | Target longitudinal acceleration (`ACCEL_TARGET`). |
+| | `a_ref` | `float64` | $\text{m/s}^2$ | Target rate of change $\dot{v}_{\text{lon}}$ of `v_lon` (`ACCEL_TARGET`), as for `a_lon_cmd` in [§5.2](05-checkpoints.md). |
 | | `v_ref` | `float64` | $\text{m/s}$ | Target cruise speed (`VELOCITY_TARGET` or `GAP_PROFILE` ceiling). |
 | | `s_stop` | `float64` | $\text{m}$ | Target stopping distance ahead (valid if `valid_mask & 0x04`). |
 | | `gap_target_actor_id` | `uint64` | — | Perceived lead actor ID for `GAP_PROFILE` ($0$ if none). |
@@ -75,7 +75,7 @@ Produced by Stage 1 (Intent) components.
 
 A component implements trajectories if its manifest's `lat_modes` lists `SPATIOTEMPORAL_TRAJECTORY` ([§15](15-manifest.md)).
 
-**Array Semantics:** `path_points` holds `num_waypoints` entries and `trajectory` holds `num_traj_points` entries, each at most 64. Entries beyond the count are ignored. A count above 64 is invalid. Both arrays are in the World frame and ordered along the direction of travel. Each `trajectory` time $t_k$ is in seconds after the frame's `timestamp_ns`. In a produced frame the times start at $t_0 \ge 0$ and strictly increase. After the hold rule's shift they do not decrease.
+**Array Semantics:** `path_points` holds `num_waypoints` entries and `trajectory` holds `num_traj_points` entries, each at most 64. Entries beyond the count are ignored. A count above 64 is invalid, and the consumer returns `DL_STATUS_ERR_INVALID_ARG`. Both arrays are in the World frame and ordered along the direction of travel. Their curvatures are positive when the path turns left in that direction, each trajectory $v_k \ge 0$, and each $a_k$ is a $\dot{v}_{\text{lon}}$ like `a_ref`. Each `trajectory` time $t_k$ is in seconds after the frame's `timestamp_ns`. In a produced frame the times start at $t_0 \ge 0$ and strictly increase. After the hold rule's shift they do not decrease.
 
 **Stop Distance:** `s_stop` is the distance along the actor's intended path from its rear-axle origin to the point where the rear-axle origin must stop.
 
