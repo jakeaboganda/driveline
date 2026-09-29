@@ -1,7 +1,7 @@
 ---
 title: DSL static semantics
 section: 16
-version: 0.178
+version: 0.180
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 07-fmu-packaging.md, 09-abi.md, 10-composition.md, 11-execution.md, 12-grammar.md, 15-manifest.md, 17-standard-library.md]
@@ -28,9 +28,9 @@ depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-
 
 ## 16.2 Literals
 
-* A `QuantityLit` has the dimension of its unit, and its value is converted to SI.
+* A `QuantityLit` has the dimension of its unit, and its value is the binary64 value nearest to its exact decimal value times the unit's SI factor. A `Time` literal is converted from its decimal text to nanoseconds exactly ([§2](02-conventions.md)).
 * A `QuantityLit` with dimension s has type `Time` where the expected type is `Time`. The expected type of an operand of `+`, `-`, or a comparison is the type of the other operand, so `t - 0.1s` is `Time`. When both operands of `+` or `-` are literals, both take the expected type of the whole expression, and in `*` or `/` with an `Int`, the other operand takes it, so `0.1s + 0.08s` and `0.09s * 2` are `Time` where `Time` is expected. The arguments of `select` and `clamp` likewise take the call's expected type. Elsewhere it is a quantity. A `Time` literal must be a whole number of nanoseconds.
-* An `IntLit` or `HexLit` has type `Int`. Where a quantity is expected, an `Int` converts to a dimensionless quantity.
+* An `IntLit` or `HexLit` has type `Int`, and one above $2^{63} - 1$ is a compile-time error. Where a quantity is expected, an `Int` converts to a dimensionless quantity.
 * A `FloatLit` is a dimensionless quantity, a `StringLit` is a `String`, and a `BoolLit` is a `Bool`.
 
 ## 16.3 Expressions
@@ -87,7 +87,7 @@ Names resolve from the innermost scope outward. A name declared twice in one sco
 * **`param`:** A parameter's type must be a quantity type, `Time`, `Int`, `Bool`, or an enum. Its initializer must have that type and be a constant expression: literals, enum constants, arithmetic on them, and array literals of constant expressions, with no names. A manifest parameter ([§15](15-manifest.md)) of type `f64` with unit $u$ is a quantity of $u$'s dimension, `i64` is `Int`, `Time` is `Time`, `Bool` is `Bool`, and an enum name is that enum type. A call-site argument for a parameter, of a declared or a library component, must have the parameter's type, where quantity types match by dimension, and must be a constant expression, which here also admits an actor's `id`.
 * **`step`:** Its signature must be `step(t: Time, dt: Time) -> T`, with `T` the component's output type, which for every component form is a checkpoint frame, a partial frame of [§16.1](16-static-semantics.md), or `KinematicState`. `t` is the tick time and `dt` the component's period ([§9.1](09-abi.md)). The block must return a value of type `T` on every path. `let x = e;` gives `x` the type of `e`, which must not be a `Chain` or an array type. `let` names are immutable. Each `{ ... }` block opens a nested scope.
 * **`bind_inputs`:** Each expression must be a quantity, a `Time`, an `Int`, or a `Bool`. The runtime writes it to the `Float64` pin as its SI value, a `Time` as the binary64 value nearest its nanoseconds over $10^9$, as the integer's value, or as 1.0 for true and 0.0 for false. Each pin name must be an input variable in the FMU's `modelDescription.xml`.
-* **`bind_outputs`:** `fmu.out("name")` is the value of the named output variable after `fmi3DoStep` ([§7.1](07-fmu-packaging.md)), as a dimensionless quantity. It is allowed only inside `bind_outputs`, and the name must be an output variable of the FMU. In `bind_outputs -> T`, `T` must be the component's output type, and each assigned name must be a field of `T`, assigned at most once. Unassigned fields, including `valid_mask`, follow [§7](07-fmu-packaging.md). Each assignment's value must have the field's type, except that a dimensionless quantity may be assigned to a quantity field and is taken as SI.
+* **`bind_outputs`:** `fmu.out("name")` is the value of the named output variable after `fmi3DoStep` ([§7.1](07-fmu-packaging.md)), as a dimensionless quantity. It is allowed only inside `bind_outputs`, and the name must be an output variable of the FMU. In `bind_outputs -> T`, `T` must be the component's output type, and each assigned name must be a field of `T`, assigned at most once. Unassigned fields, including `valid_mask`, follow [§7](07-fmu-packaging.md). An `Int` assigned to an integer field narrower than 64 bits must fit its range, and a constant that does not is a compile-time error, while a computed one makes the step return `DL_STATUS_ERR_NUMERIC`. Each assignment's value must have the field's type, except that a dimensionless quantity may be assigned to a quantity field and is taken as SI.
 
 ## 16.6 Scenario and Vehicle Specification Rules
 

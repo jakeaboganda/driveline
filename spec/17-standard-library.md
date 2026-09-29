@@ -1,7 +1,7 @@
 ---
 title: Standard library
 section: 17
-version: 0.178
+version: 0.180
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 06-lifecycle.md, 08-steady-state.md, 09-abi.md, 11-execution.md, 15-manifest.md, 16-static-semantics.md]
@@ -32,7 +32,7 @@ The world friction field is $\mu(X, Y)$: the zone or default value at the lane t
 
 ## 17.2 Sensors
 
-Sensors are part of the runtime ([§0](00-conformance.md)). Every standard sensor is ideal. It has no noise, no occlusion, and no latency beyond its rate. Every sensor takes `rate: Frequency`, written as a `FreqLit` as in a `RateClause`, and `history: Int` ($N$), and it samples in Phase 1 at its scheduled ticks. A sensor call with slice type `S` has type `SliceBuffer<S, N>`, where `history` must be a constant of at least 1.
+Sensors are part of the runtime ([§0](00-conformance.md)). Every standard sensor is ideal. It has no noise, no occlusion, and no latency beyond its rate. Every sensor takes `rate: Frequency`, written as a single `FreqLit` token as in a `RateClause`, never as another expression, and `history: Int` ($N$), and it samples in Phase 1 at its scheduled ticks. A sensor call with slice type `S` has type `SliceBuffer<S, N>`, where `history` must be a constant of at least 1.
 
 **Mounts:** A sensor frame has the heading frame's axes ([§2](02-conventions.md)) and its origin at the mount point, given in heading-frame coordinates from the rear-axle origin. Roll and pitch never tilt it.
 

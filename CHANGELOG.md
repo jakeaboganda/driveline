@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.180
+
+* Quantity literals round once from their exact decimal value. Unit expressions apply left to right. Integer literals must fit 64 bits, and `Int` values must fit narrower fields. A sensor `rate` is a single `FreqLit`.
+
 ## 0.179
 
 * The §7.2 parameter setters depend on the mode. Mode A follows its manifest, with `Time` as nanoseconds. Mode B follows each variable's type, with `Time` as seconds on a `Float64`, and takes only `Float64`, `Int64`, and `Boolean` variables. This removes the contradiction that v0.175 introduced.
