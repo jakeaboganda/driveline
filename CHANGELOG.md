@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.188
+
+* The hold rule keeps one stored value per hold unit per connection, and a `COUPLED`/`LON`/`LAT` switch clears the other side's stored values. A turn-signal-only frame after a trajectory now fills to `0x18`. Before, the literal rule could revive the latched `LON`/`LAT` units and produce an invalid frame.
+
 ## 0.187
 
 * The FMU Units rule covers every parameter variable in both modes, and an `Int` meeting a quantity in `*` or `/` converts. Minor fixes: lane tie-break ordering, the `abi_version` check, report ticks for cold init and splice windows, the full prelude-clash rule, `Enumeration` variables, multi-unit header comments, `uint8` flag typing, `SimpleDrivetrain` emitting $\dot{v}_{\text{lon}}$, and the size of the downward-crossing step.
