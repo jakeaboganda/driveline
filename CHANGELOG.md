@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.194
+
+* Enum-typed frame fields have their named enum type whatever their C type, which keeps the example's `gear_mode = GearMode::DRIVE` valid. Nanosecond `uint64` fields such as `timestamp_ns` are `Time`.
+
 ## 0.193
 
 * Minor fixes: `fn` parameter declared types, field C types come from the header, no positional arguments after named ones, and `environment` entries are uses of prelude names.
