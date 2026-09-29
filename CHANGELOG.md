@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.185
+
+* Manifest defaults are written in their unit and always sent, so FMU start values never apply. Mode checks cover only asserted units, and a set `0x08` counts as `SPATIOTEMPORAL_TRAJECTORY`. An FMU's missing-unit failure is `ERR_FMU`.
+
 ## 0.184
 
 * Cold init projects sensors once, after every actor's spawn state exists, so no sensor sees a half-spawned World.
