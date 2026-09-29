@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.179
+
+* The §7.2 parameter setters depend on the mode. Mode A follows its manifest, with `Time` as nanoseconds. Mode B follows each variable's type, with `Time` as seconds on a `Float64`, and takes only `Float64`, `Int64`, and `Boolean` variables. This removes the contradiction that v0.175 introduced.
+
 ## 0.178
 
 * Minor fixes: splice setup call order, heading-frame contact points, a well-typed `collision` signature, clearer `a_lon` updates, manifest units for `Bool`/enum/`Time`, compile-time map checks for spawns and routes, and `select`/`clamp` pass on `Time` to literals.

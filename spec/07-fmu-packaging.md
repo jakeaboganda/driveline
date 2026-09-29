@@ -1,7 +1,7 @@
 ---
 title: FMU packaging
 section: 7
-version: 0.177
+version: 0.179
 status: draft
 normative: true
 depends_on: [05-checkpoints.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md, 16-static-semantics.md]
@@ -25,7 +25,7 @@ A `component ... from_fmu("...")` declaration uses one of two modes. The compile
   * **MIME subtype names:** `<checkpoint-type>`, `<slice-type>`, and `<prior-type>` are the type names written in lowercase with a hyphen before each inner capital: `IntentFrame` is `intent-frame`, `KinematicControlFrame` is `kinematic-control-frame`, and `RadarSlice` is `radar-slice`.
 * **Mode B (Scalar-Pin FMU):** A legacy FMU with scalar `Float64` pins. `bind_inputs` maps expressions over the `SliceBuffer` ports and `own_state` onto input pins. `bind_outputs` maps output pins onto a checkpoint frame. A splice starts a new instance that initializes at $t_{\text{first}}$ from `bind_inputs` alone, with no init context ([§7.2](07-fmu-packaging.md)), and the runtime reports `DL_STATUS_WARN_FMU_COLD_SPLICE`.
 
-  In `bind_outputs`, a frame field that no assignment names is zero. If `valid_mask` is not assigned, it is the union of the bits that cover the assigned fields ([§5](05-checkpoints.md)), and a union that [§5](05-checkpoints.md) forbids, such as `0x04` with `0x08`, is a compile-time error. Named call-site arguments that are not input ports are FMI parameters with the same names, set before initialization. Each must name a parameter variable of `modelDescription.xml`, and its type follows that variable: `Float64` takes a quantity of the dimension of its declared unit, or a dimensionless one if it declares none, passed in SI units by the Units rule below, or a `Time` passed in seconds when the unit is `s`, an integer type an `Int`, and `Boolean` a `Bool`. Any other name is a compile-time error.
+  In `bind_outputs`, a frame field that no assignment names is zero. If `valid_mask` is not assigned, it is the union of the bits that cover the assigned fields ([§5](05-checkpoints.md)), and a union that [§5](05-checkpoints.md) forbids, such as `0x04` with `0x08`, is a compile-time error. Named call-site arguments that are not input ports are FMI parameters with the same names, set before initialization. Each must name a parameter variable of `modelDescription.xml`, and its type follows that variable: `Float64` takes a quantity of the dimension of its declared unit, or a dimensionless one if it declares none, passed in SI units by the Units rule below, or a `Time` passed in seconds when the unit is `s`, `Int64` takes an `Int`, and `Boolean` takes a `Bool`. A variable of any other type, or an argument of another type, is a compile-time error. Any other name is a compile-time error.
 
   A Mode B FMU cannot be re-trimmed ([§6.2.4](06-lifecycle.md)), because it has no input for `dl_init_context_t`.
 
@@ -52,7 +52,7 @@ The runtime drives an FMU through the [§6](06-lifecycle.md) states with these F
 | [§6](06-lifecycle.md) Call | FMU Calls |
 | :--- | :--- |
 | `dl_instantiate` | `fmi3InstantiateCoSimulation`. A null instance is `DL_STATUS_ERR_FMU`. |
-| `dl_set_parameters` | Set each parameter by name: a quantity with `fmi3SetFloat64` in SI units, an `Int` with `fmi3SetInt64`, a `Time` with `fmi3SetInt64` in nanoseconds, a `Bool` with `fmi3SetBoolean`, and an enum with `fmi3SetInt64` as its numeric value. A parameter whose FMI variable has another type is a compile-time error. |
+| `dl_set_parameters` | Set each parameter by name. Mode A, typed by its manifest ([§15.4](15-manifest.md)): a quantity with `fmi3SetFloat64` in SI units, an `Int` with `fmi3SetInt64`, a `Time` with `fmi3SetInt64` in nanoseconds, a `Bool` with `fmi3SetBoolean`, and an enum with `fmi3SetInt64` as its numeric value. A Mode A parameter whose FMI variable has another type is a compile-time error. Mode B, typed by its variable as above: `fmi3SetFloat64` with the SI value or the `Time` in seconds, `fmi3SetInt64`, or `fmi3SetBoolean`. |
 | `dl_configure_structure` | None. A Mode A FMU reads buffer depths from each `dl_slice_buffer_header_t`. |
 | `dl_enter_cold_init` | Initialize at $t = 0$. |
 | `dl_exit_init_mode` | `fmi3ExitInitializationMode`, after cold init, a splice, or a re-trim alike. |
