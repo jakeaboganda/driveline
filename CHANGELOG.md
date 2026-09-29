@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.201
+
+* Declared slots (params, call arguments, returns, `bind_outputs`, record fields, world statements) give their expressions an expected type, which the example's `0.18s` param and unqualified enum arguments rely on. `select`'s condition is excluded from the one-type rule, and an example comment no longer contradicts §17.
+
 ## 0.200
 
 * The two branches of `+` must end at the same rate, so a merge is an ordinary output. This replaces v0.197's per-branch assertion, which dropped `s_stop` and could hold a stale turn signal. Components that forward time- or pose-relative fields rebase them to their own tick. Latched `LON` units count as held, and a replacement's pre-step latched output is delivered as is.

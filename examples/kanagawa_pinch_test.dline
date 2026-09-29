@@ -92,7 +92,7 @@ component BoschPCS_v4 from_fmu("fmus/BoschPCS_v4.fmu") (rate: 50Hz) (required_ti
 }
 
 // Tier A control chain for the Tier 0 KinematicBicycle challengers.
-// Lon branch: PIDSpeedController (VELOCITY_TARGET only) >> JerkLimiter, both Lon<KinematicControlFrame>.
+// Lon branch: PIDSpeedController >> JerkLimiter, both Lon<KinematicControlFrame>.
 // Lat branch: StanleyLat, Lat<KinematicControlFrame>.
 // PID gains carry units: kp in 1/s (written Hz), ki in 1/s^2, kd dimensionless.
 fn kinematic_coupled_control() -> Chain<IntentFrame, KinematicControlFrame> {
