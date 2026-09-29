@@ -1,7 +1,7 @@
 ---
 title: FMU packaging
 section: 7
-version: 0.186
+version: 0.187
 status: draft
 normative: true
 depends_on: [05-checkpoints.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md, 16-static-semantics.md]
@@ -32,7 +32,7 @@ A `component ... from_fmu("...")` declaration uses one of two modes. The compile
 In both modes:
 
 * **No map callbacks:** An FMU gets no host map callbacks ([§9.2](09-abi.md)), because the callback table holds in-process pointers. Map context reaches an FMU only through its ports, priors, and `own_state`.
-* **Units:** Every bound `Float64` variable that declares a unit must declare one whose conversion to base units has factor 1 and offset 0 and whose base-unit exponents match the dimension of the value bound to it, ignoring any `rad` exponent because angles are dimensionless. Any other unit is a compile-time error, so the runtime never converts units.
+* **Units:** Every bound `Float64` variable, including every parameter variable in either mode, that declares a unit must declare one whose conversion to base units has factor 1 and offset 0 and whose base-unit exponents match the dimension of the value bound to it, ignoring any `rad` exponent because angles are dimensionless. Any other unit is a compile-time error, so the runtime never converts units.
 * **Times:** `startTime` and `communicationStepSize` are the binary64 values nearest to their nanosecond counts divided by $10^9$. The first `currentCommunicationPoint` is `startTime`, and each later one is the previous one plus the previous `communicationStepSize` in binary64, so the points are contiguous as FMI 3.0 requires.
 
 ## 7.1 Stepping and Output Timing
@@ -52,7 +52,7 @@ The runtime drives an FMU through the [§6](06-lifecycle.md) states with these F
 | [§6](06-lifecycle.md) Call | FMU Calls |
 | :--- | :--- |
 | `dl_instantiate` | `fmi3InstantiateCoSimulation`. A null instance is `DL_STATUS_ERR_FMU`. |
-| `dl_set_parameters` | Set each parameter by name. Mode A, typed by its manifest ([§15.4](15-manifest.md)): a quantity with `fmi3SetFloat64` in SI units, an `Int` with `fmi3SetInt64`, a `Time` with `fmi3SetInt64` in nanoseconds, a `Bool` with `fmi3SetBoolean`, and an enum with `fmi3SetInt64` as its numeric value. A Mode A parameter whose FMI variable has another type is a compile-time error. Mode B, typed by its variable as above: `fmi3SetFloat64` with the SI value or the `Time` in seconds, `fmi3SetInt64`, or `fmi3SetBoolean`. |
+| `dl_set_parameters` | Set each parameter by name. Mode A, typed by its manifest ([§15.4](15-manifest.md)): a quantity with `fmi3SetFloat64` in SI units, an `Int` with `fmi3SetInt64`, a `Time` with `fmi3SetInt64` in nanoseconds, a `Bool` with `fmi3SetBoolean`, and an enum with `fmi3SetInt64` as its numeric value, to an `Int64` or `Enumeration` variable. A Mode A parameter whose FMI variable has another type is a compile-time error. Mode B, typed by its variable as above: `fmi3SetFloat64` with the SI value or the `Time` in seconds, `fmi3SetInt64`, or `fmi3SetBoolean`. |
 | `dl_configure_structure` | None. A Mode A FMU reads buffer depths from each `dl_slice_buffer_header_t`. |
 | `dl_enter_cold_init` | Initialize at $t = 0$. |
 | `dl_exit_init_mode` | `fmi3ExitInitializationMode`, after cold init, a splice, or a re-trim alike. |

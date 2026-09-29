@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.187
+
+* The FMU Units rule covers every parameter variable in both modes, and an `Int` meeting a quantity in `*` or `/` converts. Minor fixes: lane tie-break ordering, the `abi_version` check, report ticks for cold init and splice windows, the full prelude-clash rule, `Enumeration` variables, multi-unit header comments, `uint8` flag typing, `SimpleDrivetrain` emitting $\dot{v}_{\text{lon}}$, and the size of the downward-crossing step.
+
 ## 0.186
 
 * Minor fixes: `Time` literals with no typed operand are quantities, and `clamp` never takes `Time`. Longest match covers every token, group chains may bind actors' priors, `history` is capped at 64, and the Mode B `KinematicState` ban is a compile-time error. Also: the downward-crossing claim is accurate, heading distance is defined, reserved FMI names are guarded, cold-init FMU inputs are named, re-trimmed steering bits are set, and the stamping link is fixed.
