@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.196
+
+* A splice keeps the edge into an unchanged consumer, with its stored hold values. Latched frames are filled on the connection they travelled, including connections into Arbiters. Minor fixes: sensor import wording and distinct `bind` lists.
+
 ## 0.195
 
 * `SimpleDrivetrain` converts CG net force to $\dot{v}_{\text{lon}}$ with the CG lateral velocity $v_{\text{lat}} + l_r \dot{\psi}$. The v0.187 form missed $l_r \dot{\psi}^2$, about 0.39 m/s² at 10 m/s on a 20 m radius. Standard physics rejects an init context with negative $v_{\text{lon}}$.

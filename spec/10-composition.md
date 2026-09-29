@@ -1,7 +1,7 @@
 ---
 title: Composition, arbitration, and splicing
 section: 10
-version: 0.178
+version: 0.196
 status: draft
 normative: true
 depends_on: [03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 06-lifecycle.md, 07-fmu-packaging.md, 11-execution.md, 12-grammar.md, 14-diagnostics.md, 15-manifest.md, 16-static-semantics.md, 17-standard-library.md]
@@ -18,7 +18,7 @@ depends_on: [03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 06-l
      | `OneToMany` | One per group. `actor_count` is $M$. | The inputs of every actor in the group. This is centralized coordination. |
      | `ManyToMany` | One per group. `actor_count` is $M$. | Actor $i$'s inputs only. The results must equal those of $M$ `OneToOne` instances. This is batched execution. |
 
-   * **Group Chains:** `bind a -> chain` means exactly `bind [a] -> chain`. In `bind [a_1, ..., a_M] -> chain`, each `OneToOne` component in the chain gets $M$ instances, one per actor, and each other component gets one instance for the group. The runtime orders actors by the order of the `bind` list, and `actor_ids` in `dl_batch_step_io_t` follows that order. In an actor's own `chain` or `physics` declaration, every component serves one actor and `actor_count` is 1.
+   * **Group Chains:** `bind a -> chain` means exactly `bind [a] -> chain`. The names in a `bind` list must be distinct actors. In `bind [a_1, ..., a_M] -> chain`, each `OneToOne` component in the chain gets $M$ instances, one per actor, and each other component gets one instance for the group. The runtime orders actors by the order of the `bind` list, and `actor_ids` in `dl_batch_step_io_t` follows that order. In an actor's own `chain` or `physics` declaration, every component serves one actor and `actor_count` is 1.
    * **Per-Actor Arguments:** In a group chain, an argument bound to an input port is either one value used by every actor, or an array literal with exactly $M$ elements in `bind` order, such as `vision: [blocker.sensors.surround, challenger.sensors.surround]`. An array of any other length is a compile-time error. Each element must satisfy the port's binding rule, including the buffer capacity rule of [§4.2](04-perception.md), and parameters take no per-actor arrays.
 2. **Parallel Split-Merge Operator (`+`):** For $T$ equal to `IntentFrame` or `KinematicControlFrame`, the partial types `Lon<T>` and `Lat<T>` are frames of type $T$ restricted to the `LON` or `LAT` field group of [§5](05-checkpoints.md). A component with output type `Lon<T>` may set only `LON` bits, and the runtime clears any other bits it sets. `Lat<T>` works the same way.
    * **Typing:** $(A + B)$ requires one branch of type $T_{\text{in}} \rightarrow$ `Lon<T>` and one branch of type $T_{\text{in}} \rightarrow$ `Lat<T>`, in either order. The result has type $T_{\text{in}} \rightarrow T$. Two `LON` branches, two `LAT` branches, or more than two branches are compile-time errors, so the two branches can never write the same field.
