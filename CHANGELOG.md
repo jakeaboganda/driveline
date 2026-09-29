@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.174
+
+* `ttc_lon` runs to bumper contact by subtracting the ego's extent ahead of the mount. Before, Windshield-mounted sensors reported a positive TTC at contact. `JerkLimiter` stores its output as the next step's state.
+
 ## 0.173
 
 * The header names the heading frame for `KinematicState` velocities and accelerations, matching §5.3. Sensor frames use heading-frame axes, so roll and pitch never tilt a mount.
