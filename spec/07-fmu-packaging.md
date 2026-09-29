@@ -1,7 +1,7 @@
 ---
 title: FMU packaging
 section: 7
-version: 0.170
+version: 0.172
 status: draft
 normative: true
 depends_on: [05-checkpoints.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md, 16-static-semantics.md]
@@ -59,5 +59,5 @@ The runtime drives an FMU through the [§6](06-lifecycle.md) states with these F
 | `dl_enter_warm_start` (splice) | Initialize at $t_{\text{first}}$, the earliest tick time $t' \ge t$ at which the component is scheduled ([§11](11-execution.md)), where $t$ is the tick after the window, so its first `fmi3DoStep` starts at `startTime`. The context's `sim_time_ns` stays $t$, the time of the committed state it describes ([§6.2.4](06-lifecycle.md)). The new instance has already been instantiated and given its parameters, and the outgoing instance is terminated and freed ([§10](10-composition.md)). |
 | `dl_enter_warm_start` (re-trim, Mode A only) | `fmi3Reset`, set the parameters again, and initialize at $t_{\text{first}}$, as for a splice, with the re-trim context ([§6.2.4](06-lifecycle.md)). |
 | `dl_do_step` | `fmi3DoStep` as [§7.1](07-fmu-packaging.md) describes. |
-| `dl_terminate` | `fmi3Terminate`. |
+| `dl_terminate` | `fmi3Terminate` if the FMU is in FMI Step Mode. Otherwise none, and teardown goes on to `fmi3FreeInstance`. |
 | `dl_free_instance` | `fmi3FreeInstance`. |

@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.172
+
+* An FMU that never reached Step Mode gets no `fmi3Terminate` at teardown. A failed run reports exactly what sequential §11 order produces up to the first error. A re-trim checks only the actors whose tier changed. Init calls finish per instance in Phase 2 order, including multi-component splices.
+
 ## 0.171
 
 * Minor fixes: `has_primary_target` is 1 exactly when there is a primary id, and `manual_gear_index` is bounded by `num_gears` in `DRIVE`.
