@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.200
+
+* The two branches of `+` must end at the same rate, so a merge is an ordinary output. This replaces v0.197's per-branch assertion, which dropped `s_stop` and could hold a stale turn signal. Components that forward time- or pose-relative fields rebase them to their own tick. Latched `LON` units count as held, and a replacement's pre-step latched output is delivered as is.
+
 ## 0.199
 
 * Minor fixes: reverse warm-start powertrain values, the map cache unchanged by a tier change, teardown reports reuse the ending error's tick, and PIDSpeedController ignores `s_stop`.

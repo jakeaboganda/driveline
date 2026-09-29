@@ -1,7 +1,7 @@
 ---
 title: Checkpoint data contracts
 section: 5
-version: 0.197
+version: 0.200
 status: draft
 normative: true
 depends_on: [02-conventions.md, 06-lifecycle.md, 07-fmu-packaging.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md, 17-standard-library.md]
@@ -77,7 +77,7 @@ Produced by Stage 1 (Intent) components.
 
 A component implements trajectories if its manifest's `lat_modes` lists `SPATIOTEMPORAL_TRAJECTORY` ([§15](15-manifest.md)).
 
-**Array Semantics:** `path_points` holds `num_waypoints` entries and `trajectory` holds `num_traj_points` entries, each at most 64. Entries beyond the count are ignored. A count above 64 is invalid. Both arrays are in the World frame and ordered along the direction of travel. Their curvatures are positive when the path turns left in that direction, each trajectory $v_k \ge 0$, and each $a_k$ is a $\dot{v}_{\text{lon}}$ like `a_ref`. Each `trajectory` time $t_k$ is in seconds after the frame's `timestamp_ns`. In a produced frame the times start at $t_0 \ge 0$ and strictly increase. After the hold rule's shift they do not decrease.
+**Array Semantics:** `path_points` holds `num_waypoints` entries and `trajectory` holds `num_traj_points` entries, each at most 64. Entries beyond the count are ignored. A count above 64 is invalid. Both arrays are in the World frame and ordered along the direction of travel. Their curvatures are positive when the path turns left in that direction, each trajectory $v_k \ge 0$, and each $a_k$ is a $\dot{v}_{\text{lon}}$ like `a_ref`. Each `trajectory` time $t_k$ is in seconds after the frame's `timestamp_ns`. In a produced frame the times start at $t_0 \ge 0$ and strictly increase. A component that copies time- or pose-relative fields from an input frame into its output, such as an Arbiter forwarding a slower chain's frame, rebases them to its own tick $t$: it subtracts $(t - t_{\text{in}})/10^9$ from each `trajectory` time as the hold rule does, drops points whose time becomes negative, keeping the last point with its time set to 0 if all would be dropped, and clears `0x04` unless $t_{\text{in}} = t$, where $t_{\text{in}}$ is the input's `timestamp_ns`. After the hold rule's shift they do not decrease.
 
 **Stop Distance:** `s_stop` is the distance along the actor's intended path from its rear-axle origin, at the pose of the frame's `timestamp_ns`, to the point where the rear-axle origin must stop. A consumer that receives the same output on a later tick subtracts the distance travelled since. Held repeats of an output, and a replacement's latched output before its first step ([§10.4](10-composition.md)), are not new outputs.
 

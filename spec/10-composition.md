@@ -1,7 +1,7 @@
 ---
 title: Composition, arbitration, and splicing
 section: 10
-version: 0.197
+version: 0.200
 status: draft
 normative: true
 depends_on: [03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 06-lifecycle.md, 07-fmu-packaging.md, 11-execution.md, 12-grammar.md, 14-diagnostics.md, 15-manifest.md, 16-static-semantics.md, 17-standard-library.md]
@@ -22,7 +22,7 @@ depends_on: [03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 06-l
    * **Per-Actor Arguments:** In a group chain, an argument bound to an input port is either one value used by every actor, or an array literal with exactly $M$ elements in `bind` order, such as `vision: [blocker.sensors.surround, challenger.sensors.surround]`. An array of any other length is a compile-time error. Each element must satisfy the port's binding rule, including the buffer capacity rule of [§4.2](04-perception.md), and parameters take no per-actor arrays.
 2. **Parallel Split-Merge Operator (`+`):** For $T$ equal to `IntentFrame` or `KinematicControlFrame`, the partial types `Lon<T>` and `Lat<T>` are frames of type $T$ restricted to the `LON` or `LAT` field group of [§5](05-checkpoints.md). A component with output type `Lon<T>` may set only `LON` bits, and the runtime clears any other bits it sets. `Lat<T>` works the same way.
    * **Typing:** $(A + B)$ requires one branch of type $T_{\text{in}} \rightarrow$ `Lon<T>` and one branch of type $T_{\text{in}} \rightarrow$ `Lat<T>`, in either order. The result has type $T_{\text{in}} \rightarrow T$. Two `LON` branches, two `LAT` branches, or more than two branches are compile-time errors, so the two branches can never write the same field.
-   * **Evaluation:** The runtime passes the same $T_{\text{in}}$ to both branches. The merged frame takes `LON` fields from the `Lon` branch and `LAT` fields from the `Lat` branch, with `valid_mask = (lon.valid_mask & LON) | (lat.valid_mask & LAT)`. It is a new output ([§5](05-checkpoints.md)) on every tick where either branch's last component stepped, and for the hold rule it asserts only the units of the branches that stepped. The other branch's units come from the stored values. A `+` merge never sets `COUPLED` bits.
+   * **Evaluation:** The runtime passes the same $T_{\text{in}}$ to both branches. The merged frame takes `LON` fields from the `Lon` branch and `LAT` fields from the `Lat` branch, with `valid_mask = (lon.valid_mask & LON) | (lat.valid_mask & LAT)`. The last components of the two branches must have the same rate ([§11](11-execution.md)), or it is a compile-time error, so both branches step on the same ticks. The merged frame is then an ordinary output of those ticks for the hold rule of [§5](05-checkpoints.md). A `+` merge never sets `COUPLED` bits.
    * **Chaining Within a Branch:** A branch can chain partial types, for example `PIDSpeedController: IntentFrame -> Lon<KinematicControlFrame>` followed by `JerkLimiter: Lon<KinematicControlFrame> -> Lon<KinematicControlFrame>`.
 3. **Multi-Chain Arbitration (`Arbitrate`):** Merges two parallel chains producing the same checkpoint type $T_{\text{check}}$ (`IntentFrame`, `KinematicControlFrame`, or `ActuatorControlFrame`) via an explicit `Arbiter` component. Arbiters read raw `valid_mask` bits and do not apply the hold rule of [§5](05-checkpoints.md). [§17](17-standard-library.md) defines `BrakeOverrideArbiter`, the standard arbiter.
 4. **Type-Safe Splicing:** A scenario replaces components during a run with `on (condition) { splice target = replacement; ... }` ([§12](12-grammar.md)).
