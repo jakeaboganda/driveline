@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.198
+
+* Fixed two contradictions from v0.186 and v0.194. Nanosecond `uint64` fields are only `Time`, and a `select`/`clamp` call's expected type never converts `Int` arguments. Pipe calls must name components or `fn`s, and `bind_outputs` cannot assign padding or header fields.
+
 ## 0.197
 
 * A `+` merge is a new output whenever either branch steps, and it asserts only the stepped branch's units. `s_stop` is measured from the pose at the frame's timestamp, and held repeats are not new outputs. Lane 0 as a `LANE_OFFSET` target is in the §5.1 validity list.
