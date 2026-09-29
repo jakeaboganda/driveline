@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.204
+
+* Below 1 m/s a tier change keeps the committed wheel angle, which overrides the $\delta_{\text{KS}}$ formula. Library components run at the base rate. `Lon<T>`/`Lat<T>` have only their group's fields plus `valid_mask`. Minor fixes: gear selection by largest index, every tier-record member required, and `sensors.n`/`priors.n` as single names.
+
 ## 0.203
 
 * An Arbiter's `primary` input is hold-filled and its `secondary` stays raw. With both raw, a single secondary brake could stay held after the override ended. Every producer output updates stored values even if the consumer doesn't step, held trajectories drop expired points as forwarded ones do, and `Lon<T>`/`Lat<T>` edges keep only their group's units.
