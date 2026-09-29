@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.183
+
+* Minor fixes: the upward 1 m/s crossing is described correctly (v0.181 overstated it), `FreqLit`/`TimeLit` are single unit atoms, constant arrays are scoped to their two uses, actor names may not shadow file-scope names, the `Time` parameter encoding, the `world_to_frenet` exception, `count` up to $N_c$, frame time offsets, PincerHiveMind's per-member `own`, and `own_state` after a splice window.
+
 ## 0.182
 
 * A Mode B FMU cannot be physics, because it has no init context. For FMU consumers, the runtime runs the §5 validity and mode checks before stepping and reports the same codes a native consumer returns.
