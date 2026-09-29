@@ -1,7 +1,7 @@
 ---
 title: FMU packaging
 section: 7
-version: 0.183
+version: 0.186
 status: draft
 normative: true
 depends_on: [05-checkpoints.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md, 16-static-semantics.md]
@@ -15,10 +15,10 @@ A `component ... from_fmu("...")` declaration uses one of two modes. The compile
   * Each checkpoint port is an `fmi3Binary` variable with MIME type `application/x-driveline.<checkpoint-type>;version=0.15`. The value is the [§9](09-abi.md) struct layout in the byte order below. An `output` value whose length is not the struct's size is `DL_STATUS_ERR_FMU`, and every input value the runtime sets has exactly its struct's size, or $16 + \text{count} \cdot$ `entry_size` bytes for a `SliceBuffer`.
   * Each prior port, such as `RouteNodes`, is an `fmi3Binary` variable with MIME type `application/x-driveline.<prior-type>;version=0.15`, holding its struct (`dl_route_t` for `RouteNodes`). The runtime sets it in initialization mode.
   * Every `fmi3Binary` value uses little-endian byte order and IEEE 754 binary64 for `double`, whatever the host.
-  * Times inside a frame, such as `trajectory` offsets ([§5.1](05-checkpoints.md)), are relative to the `timestamp_ns` that the runtime stamps, which for every frame with such times is the tick time $t$ ([§7.1](07-fmu-packaging.md)). The runtime does not shift them when it reads the output. Only the hold rule of [§5](05-checkpoints.md) shifts a held trajectory.
+  * Times inside a frame, such as `trajectory` offsets ([§5.1](05-checkpoints.md)), are relative to the `timestamp_ns` that the runtime stamps, which for every frame with such times is the tick time $t$ ([§9.1](09-abi.md)). The runtime does not shift them when it reads the output. Only the hold rule of [§5](05-checkpoints.md) shifts a held trajectory.
   * Each `SliceBuffer` port is an `fmi3Binary` variable with MIME type `application/x-driveline.slice-buffer.<slice-type>;version=0.15`. The value is a `dl_slice_buffer_header_t` followed by `count` entries, newest first. Each entry is a `uint64_t t_ns` followed by the slice struct.
   * Initialization uses the `fmi3Binary` input `dl_init_context` (MIME type `application/x-driveline.init-context;version=0.15`), set in initialization mode ([§7.2](07-fmu-packaging.md)). `is_warm_start` tells cold init from warm start.
-  * **Variable names:** Each input port is the FMI variable with the port's manifest name and causality `input`. The output is the single variable named `output` with causality `output`. `dl_init_context` and `own_state` are inputs with those names. A missing variable, or a variable with another type or MIME type, is a compile-time error.
+  * **Variable names:** Each input port is the FMI variable with the port's manifest name and causality `input`. The output is the single variable named `output` with causality `output`. `dl_init_context` and `own_state` are inputs with those names, and a port named `output`, `own_state`, or `dl_init_context` is a compile-time error. A missing variable, or a variable with another type or MIME type, is a compile-time error.
   * Component parameters are FMI parameters with the same names.
   * The actor's own state ([§9.1](09-abi.md)) is the `fmi3Binary` input `own_state` with MIME type `application/x-driveline.kinematic-state;version=0.15`. The runtime sets it on every step.
   * A Mode A manifest's `cardinality` must be `OneToOne`. Any other value is a compile-time error.
@@ -27,7 +27,7 @@ A `component ... from_fmu("...")` declaration uses one of two modes. The compile
 
   In `bind_outputs`, a frame field that no assignment names is zero. If `valid_mask` is not assigned, it is the union of the bits that cover the assigned fields ([§5](05-checkpoints.md)), and a union that [§5](05-checkpoints.md) forbids, such as `0x04` with `0x08`, is a compile-time error. Named call-site arguments that are not input ports are FMI parameters with the same names, set before initialization. Each must name a parameter variable of `modelDescription.xml`, and its type follows that variable: `Float64` takes a quantity of the dimension of its declared unit, or a dimensionless one if it declares none, passed in SI units by the Units rule below, or a `Time` passed in seconds when the unit is `s`, `Int64` takes an `Int`, and `Boolean` takes a `Bool`. A variable of any other type, or an argument of another type, is a compile-time error. Any other name is a compile-time error.
 
-  A Mode B FMU cannot be re-trimmed ([§6.2.4](06-lifecycle.md)), because it has no input for `dl_init_context_t`. For the same reason its output type must not be `KinematicState`, so it is never a physics component.
+  A Mode B FMU cannot be re-trimmed ([§6.2.4](06-lifecycle.md)), because it has no input for `dl_init_context_t`. For the same reason a Mode B output type of `KinematicState` is a compile-time error, so a Mode B FMU is never a physics component.
 
 In both modes:
 
@@ -47,7 +47,7 @@ The outputs read in step 3 describe the FMU at $t + h$ computed from inputs held
 
 ## 7.2 Lifecycle Mapping
 
-The runtime drives an FMU through the [§6](06-lifecycle.md) states with these FMI 3.0 calls. "Initialize at $t$" means: call `fmi3EnterInitializationMode` with `startTime` $= t$ and set the inputs. The following `dl_exit_init_mode` then calls `fmi3ExitInitializationMode`. A Mode A FMU's inputs are `dl_init_context`, `own_state`, its ports, and its prior variables, so a re-trim after `fmi3Reset` sets the priors again. A Mode B FMU's inputs are the `bind_inputs` expressions. At initialization, each checkpoint port holds the context's latched frame of its type ([§6.2](06-lifecycle.md)), each `SliceBuffer` port holds the actor's latest buffer, and `own_state` and `bind_inputs` read the committed state, as they stand in the window where the runtime makes the initialization calls. That is the inter-tick window of the splice or re-trim even when `startTime` is a later $t_{\text{first}}$.
+The runtime drives an FMU through the [§6](06-lifecycle.md) states with these FMI 3.0 calls. "Initialize at $t$" means: call `fmi3EnterInitializationMode` with `startTime` $= t$ and set the inputs. The following `dl_exit_init_mode` then calls `fmi3ExitInitializationMode`. A Mode A FMU's inputs are `dl_init_context`, `own_state`, its ports, and its prior variables, so a re-trim after `fmi3Reset` sets the priors again. A Mode B FMU's inputs are the `bind_inputs` expressions. At initialization, each checkpoint port holds the context's latched frame of its type ([§6.2](06-lifecycle.md)), each `SliceBuffer` port holds the actor's latest buffer, and `own_state` and `bind_inputs` read the committed state (at cold init, the Pass 1 `chassis_state`), as they stand in the window where the runtime makes the initialization calls. That is the inter-tick window of the splice or re-trim even when `startTime` is a later $t_{\text{first}}$.
 
 | [§6](06-lifecycle.md) Call | FMU Calls |
 | :--- | :--- |

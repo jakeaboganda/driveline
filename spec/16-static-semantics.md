@@ -1,7 +1,7 @@
 ---
 title: DSL static semantics
 section: 16
-version: 0.183
+version: 0.186
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 07-fmu-packaging.md, 09-abi.md, 10-composition.md, 11-execution.md, 12-grammar.md, 15-manifest.md, 17-standard-library.md]
@@ -24,12 +24,12 @@ depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-
 * **Arrays:** `[T]` is an array of `T`. An array literal has type `[T]` when every element has type `T`, and `[]` takes its type from the expected array type. Arrays are allowed only where a signature or rule names an array type: `RouteNodes(nodes: [String])`, `gear_ratios`, and per-actor arguments of a group chain ([§10](10-composition.md)). Any other array literal is a compile-time error.
 * **`Lon<T>` and `Lat<T>`:** Partial frame types ([§10.2](10-composition.md)), where `T` is `IntentFrame` or `KinematicControlFrame`. They may be a component's output type, a port type, or a `Chain` type argument. A value of type `T` converts to `Lon<T>` or `Lat<T>` where one is expected, as a `step` result or at a port, and the runtime clears the other group's bits. A partial frame converts to `T` only through `+`.
 * **Records:** A record literal is allowed only as a `vehicle_spec` tier value ([§16.6](16-static-semantics.md)). Any other record literal is a compile-time error.
-* **`Actor`:** The type of an actor name. It has the members `id` (`Int`), `state` (`KinematicState`), and `sensors.<name>` (the sensor's `SliceBuffer<T, N>`).
+* **`Actor`:** The type of an actor name. It has the members `id` (`Int`), `state` (`KinematicState`), `sensors.<name>` (the sensor's `SliceBuffer<T, N>`), and `priors.<name>` (the prior's value).
 
 ## 16.2 Literals
 
 * A `QuantityLit` has the dimension of its unit, and its value is the binary64 value nearest to its exact decimal value times the unit's SI factor. A `Time` literal is converted from its decimal text to nanoseconds exactly ([§2](02-conventions.md)).
-* A `QuantityLit` with dimension s has type `Time` where the expected type is `Time`. The expected type of an operand of `+`, `-`, or a comparison is the type of the other operand, so `t - 0.1s` is `Time`. When both operands of `+` or `-` are literals, both take the expected type of the whole expression, and in `*` or `/` with an `Int`, the other operand takes it, so `0.1s + 0.08s` and `0.09s * 2` are `Time` where `Time` is expected. The arguments of `select` and `clamp` likewise take the call's expected type. Elsewhere it is a quantity. A `Time` literal must be a whole number of nanoseconds.
+* A `QuantityLit` with dimension s has type `Time` where the expected type is `Time`. The expected type of an operand of `+`, `-`, or a comparison is the type of the other operand, so `t - 0.1s` is `Time`. When both operands of `+` or `-` are literals, both take the expected type of the whole expression, and in `*` or `/` with an `Int`, the other operand takes it, so `0.1s + 0.08s` and `0.09s * 2` are `Time` where `Time` is expected. The arguments of `select` likewise take the call's expected type. Where no operand has a type of its own and there is no expected type, as in `0.1s + 0.2s <= 0.3s`, the literals are quantities. `clamp` never takes `Time`. Elsewhere it is a quantity. A `Time` literal must be a whole number of nanoseconds.
 * An `IntLit` or `HexLit` has type `Int`, and one above $2^{63} - 1$ is a compile-time error. Where a quantity is expected, an `Int` converts to a dimensionless quantity.
 * A `FloatLit` is a dimensionless quantity, a `StringLit` is a `String`, and a `BoolLit` is a `Bool`.
 
@@ -59,7 +59,7 @@ Names resolve from the innermost scope outward. A name declared twice in one sco
 | Component body | Input port names and `param` names. Inside `bind_outputs`, also `fmu`, usable only as `fmu.out(...)`. Inside `bind_inputs` and `step`, also `own_state` (`KinematicState`, the actor's own committed state, [§9.1](09-abi.md)). Inside `step`, also its parameters and `let` names. |
 
 * **Imports:** `use std::m::{...}` must name a module of [§17](17-standard-library.md) and components or sensors that its section lists. A sensor or standard component is usable only if imported. Other imports follow [§15.2](15-manifest.md).
-* **Actors:** An actor name is visible in the whole scenario, including before its declaration. `a.sensors.n` may appear only in `a`'s own actor body, in a `bind` statement whose list contains `a`, or in a `splice` whose target belongs to `a`. Any other use is a compile-time error.
+* **Actors:** An actor name is visible in the whole scenario, including before its declaration. `a.sensors.n` and `a.priors.n` may appear only in `a`'s own actor body, in a `bind` statement whose list contains `a`, or in a `splice` whose target belongs to `a`. Any other use is a compile-time error.
 * **World Separation:** `actor.state`, `sim_time`, and calls to `collision` are allowed only in `terminate when` and `on` conditions. `any` is allowed only as the second argument of `collision`. Using them anywhere else, including as a component argument, is a compile-time error. Components see the World only through sensors, priors, host map callbacks, and their own actor's `own_state` ([§1.1](01-scope.md)).
 * **Field Selectors:** The first argument of `rate_of` is a field name of the buffer's slice type, resolved in that type's scope. It must name a top-level `float64` field of the slice type, so track fields inside `tracks[]` cannot be selected. `window` must be a constant `Int` of at least 1. `Rate.value` has the field's dimension divided by time, and `Rate.valid` is `Bool`.
 * **`spawn`:** Every actor initializer must be a `spawn` call, and `spawn` may appear nowhere else.
