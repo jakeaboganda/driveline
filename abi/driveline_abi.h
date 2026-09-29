@@ -9,7 +9,7 @@ extern "C" {
 
 #pragma pack(push, 8)
 
-#define DL_ABI_VERSION_0_14 0x00000E00U
+#define DL_ABI_VERSION_0_15 0x00000F00U
 
 typedef enum {
     DL_STATUS_OK                    = 0,
@@ -220,8 +220,8 @@ typedef struct {
     uint64_t timestamp_ns;                       /* [ns] */
     double   pos_x, pos_y, pos_z;                /* Rear-axle World [m] */
     double   roll, pitch, yaw;                   /* Intrinsic Z-Y'-X'' Euler [rad] */
-    double   v_lon, v_lat, yaw_rate;             /* Rear-axle Body Twist [m/s, rad/s] */
-    double   a_lon, a_lat;                       /* Rear-axle Body Accel [m/s^2] */
+    double   v_lon, v_lat, yaw_rate;             /* Rear-axle, heading-frame axes [m/s, rad/s] */
+    double   a_lon, a_lat;                       /* Rear-axle, heading-frame axes [m/s^2] */
     double   front_wheel_angle;                  /* Road-wheel delta [rad] */
     double   slip_angle_beta_cg;                 /* Sideslip angle at CG beta_cg [rad] */
     char     road_id[64];
@@ -252,7 +252,7 @@ typedef struct {
 } dl_powertrain_state_t;
 
 typedef struct {
-    uint32_t abi_version;                        /* Must equal DL_ABI_VERSION_0_14 */
+    uint32_t abi_version;                        /* Must equal DL_ABI_VERSION_0_15 */
     uint32_t struct_size;                        /* sizeof(dl_init_context_t) */
     uint64_t sim_time_ns;                        /* [ns] */
     uint8_t  is_warm_start;                      /* 0:ColdInit, 1:WarmStart */

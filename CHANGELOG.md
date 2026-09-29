@@ -6,6 +6,11 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.173
+
+* The header names the heading frame for `KinematicState` velocities and accelerations, matching §5.3. Sensor frames use heading-frame axes, so roll and pitch never tilt a mount.
+* ABI version 0.15.
+
 ## 0.172
 
 * An FMU that never reached Step Mode gets no `fmi3Terminate` at teardown. A failed run reports exactly what sequential §11 order produces up to the first error. A re-trim checks only the actors whose tier changed. Init calls finish per instance in Phase 2 order, including multi-component splices.

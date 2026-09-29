@@ -1,7 +1,7 @@
 ---
 title: Standard library
 section: 17
-version: 0.167
+version: 0.173
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 06-lifecycle.md, 08-steady-state.md, 09-abi.md, 11-execution.md, 15-manifest.md]
@@ -34,7 +34,7 @@ The world friction field is $\mu(X, Y)$: the zone or default value at the lane t
 
 Sensors are part of the runtime ([§0](00-conformance.md)). Every standard sensor is ideal. It has no noise, no occlusion, and no latency beyond its rate. Every sensor takes `rate: Frequency`, written as a `FreqLit` as in a `RateClause`, and `history: Int` ($N$), and it samples in Phase 1 at its scheduled ticks. A sensor call with slice type `S` has type `SliceBuffer<S, N>`, where `history` must be a constant of at least 1.
 
-**Mounts:** A sensor frame has the body frame's axes and its origin at the mount point, in body coordinates from the rear-axle origin.
+**Mounts:** A sensor frame has the heading frame's axes ([§2](02-conventions.md)) and its origin at the mount point, given in heading-frame coordinates from the rear-axle origin. Roll and pitch never tilt it.
 
 | Mount | Position $(x, y, z)$ |
 | :--- | :--- |
@@ -42,7 +42,7 @@ Sensors are part of the runtime ([§0](00-conformance.md)). Every standard senso
 | `Windshield` | $(0.5 L,\ 0,\ 0.9 H_{\text{bbox}})$ |
 | `Center` | $(0.5 L,\ 0,\ 0.5 H_{\text{bbox}})$ |
 
-**Detection:** A target is every other actor. Its reference point is its footprint center on the ground. A target is detected if its reference point lies within `range` of the sensor origin and its bearing $\operatorname{atan2}(y, x)$ in the sensor frame lies within $\pm$`fov`/2. Track fields ([§4.3](04-perception.md)): `rel_x`, `rel_y`, and `rel_z` are the reference point in the sensor frame. `rel_vx` and `rel_vy` are the World velocity of the target's reference point minus the World velocity of the sensor origin, rotated into the sensor frame. Each point velocity follows by rigid-body kinematics from the committed `KinematicState`: $\vec{v}_P = \vec{v}_{\text{ra}} + \dot{\psi}\,\hat{z} \times \vec{r}_P$, with $\vec{r}_P$ the point's offset from the rear-axle origin. The sensor frame's yaw is the actor's yaw. Roll and pitch are ignored. `rel_yaw` is the target's yaw minus the actor's yaw, wrapped. `range` is $\sqrt{x^2 + y^2 + z^2}$ and `bearing` is $\operatorname{atan2}(y, x)$. `ttc_lon` is $\max(0,\ x - L_{\text{bbox,target}}/2) / (-v_x)$ if $x > 0$ and $v_x < 0$, else `+INFINITY`. `road_id` and `lane_id` come from the target's committed map cache. `object_class` is `1` (CAR), and `confidence` is `1.0`.
+**Detection:** A target is every other actor. Its reference point is its footprint center on the ground. A target is detected if its reference point lies within `range` of the sensor origin and its bearing $\operatorname{atan2}(y, x)$ in the sensor frame lies within $\pm$`fov`/2. Track fields ([§4.3](04-perception.md)): `rel_x`, `rel_y`, and `rel_z` are the reference point in the sensor frame. `rel_vx` and `rel_vy` are the World velocity of the target's reference point minus the World velocity of the sensor origin, rotated into the sensor frame. Each point velocity follows by rigid-body kinematics from the committed `KinematicState`: $\vec{v}_P = \vec{v}_{\text{ra}} + \dot{\psi}\,\hat{z} \times \vec{r}_P$, with $\vec{r}_P$ the point's offset from the rear-axle origin. The sensor frame's yaw is the actor's yaw, as in the Mounts rule above. `rel_yaw` is the target's yaw minus the actor's yaw, wrapped. `range` is $\sqrt{x^2 + y^2 + z^2}$ and `bearing` is $\operatorname{atan2}(y, x)$. `ttc_lon` is $\max(0,\ x - L_{\text{bbox,target}}/2) / (-v_x)$ if $x > 0$ and $v_x < 0$, else `+INFINITY`. `road_id` and `lane_id` come from the target's committed map cache. `object_class` is `1` (CAR), and `confidence` is `1.0`.
 
 | Sensor | Parameters | Slice | Mount | Additional Fields |
 | :--- | :--- | :--- | :--- | :--- |
