@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.192
+
+* Tier changes keep $\psi + \arctan(v_{\text{lat,ra}}/v_{\text{lon}})$, which keeps the path in reverse. The v0.189 `|v_lon|` form did not. Below 1 m/s a tier change keeps the committed wheel angle. Teardown reports carry the ending tick, warm starts in reverse latch `REVERSE`, and the regime-crossing text drops step sizes that simulation did not bear out.
+
 ## 0.191
 
 * Only a new producer output updates hold-rule state, and a held output keeps its first filled frame. A connection is the edge into one consumer port for one actor, and a splice keeps the edge into a replaced physics component or chain input. A trajectory frame carries at least one point.
