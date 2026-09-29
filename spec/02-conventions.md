@@ -1,7 +1,7 @@
 ---
 title: Units and coordinate conventions
 section: 2
-version: 0.183
+version: 0.189
 status: draft
 normative: true
 depends_on: [05-checkpoints.md, 06-lifecycle.md]
@@ -19,7 +19,7 @@ All conforming runtimes and components must enforce the following mathematical c
 * **Actor Reference Origin:** Standardized at the **center of the rear axle projected onto the ground plane** $(x_{\text{ra}}, y_{\text{ra}}, z_{\text{ra}})$. The Center of Gravity (CG) is located at longitudinal distance $l_r$ forward of the rear axle, $l_f$ behind the front axle, and height $h_{\text{cg}}$ above the ground plane.
 * **OpenDRIVE Road & Lane Referencing `(road_id, lane_id, s, d)`:**
   * `road_id` (`char[64]`): Null-terminated OpenDRIVE `<road id="...">` identifier.
-  * `lane_id` (`int32_t`): Signed OpenDRIVE lane index ($-1, -2, \dots$ right of reference line; $+1, +2, \dots$ left of reference line; $0$ is the road reference line).
+  * `lane_id` (`int32_t`): Signed OpenDRIVE lane index ($-1, -2, \dots$ right of reference line; $+1, +2, \dots$ left of reference line; $0$ is the road reference line, which has no centerline, so lane 0 in a callback argument, or in a frame field whose valid bit is set, is `DL_STATUS_ERR_INVALID_ARG`).
   * `s` (`float64`, $\text{m}$): Arc-length measured along the **OpenDRIVE road reference line** (`lane_id = 0`) from the start of `road_id`.
   * `d` (`float64`, $\text{m}$): Orthogonal lateral offset measured from the **centerline of `lane_id`** (positive to the left in the reference line direction).
   * **Lane Reference String:** Where the DSL writes a lane as a string, the format is `"<road_id>:<lane_id>"`. The text after the last colon is the signed lane index. Junction connecting roads are roads and use their own `road_id`.

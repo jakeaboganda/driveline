@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.189
+
+* Negative spawn speeds are compile-time errors, and tier-change headings use |v_lon|, so reversing physics can't flip the heading by π. Minor fixes: wrapped demotion yaw, window report times, lane 0 invalid, enum defaults as numbers, accurate crossing descriptions, header unit comments, and no lexer backtracking.
+
 ## 0.188
 
 * The hold rule keeps one stored value per hold unit per connection, and a `COUPLED`/`LON`/`LAT` switch clears the other side's stored values. A turn-signal-only frame after a trajectory now fills to `0x18`. Before, the literal rule could revive the latched `LON`/`LAT` units and produce an invalid frame.
