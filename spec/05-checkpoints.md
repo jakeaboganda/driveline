@@ -1,7 +1,7 @@
 ---
 title: Checkpoint data contracts
 section: 5
-version: 0.196
+version: 0.197
 status: draft
 normative: true
 depends_on: [02-conventions.md, 06-lifecycle.md, 07-fmu-packaging.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md, 17-standard-library.md]
@@ -71,7 +71,7 @@ Produced by Stage 1 (Intent) components.
 * Every enum field whose bit is set holds one of its listed values.
 * `0x04` (`s_stop`) is set only together with `0x01`. It refines the longitudinal request.
 * If `0x08` is set, `num_traj_points` is at least 1 and `trajectory` governs both longitudinal and lateral motion, and `0x01`, `0x02`, and `0x04` are clear. The frame requests `SPATIOTEMPORAL_TRAJECTORY` by this bit alone, and consumers ignore `lon_mode` and `lat_mode`.
-* If `0x02` is set, `lat_mode` is not `SPATIOTEMPORAL_TRAJECTORY`.
+* If `0x02` is set, `lat_mode` is not `SPATIOTEMPORAL_TRAJECTORY`, and with `LANE_OFFSET` the `target_lane_id` is not 0.
 * `0x10` (`turn_signal`) may accompany any combination.
 * `num_waypoints` and `num_traj_points` are at most 64, and the `trajectory` times follow the Array Semantics below.
 
@@ -79,7 +79,7 @@ A component implements trajectories if its manifest's `lat_modes` lists `SPATIOT
 
 **Array Semantics:** `path_points` holds `num_waypoints` entries and `trajectory` holds `num_traj_points` entries, each at most 64. Entries beyond the count are ignored. A count above 64 is invalid. Both arrays are in the World frame and ordered along the direction of travel. Their curvatures are positive when the path turns left in that direction, each trajectory $v_k \ge 0$, and each $a_k$ is a $\dot{v}_{\text{lon}}$ like `a_ref`. Each `trajectory` time $t_k$ is in seconds after the frame's `timestamp_ns`. In a produced frame the times start at $t_0 \ge 0$ and strictly increase. After the hold rule's shift they do not decrease.
 
-**Stop Distance:** `s_stop` is the distance along the actor's intended path from its rear-axle origin to the point where the rear-axle origin must stop.
+**Stop Distance:** `s_stop` is the distance along the actor's intended path from its rear-axle origin, at the pose of the frame's `timestamp_ns`, to the point where the rear-axle origin must stop. A consumer that receives the same output on a later tick subtracts the distance travelled since. Held repeats of an output, and a replacement's latched output before its first step ([§10.4](10-composition.md)), are not new outputs.
 
 **Measured Gap for `GAP_PROFILE`:** `IntentFrame` carries the gap target and the desired gap. It does not carry the measured gap. A Stage 2 component that tracks `GAP_PROFILE` must declare a `SliceBuffer` input port whose slice type contains `tracks[]`. It reads the measured gap $g$ from the `latest()` sample of its first declared such port, from the track whose `target_actor_id` equals `gap_target_actor_id`: $g$ is that track's `rel_x`, the distance along the sensor's $x$ axis from the mount point to the target's footprint center ([§17.2](17-standard-library.md)). `distance_gap_min` and `time_gap_ref` are targets for this same $g$, so they include the sensor's offset from the front bumper and half the target's length. If no such track exists, the component treats the gap target as absent and tracks `v_ref`.
 

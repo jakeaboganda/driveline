@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.197
+
+* A `+` merge is a new output whenever either branch steps, and it asserts only the stepped branch's units. `s_stop` is measured from the pose at the frame's timestamp, and held repeats are not new outputs. Lane 0 as a `LANE_OFFSET` target is in the §5.1 validity list.
+
 ## 0.196
 
 * A splice keeps the edge into an unchanged consumer, with its stored hold values. Latched frames are filled on the connection they travelled, including connections into Arbiters. Minor fixes: sensor import wording and distinct `bind` lists.
