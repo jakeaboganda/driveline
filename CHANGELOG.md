@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.190
+
+* Frame validity is checked once, by the runtime, on every produced frame in output validation, and a failure is `ERR_INVALID_ARG` of the producer. Consumers, FMUs, and Arbiters receive only valid frames, and the hold rule preserves validity. This replaces per-consumer checks that disagreed across native, FMU, and Arbiter consumers.
+
 ## 0.189
 
 * Negative spawn speeds are compile-time errors, and tier-change headings use |v_lon|, so reversing physics can't flip the heading by π. Minor fixes: wrapped demotion yaw, window report times, lane 0 invalid, enum defaults as numbers, accurate crossing descriptions, header unit comments, and no lexer backtracking.

@@ -1,10 +1,10 @@
 ---
 title: Checkpoint data contracts
 section: 5
-version: 0.188
+version: 0.190
 status: draft
 normative: true
-depends_on: [02-conventions.md, 06-lifecycle.md, 07-fmu-packaging.md, 09-abi.md, 10-composition.md, 15-manifest.md, 17-standard-library.md]
+depends_on: [02-conventions.md, 06-lifecycle.md, 07-fmu-packaging.md, 09-abi.md, 10-composition.md, 14-diagnostics.md, 15-manifest.md, 17-standard-library.md]
 ---
 
 # 5. Canonical Checkpoint Data Contracts
@@ -64,7 +64,9 @@ Produced by Stage 1 (Intent) components.
 | `0x10` | `LAT` | `turn_signal` |
 | `0x08` | `COUPLED` | `num_traj_points`, `trajectory` |
 
-**Valid Masks:** An `IntentFrame`, after the hold rule, is valid if and only if every rule below holds. A consumer that receives any other frame returns `DL_STATUS_ERR_INVALID_ARG`.
+**Frame Validity:** The validity rules of this section apply to every frame a component produces. The runtime checks them in output validation ([§14.2](14-diagnostics.md)) and reports a failure as `DL_STATUS_ERR_INVALID_ARG` of the producing call, so every consumer, native, FMU, or Arbiter, receives only valid frames. The hold rule keeps them valid, because each filled unit comes from a valid frame and clearing keeps `COUPLED` apart from `LON` and `LAT`.
+
+**Valid Masks:** An `IntentFrame` is valid if and only if every rule below holds.
 * Bits outside `0x1F` are clear.
 * Every enum field whose bit is set holds one of its listed values.
 * `0x04` (`s_stop`) is set only together with `0x01`. It refines the longitudinal request.
@@ -75,7 +77,7 @@ Produced by Stage 1 (Intent) components.
 
 A component implements trajectories if its manifest's `lat_modes` lists `SPATIOTEMPORAL_TRAJECTORY` ([§15](15-manifest.md)).
 
-**Array Semantics:** `path_points` holds `num_waypoints` entries and `trajectory` holds `num_traj_points` entries, each at most 64. Entries beyond the count are ignored. A count above 64 is invalid, and the consumer returns `DL_STATUS_ERR_INVALID_ARG`. Both arrays are in the World frame and ordered along the direction of travel. Their curvatures are positive when the path turns left in that direction, each trajectory $v_k \ge 0$, and each $a_k$ is a $\dot{v}_{\text{lon}}$ like `a_ref`. Each `trajectory` time $t_k$ is in seconds after the frame's `timestamp_ns`. In a produced frame the times start at $t_0 \ge 0$ and strictly increase. After the hold rule's shift they do not decrease.
+**Array Semantics:** `path_points` holds `num_waypoints` entries and `trajectory` holds `num_traj_points` entries, each at most 64. Entries beyond the count are ignored. A count above 64 is invalid. Both arrays are in the World frame and ordered along the direction of travel. Their curvatures are positive when the path turns left in that direction, each trajectory $v_k \ge 0$, and each $a_k$ is a $\dot{v}_{\text{lon}}$ like `a_ref`. Each `trajectory` time $t_k$ is in seconds after the frame's `timestamp_ns`. In a produced frame the times start at $t_0 \ge 0$ and strictly increase. After the hold rule's shift they do not decrease.
 
 **Stop Distance:** `s_stop` is the distance along the actor's intended path from its rear-axle origin to the point where the rear-axle origin must stop.
 
@@ -90,24 +92,24 @@ A component implements trajectories if its manifest's `lat_modes` lists `SPATIOT
 | :--- | :--- | :--- | :--- |
 | `actor_id` | `uint64` | — | Unique actor entity identifier. |
 | `timestamp_ns` | `uint64` | $\text{ns}$ | Simulation timestamp. |
-| `valid_mask` | `uint32` | bitmask | `0x01`: `a_lon_cmd` valid, `0x02`: `jerk_lon_cmd` valid, `0x04`: `steer_angle_cmd` valid, `0x08`: `steer_rate_cmd` valid. A frame with bits outside `0x0F` is invalid (`DL_STATUS_ERR_INVALID_ARG`). |
+| `valid_mask` | `uint32` | bitmask | `0x01`: `a_lon_cmd` valid, `0x02`: `jerk_lon_cmd` valid, `0x04`: `steer_angle_cmd` valid, `0x08`: `steer_rate_cmd` valid. A frame with bits outside `0x0F` is invalid. |
 | `a_lon_cmd` | `float64` | $\text{m/s}^2$ | Commanded rate of change $\dot{v}_{\text{lon}}$ of `v_lon` ([§5.3](05-checkpoints.md)). In a turn it differs from the reported `a_lon` of [§5.3](05-checkpoints.md) by $v_{\text{lat}} \dot{\psi}$. |
-| `jerk_lon_cmd` | `float64` | $\text{m/s}^3$ | If `0x01` is also set, the maximum jerk used to reach `a_lon_cmd`, which must be above zero, or the consumer returns `DL_STATUS_ERR_INVALID_ARG`. If only `0x02` is set, a jerk command that physics integrates. |
+| `jerk_lon_cmd` | `float64` | $\text{m/s}^3$ | If `0x01` is also set, the maximum jerk used to reach `a_lon_cmd`, which must be above zero, or the frame is invalid. If only `0x02` is set, a jerk command that physics integrates. |
 | `steer_angle_cmd` | `float64` | $\text{rad}$ | Front road-wheel steering angle target $\delta_{\text{cmd}}$, positive to the left (valid if `0x04` set). |
-| `steer_rate_cmd` | `float64` | $\text{rad/s}$ | If `0x04` is also set, the maximum rate used to reach `steer_angle_cmd`, which must be above zero, or the consumer returns `DL_STATUS_ERR_INVALID_ARG`. If only `0x08` is set, a rate command that physics integrates. |
+| `steer_rate_cmd` | `float64` | $\text{rad/s}$ | If `0x04` is also set, the maximum rate used to reach `steer_angle_cmd`, which must be above zero, or the frame is invalid. If only `0x08` is set, a rate command that physics integrates. |
 
 ### Tier B: `ActuatorControlFrame`
 | Field Name | Type | Unit | Specification & Semantics |
 | :--- | :--- | :--- | :--- |
 | `actor_id` | `uint64` | — | Unique actor entity identifier. |
 | `timestamp_ns` | `uint64` | $\text{ns}$ | Simulation timestamp. |
-| `valid_mask` | `uint32` | bitmask | `0x01`: `throttle` active, `0x02`: `brake` active, `0x04`: `steering_wheel_norm` active, `0x08`: `steering_torque_nm` active, `0x10`: `gear_mode` active. A frame with bits outside `0x1F` is invalid (`DL_STATUS_ERR_INVALID_ARG`). |
+| `valid_mask` | `uint32` | bitmask | `0x01`: `throttle` active, `0x02`: `brake` active, `0x04`: `steering_wheel_norm` active, `0x08`: `steering_torque_nm` active, `0x10`: `gear_mode` active. A frame with bits outside `0x1F` is invalid. |
 | `throttle` | `float64` | $[0.0, 1.0]$ | Normalized propulsion demand relative to `max_drive_torque` $T_{\text{drive,max}}$. |
 | `brake` | `float64` | $[0.0, 1.0]$ | Normalized brake demand relative to `max_brake_torque` $T_{\text{brake,max}}$. |
 | `steering_wheel_norm` | `float64` | $[-1.0, 1.0]$ | Steering wheel angle normalized against $(\delta_{\max} \cdot i_s)$, positive to the left. |
-| `steering_torque_nm` | `float64` | $\text{N}\cdot\text{m}$ | Optional column steering torque (used when `valid_mask & 0x08` is set). Positive torque turns the wheels left. Setting both `0x04` and `0x08` is invalid. The consumer returns `DL_STATUS_ERR_INVALID_ARG`. |
+| `steering_torque_nm` | `float64` | $\text{N}\cdot\text{m}$ | Optional column steering torque (used when `valid_mask & 0x08` is set). Positive torque turns the wheels left. Setting both `0x04` and `0x08` is invalid. |
 | `gear_mode` | `enum` | — | `PARK` ($0$), `REVERSE` ($1$), `NEUTRAL` ($2$), `DRIVE` ($3$). |
-| `manual_gear_index` | `int8` | — | Explicit gear index ($1..$`num_gears`, or $0$ for automatic selection in `DRIVE`). When `0x10` is set, it is $0$ outside `DRIVE` and at most `num_gears` in `DRIVE` (so $0$ without Tier 2), and any other value makes the consumer return `DL_STATUS_ERR_INVALID_ARG`. Bit `0x10` covers both `gear_mode` and `manual_gear_index`. |
+| `manual_gear_index` | `int8` | — | Explicit gear index ($1..$`num_gears`, or $0$ for automatic selection in `DRIVE`). When `0x10` is set, it is $0$ outside `DRIVE` and at most `num_gears` in `DRIVE` (so $0$ without Tier 2), and any other value makes the frame invalid. Bit `0x10` covers both `gear_mode` and `manual_gear_index`. |
 
 ## 5.3 Checkpoint 3: `KinematicState` & Reference-Point Continuity
 Produced by Stage 3 (Physics) at the end of every simulation step $t + \Delta t$.

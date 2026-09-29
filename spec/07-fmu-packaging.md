@@ -1,7 +1,7 @@
 ---
 title: FMU packaging
 section: 7
-version: 0.187
+version: 0.190
 status: draft
 normative: true
 depends_on: [05-checkpoints.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md, 16-static-semantics.md]
@@ -39,7 +39,7 @@ In both modes:
 
 Both modes use FMI 3.0 Co-Simulation. On each tick $t$ where the component is scheduled, with period $h = k_{\text{div}} \cdot \Delta t_{\text{base}}$ ([§11](11-execution.md)), the runtime does three things in order:
 
-1. It sets the inputs for tick $t$. Before that, it applies to each filled checkpoint input the checks that [§5](05-checkpoints.md) assigns to a consumer: the valid-mask rules and, for a Mode A FMU, the manifest's `lon_modes` and `lat_modes`. A failed check is reported with the code [§5](05-checkpoints.md) names, as a native consumer would return it, and `fmi3DoStep` is not called.
+1. It sets the inputs for tick $t$. Before that, for a Mode A FMU, it checks each filled checkpoint input against the manifest's `lon_modes` and `lat_modes` by the rule of [§5](05-checkpoints.md). A failed check is reported with the code [§5](05-checkpoints.md) names, as a native consumer would return it, and `fmi3DoStep` is not called.
 2. It calls `fmi3DoStep` with the `currentCommunicationPoint` of tick $t$ by the Times rule of [§7](07-fmu-packaging.md) and `communicationStepSize` $= h$.
 3. It reads the outputs and uses them as the component's output for tick $t$. An FMI return of `fmi3Warning` counts as `fmi3OK`. Any worse return, or a step that sets `terminateSimulation` or `earlyReturn`, is `DL_STATUS_ERR_FMU` ([§14](14-diagnostics.md)). The runtime instantiates every FMU with `eventModeUsed` and `earlyReturnAllowed` false and enters initialization with no tolerance and no stop time.
 
