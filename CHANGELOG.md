@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.202
+
+* Minor fixes: group-instance trim checks are per actor, and FMU communication points restart at each initialization.
+
 ## 0.201
 
 * Declared slots (params, call arguments, returns, `bind_outputs`, record fields, world statements) give their expressions an expected type, which the example's `0.18s` param and unqualified enum arguments rely on. `select`'s condition is excluded from the one-type rule, and an example comment no longer contradicts §17.
