@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.181
+
+* Minor fixes: `DynamicSingleTrack` reports kinematic outputs on any step with the low-speed reset, which removes the one-tick `a_lat` drop. A `struct_size` mismatch names its error, jerk and steer-rate limits must be positive, and the pitch sign covers vehicles facing against their lane.
+
 ## 0.180
 
 * Quantity literals round once from their exact decimal value. Unit expressions apply left to right. Integer literals must fit 64 bits, and `Int` values must fit narrower fields. A sensor `rate` is a single `FreqLit`.
