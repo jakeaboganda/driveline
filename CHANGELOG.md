@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.191
+
+* Only a new producer output updates hold-rule state, and a held output keeps its first filled frame. A connection is the edge into one consumer port for one actor, and a splice keeps the edge into a replaced physics component or chain input. A trajectory frame carries at least one point.
+
 ## 0.190
 
 * Frame validity is checked once, by the runtime, on every produced frame in output validation, and a failure is `ERR_INVALID_ARG` of the producer. Consumers, FMUs, and Arbiters receive only valid frames, and the hold rule preserves validity. This replaces per-consumer checks that disagreed across native, FMU, and Arbiter consumers.
