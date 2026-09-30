@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.263
+
+* Fold-in review round 8. Warm-start axle loads use grade and bank relative to the actor's heading, so an actor facing against its lane gets the right load transfer (an older gap). A module's identity is its normalized path: one module imported twice adds one name, the same name from two modules is a duplicate, and `std` imports name no file. A track's `object_class` types as `ObjectClass`. β_cg wording covers `object_spec`, and per-actor elements are checked against ports or `fn` parameters.
+
 ## 0.262
 
 * Fold-in review round 7. A Tier 3 `uri` with a scheme is passed through unchanged, and only file paths are resolved. An object's `v_max` and `a_max` bound `|v_lon|` and `|dv_lon/dt|`, and the object physics component enforces them. The module-versus-manifest conflict is defined per imported name, and repeated imports add one name. The spawn curvature check covers `place`. §18 explains why collision and report ticks differ. The constant-expression wording is fixed.
