@@ -1,16 +1,16 @@
 ---
 title: Composition, arbitration, and splicing
 section: 10
-version: 0.253
+version: 0.256
 status: draft
 normative: true
-depends_on: [03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 06-lifecycle.md, 07-fmu-packaging.md, 11-execution.md, 12-grammar.md, 14-diagnostics.md, 15-manifest.md, 16-static-semantics.md, 17-standard-library.md]
+depends_on: [03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 06-lifecycle.md, 07-fmu-packaging.md, 11-execution.md, 12-grammar.md, 14-diagnostics.md, 15-manifest.md, 16-static-semantics.md, 17-standard-library.md, 19-modules.md]
 ---
 
 # 10. Composition, Fan-Out (`+`), Arbitration, & Splicing
 
 1. **Sequential Chaining (`>>`):** Connects $A: T_1 \rightarrow T_2$ and $B: T_2 \rightarrow T_3$ into $A \gg B: T_1 \rightarrow T_3$.
-   * **Cardinality:** A component declared in the scenario is `OneToOne`, and a Mode A manifest must say so too ([§7](07-fmu-packaging.md)). A library component's cardinality comes from its manifest ([§15](15-manifest.md)).
+   * **Cardinality:** A component declared with `component`, in the scenario or a module ([§19](19-modules.md)), is `OneToOne`, and a Mode A manifest must say so too ([§7](07-fmu-packaging.md)). A library component's cardinality comes from its manifest ([§15](15-manifest.md)).
 
      | Cardinality | Instances | Output for Actor $i$ May Depend On |
      | :--- | :--- | :--- |

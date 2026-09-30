@@ -1,7 +1,7 @@
 ---
 title: Component lifecycle
 section: 6
-version: 0.253
+version: 0.256
 status: draft
 normative: true
 depends_on: [02-conventions.md, 05-checkpoints.md, 07-fmu-packaging.md, 08-steady-state.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md, 17-standard-library.md]
@@ -64,7 +64,7 @@ The **Driveline Component Model (DCM)** is a C-ABI ([§9](09-abi.md)). Native co
 
 ## 6.2 Detailed Lifecycle Transition Rules
 
-1. **`Instantiated` (`dl_instantiate`, `dl_set_parameters`):** `dl_instantiate` verifies `abi_version` and stores the host map callback table (`dl_host_map_callbacks_t`) and its `host_ctx`. The runtime then passes every component parameter from the DSL (for example `kp: 1.8` or `reaction_delay: 0.18s`) through `dl_set_parameters`, by name, in SI units, with `Time` in nanoseconds ([§15.4](15-manifest.md)). `dl_set_parameters` is valid in `Instantiated` and `StructuralConfig`. An unknown name or a wrong type returns `DL_STATUS_ERR_INVALID_ARG`.
+1. **`Instantiated` (`dl_instantiate`, `dl_set_parameters`):** `dl_instantiate` verifies `abi_version` and stores the host map callback table (`dl_host_map_callbacks_t`) and its `host_ctx`. The runtime names each instance `<owner>.<Component>.<n>`. `<owner>` is the actor name, or for a group instance the member actor names joined by `+` in `bind` order, and a per-actor instance of a group chain has its served actor as owner. `<Component>` is the component's name, and `<n>` counts the instances of that component that the runtime has created for that owner in the run so far, starting at 1. An FMU instance gets the same name as its `instanceName`. The runtime then passes every component parameter from the DSL (for example `kp: 1.8` or `reaction_delay: 0.18s`) through `dl_set_parameters`, by name, in SI units, with `Time` in nanoseconds ([§15.4](15-manifest.md)). `dl_set_parameters` is valid in `Instantiated` and `StructuralConfig`. An unknown name or a wrong type returns `DL_STATUS_ERR_INVALID_ARG`.
 2. **`StructuralConfig` (`dl_configure_structure`):** Passes the input port count, the per-port ring buffer capacities `port_history_depths[]`, and the number of actors that the instance serves (`max_actors`): 1 for a per-actor instance and $M$ for a group instance ([§10](10-composition.md)). Multi-input components such as `BoschPCS_v4` get one depth per port, for example $N_0 = 8$ and $N_1 = 5$. Non-buffer ports have depth $0$.
 3. **`ColdInitMode` (`dl_enter_cold_init` at $t = 0$), Coupled Trim Protocol:**
    Before Pass 1, the runtime visits every component instance in Phase 2 order ([§11](11-execution.md)), with each actor's or group's physics instances after its Stage 2 instances and per-actor physics instances in `bind` order, and calls `dl_instantiate`, `dl_set_parameters`, and `dl_configure_structure` on it before it moves to the next instance. It then initializes the pipeline in three passes. Each pass covers all actors and groups in the Phase 2 order of [§11](11-execution.md): ascending `actor_id`, with a group sorted by its smallest member, and components in topological order.

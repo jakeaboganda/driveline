@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.256
+
+* Fold-in review fixes. `place` is a valid actor initializer, and its arguments are constant. `vehicle_spec` and `object_spec` keys have expected types, so `class = PEDESTRIAN` types. Components declared in modules are declared components, and a declared Stage 3 component is vehicle physics. Imported `component` and `fn` bodies resolve names in their own module. Instance names are defined as `<owner>.<Component>.<n>`. Reports during tick k carry tick k, and the Phase 4 commit stands even if a later Phase 4 action fails. Static actors skip the Phase 4 commit, odometer, and map-cache updates. Contact is also tested on the spawn state, and each pair gets at most one collision line. The run record fixes the version string forms. Lockfile paths are normalized, URIs with a scheme are not files, and the lockfile uses the §18.1 encoding. `PointMassWalker` shares StanleyLat's errors.
+
 ## 0.255
 
 * The reference scenario gains a pedestrian object actor (`Adult` from the new catalog module `examples/catalog/people.dline`, driven by a declared `ShoulderWalk` intent into `PointMassWalker`) and a stalled car created with `place`. `check.py` parses example subdirectories as modules, checks that module imports resolve to declarations, and counts `place` ids. Each new check was mutation-tested.
