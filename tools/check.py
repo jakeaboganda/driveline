@@ -444,6 +444,27 @@ def check_siphash(docs):
     notes.append(f"siphash: reference vectors pass, {len(vectors)} seed vectors match")
 
 
+RETIRED_TERMS = ("valid_mask", "hold rule", "hold unit", "stored value", "s_stop")
+
+
+def check_retired_terms():
+    """Frames state every group (section 5). The runtime keeps no per-connection memory,
+    so the vocabulary of the old hold model must not reappear."""
+    files = sorted(SPEC.glob("*.md")) + sorted(EXAMPLES.glob("*.dline")) + [HEADER]
+    if len(files) < 3:
+        fail("retired terms: no files to check")
+    hits = []
+    for path in files:
+        text = path.read_text().lower()
+        for term in RETIRED_TERMS:
+            if term in text:
+                hits.append(f"{path.name}: {term}")
+    for h in hits:
+        fail(f"retired term {h}")
+    if not hits:
+        notes.append(f"retired terms: none of {len(RETIRED_TERMS)} in {len(files)} files")
+
+
 def main():
     readme_meta, docs = check_docs()
     check_abi(readme_meta)
@@ -453,6 +474,7 @@ def main():
     check_frame_tables(docs)
     check_test_vector(docs)
     check_siphash(docs)
+    check_retired_terms()
     for n in notes:
         print("ok   ", n)
     for f in failures:

@@ -56,8 +56,8 @@ component HumanIntent (rate: 20Hz) (required_tier: 0): (
     step(t: Time, dt: Time) -> IntentFrame {
         let perceived = eyes.at(t - reaction_delay, mode: Interpolate);
         if perceived.lead_ttc < 2.2s {
-            // Sets LON bits only. Downstream keeps the last lateral target (hold rule, §5).
-            return IntentFrame::decelerate(a_ref: -5.5m/s^2);
+            // Brakes while keeping the route's lateral target. Every frame states every group (§5).
+            return IntentFrame::decelerate(a_ref: -5.5m/s^2, route: route, from: own_state);
         } else {
             return IntentFrame::follow_route(route: route, from: own_state, v_ref: desired_speed);
         }
@@ -71,10 +71,11 @@ component HumanControl from_fmu("fmus/HumanDriverControl.fmu") (rate: 100Hz) (re
 
 // Mode B scalar-pin FMU. Target and range-rate validity go to the FMU as pins.
 // Brake normalization assumes 120 bar corresponds to max_brake_torque.
+// It outputs an override: pedals only while AEB is active, never steering or gear.
 component BoschPCS_v4 from_fmu("fmus/BoschPCS_v4.fmu") (rate: 50Hz) (required_tier: 0): (
     radar:  SliceBuffer<RadarSlice, 8>,
     camera: SliceBuffer<CameraSlice, 5>
-) -> ActuatorControlFrame {
+) -> Override<ActuatorControlFrame> {
     bind_inputs {
         "Radar_TargetValid" = select(radar.latest().has_primary_target == 1, 1.0, 0.0);
         "Radar_Range_m"     = radar.latest().primary_range;
@@ -82,12 +83,12 @@ component BoschPCS_v4 from_fmu("fmus/BoschPCS_v4.fmu") (rate: 50Hz) (required_ti
         "Radar_RateValid"   = select(radar.rate_of(primary_range, window: 1).valid, 1.0, 0.0);
         "Cam_ObstacleConf"  = camera.latest().obstacle_confidence;
     }
-    bind_outputs -> ActuatorControlFrame {
-        valid_mask          = select(fmu.out("AEB_Active") > 0.5, 0x03, 0x00);
-        throttle            = 0.0;
-        brake               = clamp(fmu.out("AEB_BrakePressure_Pa") / 12000000.0, 0.0, 1.0);
-        steering_wheel_norm = 0.0;
-        gear_mode           = GearMode::DRIVE;
+    bind_outputs -> Override<ActuatorControlFrame> {
+        pedal_mode = select(fmu.out("AEB_Active") > 0.5, PedalMode::PEDALS, PedalMode::NONE);
+        throttle   = 0.0;
+        brake      = clamp(fmu.out("AEB_BrakePressure_Pa") / 12000000.0, 0.0, 1.0);
+        wheel_mode = WheelMode::NONE;
+        gear_mode  = GearMode::NONE;
     }
 }
 

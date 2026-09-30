@@ -9,7 +9,7 @@ extern "C" {
 
 #pragma pack(push, 8)
 
-#define DL_ABI_VERSION_0_15 0x00000F00U
+#define DL_ABI_VERSION_0_16 0x00001000U
 
 typedef enum {
     DL_STATUS_OK                    = 0,
@@ -171,18 +171,19 @@ typedef struct {
 } dl_waypoint_t;
 
 typedef struct {
-    double t, x, y, psi, v, a, kappa, _pad;      /* [s, m, m, rad, m/s, m/s^2, 1/m] */
+    int64_t t_ns;                                /* Absolute sim time [ns] */
+    double  x, y, psi, v, a, kappa, _pad;        /* [m], [m], [rad], [m/s], [m/s^2], [1/m] */
 } dl_traj_point_t;
 
 typedef struct {
     uint64_t actor_id;
     uint64_t timestamp_ns;                       /* [ns] */
-    uint32_t valid_mask;                         /* Bitmask of active intent fields */
-    uint8_t  lon_mode;                           /* 0:ACCEL, 1:VEL, 2:GAP */
-    uint8_t  lat_mode;                           /* 0:LANE, 1:PATH, 2:TRAJ */
-    uint8_t  turn_signal;                        /* 0:NONE, 1:L, 2:R, 3:HAZ */
-    uint8_t  _pad;
-    double   a_ref, v_ref, s_stop;               /* [m/s^2, m/s, m] */
+    uint8_t  lon_mode;                           /* 0:NONE, 1:ACCEL, 2:VELOCITY, 3:GAP, 4:TRAJECTORY */
+    uint8_t  lat_mode;                           /* 0:NONE, 1:LANE_OFFSET, 2:POLYLINE, 3:TRAJECTORY */
+    uint8_t  turn_signal;                        /* 0:NONE, 1:OFF, 2:LEFT, 3:RIGHT, 4:HAZARD */
+    uint8_t  _pad[5];
+    double   a_ref, v_ref;                       /* [m/s^2], [m/s] */
+    double   stop_at_odometer;                   /* [m], +INFINITY for no stop */
     uint64_t gap_target_actor_id;
     double   time_gap_ref, distance_gap_min;     /* [s, m] */
     char     target_road_id[64];
@@ -197,8 +198,9 @@ typedef struct {
 typedef struct {
     uint64_t actor_id;
     uint64_t timestamp_ns;                       /* [ns] */
-    uint32_t valid_mask;                         /* 0x1:a_lon, 0x2:jerk, 0x4:angle, 0x8:rate */
-    uint32_t _pad;
+    uint8_t  accel_mode;                         /* 0:NONE, 1:ACCEL, 2:JERK */
+    uint8_t  steer_mode;                         /* 0:NONE, 1:ANGLE, 2:RATE */
+    uint8_t  _pad[6];
     double   a_lon_cmd, jerk_lon_cmd;            /* [m/s^2, m/s^3] */
     double   steer_angle_cmd, steer_rate_cmd;    /* [rad, rad/s] */
 } dl_kinematic_control_frame_t;
@@ -206,10 +208,11 @@ typedef struct {
 typedef struct {
     uint64_t actor_id;
     uint64_t timestamp_ns;                       /* [ns] */
-    uint32_t valid_mask;                         /* 0x1:thr, 0x2:brk, 0x4:steer, 0x8:trq, 0x10:gear */
-    uint8_t  gear_mode;                          /* 0:PARK, 1:REVERSE, 2:NEUTRAL, 3:DRIVE */
+    uint8_t  pedal_mode;                         /* 0:NONE, 1:PEDALS */
+    uint8_t  wheel_mode;                         /* 0:NONE, 1:ANGLE, 2:TORQUE */
+    uint8_t  gear_mode;                          /* 0:NONE, 1:PARK, 2:REVERSE, 3:NEUTRAL, 4:DRIVE */
     int8_t   manual_gear_index;                  /* 0:Auto, 1..10:Manual gear */
-    uint16_t _pad;
+    uint32_t _pad;
     double   throttle, brake;                    /* [0.0, 1.0] */
     double   steering_wheel_norm;                /* [-1.0, 1.0] */
     double   steering_torque_nm;                 /* [N*m] */
@@ -220,7 +223,7 @@ typedef struct {
     uint64_t timestamp_ns;                       /* [ns] */
     double   pos_x, pos_y, pos_z;                /* Rear-axle World [m] */
     double   roll, pitch, yaw;                   /* Intrinsic Z-Y'-X'' Euler [rad] */
-    double   v_lon, v_lat, yaw_rate;             /* Rear-axle, heading-frame axes [m/s, rad/s] */
+    double   v_lon, v_lat, yaw_rate;             /* Rear-axle, heading-frame axes [m/s], [m/s], [rad/s] */
     double   a_lon, a_lat;                       /* Rear-axle, heading-frame axes [m/s^2] */
     double   front_wheel_angle;                  /* Road-wheel delta [rad] */
     double   slip_angle_beta_cg;                 /* Sideslip angle at CG beta_cg [rad] */
@@ -228,6 +231,7 @@ typedef struct {
     int32_t  lane_id;
     uint32_t _pad;
     double   frenet_s, frenet_d;                 /* Cached Frenet [m] */
+    double   odometer_m;                         /* Runtime-written distance since spawn [m] */
 } dl_kinematic_state_t;
 
 /* ==========================================================================
@@ -246,13 +250,13 @@ typedef struct {
     double   motor_or_engine_speed_rads;         /* [rad/s] (Strict SI) */
     double   actual_drive_torque_nm;             /* [N*m] */
     double   brake_pressure_pa[8];               /* [Pa], indexed as wheels[] */
-    uint8_t  gear_mode;                          /* 0:P, 1:R, 2:N, 3:D */
+    uint8_t  gear_mode;                          /* GearMode: 1:PARK, 2:REVERSE, 3:NEUTRAL, 4:DRIVE */
     int8_t   active_gear_index;                  /* -1:R, 0:N, 1..10:Forward */
     uint8_t  _pad[6];
 } dl_powertrain_state_t;
 
 typedef struct {
-    uint32_t abi_version;                        /* Must equal DL_ABI_VERSION_0_15 */
+    uint32_t abi_version;                        /* Must equal DL_ABI_VERSION_0_16 */
     uint32_t struct_size;                        /* sizeof(dl_init_context_t) */
     uint64_t sim_time_ns;                        /* [ns] */
     uint8_t  is_warm_start;                      /* 0:ColdInit, 1:WarmStart */

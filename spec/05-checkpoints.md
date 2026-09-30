@@ -1,33 +1,38 @@
 ---
 title: Checkpoint data contracts
 section: 5
-version: 0.207
+version: 0.209
 status: draft
 normative: true
-depends_on: [02-conventions.md, 06-lifecycle.md, 07-fmu-packaging.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md, 17-standard-library.md]
+depends_on: [02-conventions.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md, 17-standard-library.md]
 ---
 
 # 5. Canonical Checkpoint Data Contracts
 
-Every checkpoint frame carries `timestamp_ns` (`uint64`, simulation time in nanoseconds) and `actor_id` (`uint64`). `IntentFrame`, `KinematicControlFrame`, and `ActuatorControlFrame` also carry a `valid_mask` bitmask, so a consumer can tell an asserted `0.0` from a field that the producer does not request. `KinematicState` has no `valid_mask` because physics fills every field except the header and the map cache, which the runtime writes ([§9.1](09-abi.md)).
+Every checkpoint frame carries `timestamp_ns` (`uint64`, simulation time in nanoseconds) and `actor_id` (`uint64`), which the runtime writes ([§9.1](09-abi.md)). For the three command frames, `timestamp_ns` is the tick that produced the frame. `KinematicState` has fixed fields, and physics fills every one except the header, the map cache, and `odometer_m`, which the runtime writes ([§9.1](09-abi.md)).
 
-**Field Groups:** Each `valid_mask` bit belongs to one field group. The `+` operator ([§10.2](10-composition.md)) uses these groups.
+**Groups and Modes:** `IntentFrame`, `KinematicControlFrame`, and `ActuatorControlFrame` consist of the header and a fixed set of groups. Each group has a mode field that selects one variant, and the mode decides which of the group's fields apply. Every output states every group, so a frame has no optional fields and a consumer reads each frame on its own. The runtime keeps no memory of earlier frames.
 
-| Frame | `LON` Bits | `LAT` Bits | `COUPLED` Bits |
-| :--- | :--- | :--- | :--- |
-| `IntentFrame` | `0x01`, `0x04` | `0x02`, `0x10` | `0x08` |
-| `KinematicControlFrame` | `0x01`, `0x02` | `0x04`, `0x08` | none |
-| `ActuatorControlFrame` | `0x01`, `0x02`, `0x10` | `0x04`, `0x08` | none |
+| Frame | Group | Mode Field (DSL Type) | Modes | Fields |
+| :--- | :--- | :--- | :--- | :--- |
+| `IntentFrame` | `LON` | `lon_mode` (`LonMode`) | `ACCEL_TARGET`, `VELOCITY_TARGET`, `GAP_PROFILE`, `SPATIOTEMPORAL_TRAJECTORY` | `a_ref`, `v_ref`, `stop_at_odometer`, `gap_target_actor_id`, `time_gap_ref`, `distance_gap_min` |
+| | `LAT` | `lat_mode` (`LatMode`) | `LANE_OFFSET`, `POLYLINE_PATH`, `SPATIOTEMPORAL_TRAJECTORY` | `target_road_id`, `target_lane_id`, `d_ref`, `num_waypoints`, `path_points` |
+| | `SIGNAL` | `turn_signal` (`TurnSignal`) | `OFF`, `LEFT`, `RIGHT`, `HAZARD` | none |
+| `KinematicControlFrame` | `LON` | `accel_mode` (`AccelMode`) | `ACCEL`, `JERK` | `a_lon_cmd`, `jerk_lon_cmd` |
+| | `LAT` | `steer_mode` (`SteerMode`) | `ANGLE`, `RATE` | `steer_angle_cmd`, `steer_rate_cmd` |
+| `ActuatorControlFrame` | `PEDALS` | `pedal_mode` (`PedalMode`) | `PEDALS` | `throttle`, `brake` |
+| | `WHEEL` | `wheel_mode` (`WheelMode`) | `ANGLE`, `TORQUE` | `steering_wheel_norm`, `steering_torque_nm` |
+| | `GEAR` | `gear_mode` (`GearMode`) | `PARK`, `REVERSE`, `NEUTRAL`, `DRIVE` | `manual_gear_index` |
 
-**Hold Units:** Bits are held or replaced together in hold units:
+The listed modes are numbered from 1 in the order shown. Every mode enum also has `NONE` ($0$), meaning no request. In `IntentFrame`, `SPATIOTEMPORAL_TRAJECTORY` couples the two motion groups: `num_traj_points` and `trajectory` then govern both, and the other fields of `LON` and `LAT` do not apply.
 
-| Frame | Hold Units |
-| :--- | :--- |
-| `IntentFrame` | `LON` $\{$`0x01`, `0x04`$\}$, `LAT` $\{$`0x02`$\}$, `COUPLED` $\{$`0x08`$\}$, `AUX` $\{$`0x10`$\}$ |
-| `KinematicControlFrame` | `LON` $\{$`0x01`, `0x02`$\}$, `LAT` $\{$`0x04`, `0x08`$\}$ |
-| `ActuatorControlFrame` | `PEDALS` $\{$`0x01`, `0x02`$\}$, `STEER` $\{$`0x04`, `0x08`$\}$, `GEAR` $\{$`0x10`$\}$ |
+**Partial and Override Frames:** A `Lon<T>` frame ([§10.2](10-composition.md)) states the `LON` group and has every other group `NONE`. A `Lat<T>` frame states `LAT`, and for `IntentFrame` also `SIGNAL`, and has `LON` `NONE`. Neither uses `SPATIOTEMPORAL_TRAJECTORY`. An `Override<T>` frame ([§10.3](10-composition.md)) may have any group `NONE`. Every other frame has no `NONE` group.
 
-**Hold Rule (applied by the runtime):** A frame asserts a unit if it sets any bit of that unit. Before the runtime delivers a frame to a consumer, it fills the frame unit by unit, except on an Arbiter's `secondary` input, which receives the raw frame so that an override is active only while the secondary chain asserts it ([§10.3](10-composition.md)). On an edge whose type is `Lon<T>` or `Lat<T>`, only the hold units of that group are kept and filled, and a `Lat<IntentFrame>` edge also keeps `AUX`. For a unit that the frame asserts, the unit's bits and fields come from the frame, and a clear bit inside that unit stays clear. The runtime keeps a stored value of each hold unit for each connection and actor. A frame that asserts a unit replaces its stored value with the frame's bits and fields for that unit. For a unit that the frame does not assert, the filled frame takes the stored value. Only a new output of a producer step updates the stored values, and every such output updates them on the tick it is produced, whether or not the consumer steps on that tick. On ticks where the producer holds its output ([§11](11-execution.md)), the consumer receives the frame as filled at that output's first delivery, rebased as below from each unit's original stamp. A connection is the edge into one consumer input port for one actor. A splice keeps a connection, with its stored values, when the replacement's component takes the place of the old one on that edge: the edge into a replaced physics component, or into the pipe input of a replaced chain. An edge into a consumer that the splice does not replace is also kept, with its stored values, even though its producer changed. Every other edge of a replacement chain is a new connection. **Delivery rebase:** Every frame the runtime delivers, filled or raw, is made relative to the delivery tick $t$, and its `timestamp_ns` is $t$. For each unit that comes from a frame or stored value stamped $t_0 < t$, the runtime subtracts the binary64 value nearest to $(t - t_0)/10^9$, with the nanosecond difference taken first, from each `trajectory` time. Points whose time becomes negative are dropped, and if all would be dropped the last point is kept with its time set to 0. If rounding makes two times equal, the earlier point is dropped. It also reduces `s_stop` by the actor's odometer distance $D(t) - D(t_0)$, setting a negative result to 0, where $D$ is the sum of the horizontal distances between the actor's consecutive committed rear-axle positions, 0 at spawn. Stored values keep their original fields and stamps, and only the delivered copy is rebased. Otherwise a held unit keeps its fields. When the connection is created, each stored value starts as that unit of the latched frame of the consumer's init context ([§6.2](06-lifecycle.md)), stamped with that frame's `timestamp_ns`. In `IntentFrame`, a frame that asserts the `COUPLED` hold unit clears the stored `LON` and `LAT` values, and a frame that asserts `LON` or `LAT` clears the stored `COUPLED` value, before the frame is filled. The cleared values stay clear until a later frame asserts those units. `AUX` never clears another unit and is never cleared, so a turn-signal-only frame keeps a held trajectory. Hold units, not the field groups above, decide assertion and clearing. A cleared value has its bits clear and its fields zero, so a filled frame never combines `COUPLED` with `LON` or `LAT` (see Valid Masks below). A turn-signal-only frame after a trajectory therefore fills to `0x18`. Consumers read a field whose bit is clear after filling as not requested. A component that needs a hold unit that is still clear after filling returns `DL_STATUS_ERR_UNSUPPORTED_MODE`. A manifest cannot declare needed units, so an FMU that needs one fails through its FMI status as `DL_STATUS_ERR_FMU` ([§7.1](07-fmu-packaging.md)). [§17](17-standard-library.md) names the units that each standard component needs. For example, if an intent component emits only a longitudinal deceleration, the controller receives the last lateral target with it, unless a trajectory frame has cleared it.
+**No-Bound Values:** `jerk_lon_cmd` under `ACCEL`, `steer_rate_cmd` under `ANGLE`, and `stop_at_odometer` bound other fields. The value `+INFINITY` means no bound.
+
+**Frame Validity:** The validity rules of this section apply to every frame a component produces. The runtime checks them in output validation ([§14.2](14-diagnostics.md)) and reports a failure as `DL_STATUS_ERR_INVALID_ARG` of the producing call, so every consumer receives only valid frames. After the check, the runtime sets every field that the frame's modes do not use to zero, so the bytes that consumers receive are deterministic.
+
+**Delivery:** The runtime delivers each producer's latest output unchanged. On a tick where a producer does not step ([§11](11-execution.md)), its consumers receive its last output again. Trajectory times and the stop target are absolute, so a frame read on a later tick needs no adjustment. A consumer can compare `timestamp_ns` with its own tick time to see how old a frame is.
 
 ## 5.1 Checkpoint 1: `IntentFrame`
 Produced by Stage 1 (Intent) components.
@@ -35,55 +40,39 @@ Produced by Stage 1 (Intent) components.
 | Field Group | Field Name | Type | Unit | Specification & Semantics |
 | :--- | :--- | :--- | :--- | :--- |
 | **Header** | `actor_id` | `uint64` | — | Unique actor entity identifier. |
-| | `timestamp_ns` | `uint64` | $\text{ns}$ | Simulation time when the intent frame was evaluated. |
-| | `valid_mask` | `uint32` | bitmask | `0x01`: Lon active, `0x02`: Lat active, `0x04`: `s_stop` valid, `0x08`: `trajectory` valid, `0x10`: `turn_signal` active. |
-| **Longitudinal** | `lon_mode` | `enum` | — | `ACCEL_TARGET` ($0$), `VELOCITY_TARGET` ($1$), or `GAP_PROFILE` ($2$). |
+| | `timestamp_ns` | `uint64` | $\text{ns}$ | Simulation time of the tick that produced the frame. |
+| **Longitudinal** | `lon_mode` | `enum` | — | `NONE` ($0$), `ACCEL_TARGET` ($1$), `VELOCITY_TARGET` ($2$), `GAP_PROFILE` ($3$), or `SPATIOTEMPORAL_TRAJECTORY` ($4$). |
 | | `a_ref` | `float64` | $\text{m/s}^2$ | Target rate of change $\dot{v}_{\text{lon}}$ of `v_lon` (`ACCEL_TARGET`), as for `a_lon_cmd` in [§5.2](05-checkpoints.md). |
 | | `v_ref` | `float64` | $\text{m/s}$ | Target cruise speed (`VELOCITY_TARGET` or `GAP_PROFILE` ceiling). |
-| | `s_stop` | `float64` | $\text{m}$ | Target stopping distance ahead (valid if `valid_mask & 0x04`). |
-| | `gap_target_actor_id` | `uint64` | — | Perceived lead actor ID for `GAP_PROFILE` ($0$ if none). |
+| | `stop_at_odometer` | `float64` | $\text{m}$ | Stop target: the actor's odometer reading at which it must be at rest, or `+INFINITY` for none. |
+| | `gap_target_actor_id` | `uint64` | — | Perceived lead actor ID for `GAP_PROFILE`. |
 | | `time_gap_ref` | `float64` | $\text{s}$ | Desired time headway $T_{\text{gap}}$ for `GAP_PROFILE`. |
 | | `distance_gap_min` | `float64` | $\text{m}$ | Minimum standstill gap $s_0$ for `GAP_PROFILE`. |
-| **Lateral** | `lat_mode` | `enum` | — | `LANE_OFFSET` ($0$), `POLYLINE_PATH` ($1$), or `SPATIOTEMPORAL_TRAJECTORY` ($2$). |
+| **Lateral** | `lat_mode` | `enum` | — | `NONE` ($0$), `LANE_OFFSET` ($1$), `POLYLINE_PATH` ($2$), or `SPATIOTEMPORAL_TRAJECTORY` ($3$). |
 | | `target_road_id` | `char[64]` | — | Target OpenDRIVE road identifier. |
 | | `target_lane_id` | `int32` | — | Signed OpenDRIVE lane index. |
 | | `d_ref` | `float64` | $\text{m}$ | Target lateral offset from the `target_lane_id` centerline, with the sign convention of `d` in [§2](02-conventions.md): positive to the left of the reference line direction, whatever the lane's driving direction. |
-| | `num_waypoints` | `uint32` | — | Number of valid entries in `path_points`, at most 64. |
+| | `num_waypoints` | `uint32` | — | Number of valid entries in `path_points`. |
 | | `path_points` | `Waypoint[64]` | $\text{m}, \text{rad}, \text{m}^{-1}$ | Array of $(X, Y, \psi_{\text{ref}}, \kappa_{\text{ref}})$ geometric path targets. |
-| **Coupled Horizon** | `num_traj_points` | `uint32` | — | Number of valid entries in `trajectory`, at most 64. |
-| | `trajectory` | `TrajPoint[64]` | $\text{s}, \text{m}, \text{m/s}$ | Time-indexed array $(t_k, X_k, Y_k, \psi_k, v_k, a_k, \kappa_k)$. |
-| **Auxiliary** | `turn_signal` | `enum` | — | `NONE` ($0$), `LEFT` ($1$), `RIGHT` ($2$), `HAZARD` ($3$). |
+| **Coupled Horizon** | `num_traj_points` | `uint32` | — | Number of valid entries in `trajectory`. |
+| | `trajectory` | `TrajPoint[64]` | $\text{ns}, \text{m}, \text{m/s}$ | Time-indexed array $(t_k, X_k, Y_k, \psi_k, v_k, a_k, \kappa_k)$. |
+| **Signal** | `turn_signal` | `enum` | — | `NONE` ($0$), `OFF` ($1$), `LEFT` ($2$), `RIGHT` ($3$), or `HAZARD` ($4$). |
 
-**Bit Coverage:** Each `valid_mask` bit covers these fields. The hold rule moves a bit and its fields together.
+**Valid `IntentFrame`:** An `IntentFrame` is valid if and only if every rule below holds, together with the Partial and Override rule above.
+* Each mode field holds one of its listed values.
+* `lon_mode` is `SPATIOTEMPORAL_TRAJECTORY` if and only if `lat_mode` is. Then `num_traj_points` is from 1 to 64, and the trajectory follows the Array Semantics below.
+* With `LANE_OFFSET`, `target_lane_id` is not 0. With `POLYLINE_PATH`, `num_waypoints` is from 2 to 64.
+* With `GAP_PROFILE`, `gap_target_actor_id` is not 0.
 
-| Bit | Group | Fields |
-| :--- | :--- | :--- |
-| `0x01` | `LON` | `lon_mode`, `a_ref`, `v_ref`, `gap_target_actor_id`, `time_gap_ref`, `distance_gap_min` |
-| `0x04` | `LON` | `s_stop` |
-| `0x02` | `LAT` | `lat_mode`, `target_road_id`, `target_lane_id`, `d_ref`, `num_waypoints`, `path_points` |
-| `0x10` | `LAT` | `turn_signal` |
-| `0x08` | `COUPLED` | `num_traj_points`, `trajectory` |
+A component implements trajectories if its manifest's `lon_modes` and `lat_modes` both list `SPATIOTEMPORAL_TRAJECTORY` ([§15](15-manifest.md)).
 
-**Frame Validity:** The validity rules of this section apply to every frame a component produces. The runtime checks them in output validation ([§14.2](14-diagnostics.md)) and reports a failure as `DL_STATUS_ERR_INVALID_ARG` of the producing call, so every consumer, native, FMU, or Arbiter, receives only valid frames. The hold rule keeps them valid, because each filled unit comes from a valid frame and clearing keeps `COUPLED` apart from `LON` and `LAT`.
+**Array Semantics:** `path_points` holds `num_waypoints` entries and `trajectory` holds `num_traj_points` entries. Entries beyond the count are ignored. Both arrays are in the World frame and ordered along the direction of travel. Their curvatures are positive when the path turns left in that direction, each trajectory $v_k \ge 0$, and each $a_k$ is a $\dot{v}_{\text{lon}}$ like `a_ref`. Each `trajectory` time $t_k$ is an absolute simulation time in nanoseconds. The times strictly increase, and the first is not earlier than the frame's `timestamp_ns`.
 
-**Valid Masks:** An `IntentFrame` is valid if and only if every rule below holds.
-* Bits outside `0x1F` are clear.
-* Every enum field whose bit is set holds one of its listed values.
-* `0x04` (`s_stop`) is set only together with `0x01`. It refines the longitudinal request.
-* If `0x08` is set, `num_traj_points` is at least 1 and `trajectory` governs both longitudinal and lateral motion, and `0x01`, `0x02`, and `0x04` are clear. The frame requests `SPATIOTEMPORAL_TRAJECTORY` by this bit alone, and consumers ignore `lon_mode` and `lat_mode`.
-* If `0x02` is set, `lat_mode` is not `SPATIOTEMPORAL_TRAJECTORY`, with `LANE_OFFSET` the `target_lane_id` is not 0, and with `POLYLINE_PATH` `num_waypoints` is at least 2.
-* `0x10` (`turn_signal`) may accompany any combination.
-* `num_waypoints` and `num_traj_points` are at most 64, and the `trajectory` times follow the Array Semantics below.
-
-A component implements trajectories if its manifest's `lat_modes` lists `SPATIOTEMPORAL_TRAJECTORY` ([§15](15-manifest.md)).
-
-**Array Semantics:** `path_points` holds `num_waypoints` entries and `trajectory` holds `num_traj_points` entries, each at most 64. Entries beyond the count are ignored. A count above 64 is invalid. Both arrays are in the World frame and ordered along the direction of travel. Their curvatures are positive when the path turns left in that direction, each trajectory $v_k \ge 0$, and each $a_k$ is a $\dot{v}_{\text{lon}}$ like `a_ref`. Each `trajectory` time $t_k$ is in seconds after the frame's `timestamp_ns`. In a produced frame the times start at $t_0 \ge 0$ and strictly increase. A component that copies time- or pose-relative fields from an input frame into its output, such as an Arbiter, copies values that the delivery rebase has already made relative to its own tick. After the hold rule's shift they do not decrease.
-
-**Stop Distance:** `s_stop` is the distance along the actor's intended path from its rear-axle origin, at the pose of the frame's `timestamp_ns`, to the point where the rear-axle origin must stop. The delivery rebase of the hold rule keeps it relative to the pose at the delivery tick, so a consumer reads it as the remaining distance. Held repeats of an output, and a replacement's latched output before its first step ([§10.4](10-composition.md)), are not new outputs.
+**Stop Target:** The actor's odometer is `odometer_m` in its `KinematicState` ([§5.3](05-checkpoints.md)). A consumer's remaining stopping distance is `stop_at_odometer` $-$ `own.odometer_m`, and a value at or below zero means stop now. The target is absolute, so it stays correct on every tick that a consumer reads the frame.
 
 **Measured Gap for `GAP_PROFILE`:** `IntentFrame` carries the gap target and the desired gap. It does not carry the measured gap. A Stage 2 component that tracks `GAP_PROFILE` must declare a `SliceBuffer` input port whose slice type contains `tracks[]`. It reads the measured gap $g$ from the `latest()` sample of its first declared such port, from the track whose `target_actor_id` equals `gap_target_actor_id`: $g$ is that track's `rel_x`, the distance along the sensor's $x$ axis from the mount point to the target's footprint center ([§17.2](17-standard-library.md)). `distance_gap_min` and `time_gap_ref` are targets for this same $g$, so they include the sensor's offset from the front bumper and half the target's length. If no such track exists, the component treats the gap target as absent and tracks `v_ref`.
 
-**Unsupported Modes:** A component's manifest lists the modes it implements ([§15](15-manifest.md)). The check covers only asserted units. `lon_mode` counts only when `0x01` is set, `lat_mode` only when `0x02` is set, and a set `0x08` counts as `SPATIOTEMPORAL_TRAJECTORY` for `lat_modes`. If a Stage 2 component receives a `lon_mode` or `lat_mode` that it does not implement, `dl_do_step` returns `DL_STATUS_ERR_UNSUPPORTED_MODE`, and the runtime stops the scenario.
+**Unsupported Modes:** A component's manifest lists the `IntentFrame` modes it implements ([§15](15-manifest.md)). A component that receives a mode it does not implement, in any checkpoint frame, returns `DL_STATUS_ERR_UNSUPPORTED_MODE` from `dl_do_step`, and the runtime stops the scenario. `NONE` is never checked.
 
 ## 5.2 Checkpoint 2: `ControlFrame` (Strict Two-Tier Typing)
 
@@ -91,25 +80,31 @@ A component implements trajectories if its manifest's `lat_modes` lists `SPATIOT
 | Field Name | Type | Unit | Specification & Semantics |
 | :--- | :--- | :--- | :--- |
 | `actor_id` | `uint64` | — | Unique actor entity identifier. |
-| `timestamp_ns` | `uint64` | $\text{ns}$ | Simulation timestamp. |
-| `valid_mask` | `uint32` | bitmask | `0x01`: `a_lon_cmd` valid, `0x02`: `jerk_lon_cmd` valid, `0x04`: `steer_angle_cmd` valid, `0x08`: `steer_rate_cmd` valid. A frame with bits outside `0x0F` is invalid. |
-| `a_lon_cmd` | `float64` | $\text{m/s}^2$ | Commanded rate of change $\dot{v}_{\text{lon}}$ of `v_lon` ([§5.3](05-checkpoints.md)). In a turn it differs from the reported `a_lon` of [§5.3](05-checkpoints.md) by $v_{\text{lat}} \dot{\psi}$. |
-| `jerk_lon_cmd` | `float64` | $\text{m/s}^3$ | If `0x01` is also set, the maximum jerk used to reach `a_lon_cmd`, which must be above zero, or the frame is invalid. If only `0x02` is set, a jerk command that physics integrates. |
-| `steer_angle_cmd` | `float64` | $\text{rad}$ | Front road-wheel steering angle target $\delta_{\text{cmd}}$, positive to the left (valid if `0x04` set). |
-| `steer_rate_cmd` | `float64` | $\text{rad/s}$ | If `0x04` is also set, the maximum rate used to reach `steer_angle_cmd`, which must be above zero, or the frame is invalid. If only `0x08` is set, a rate command that physics integrates. |
+| `timestamp_ns` | `uint64` | $\text{ns}$ | Simulation time of the tick that produced the frame. |
+| `accel_mode` | `enum` | — | `NONE` ($0$), `ACCEL` ($1$), or `JERK` ($2$). |
+| `a_lon_cmd` | `float64` | $\text{m/s}^2$ | Under `ACCEL`, the commanded rate of change $\dot{v}_{\text{lon}}$ of `v_lon` ([§5.3](05-checkpoints.md)). In a turn it differs from the reported `a_lon` of [§5.3](05-checkpoints.md) by $v_{\text{lat}} \dot{\psi}$. |
+| `jerk_lon_cmd` | `float64` | $\text{m/s}^3$ | Under `ACCEL`, the maximum jerk used to reach `a_lon_cmd`, above zero, or `+INFINITY` for none. Under `JERK`, a jerk command that physics integrates. |
+| `steer_mode` | `enum` | — | `NONE` ($0$), `ANGLE` ($1$), or `RATE` ($2$). |
+| `steer_angle_cmd` | `float64` | $\text{rad}$ | Under `ANGLE`, the front road-wheel steering angle target $\delta_{\text{cmd}}$, positive to the left. |
+| `steer_rate_cmd` | `float64` | $\text{rad/s}$ | Under `ANGLE`, the maximum rate used to reach `steer_angle_cmd`, above zero, or `+INFINITY` for none. Under `RATE`, a rate command that physics integrates. |
+
+A `KinematicControlFrame` is valid if and only if each mode field holds one of its listed values, and the bounds under `ACCEL` and `ANGLE` are above zero.
 
 ### Tier B: `ActuatorControlFrame`
 | Field Name | Type | Unit | Specification & Semantics |
 | :--- | :--- | :--- | :--- |
 | `actor_id` | `uint64` | — | Unique actor entity identifier. |
-| `timestamp_ns` | `uint64` | $\text{ns}$ | Simulation timestamp. |
-| `valid_mask` | `uint32` | bitmask | `0x01`: `throttle` active, `0x02`: `brake` active, `0x04`: `steering_wheel_norm` active, `0x08`: `steering_torque_nm` active, `0x10`: `gear_mode` active. A frame with bits outside `0x1F` is invalid. |
+| `timestamp_ns` | `uint64` | $\text{ns}$ | Simulation time of the tick that produced the frame. |
+| `pedal_mode` | `enum` | — | `NONE` ($0$) or `PEDALS` ($1$). |
 | `throttle` | `float64` | $[0.0, 1.0]$ | Normalized propulsion demand relative to `max_drive_torque` $T_{\text{drive,max}}$. |
 | `brake` | `float64` | $[0.0, 1.0]$ | Normalized brake demand relative to `max_brake_torque` $T_{\text{brake,max}}$. |
-| `steering_wheel_norm` | `float64` | $[-1.0, 1.0]$ | Steering wheel angle normalized against $(\delta_{\max} \cdot i_s)$, positive to the left. |
-| `steering_torque_nm` | `float64` | $\text{N}\cdot\text{m}$ | Optional column steering torque (used when `valid_mask & 0x08` is set). Positive torque turns the wheels left. Setting both `0x04` and `0x08` is invalid. |
-| `gear_mode` | `enum` | — | `PARK` ($0$), `REVERSE` ($1$), `NEUTRAL` ($2$), `DRIVE` ($3$). |
-| `manual_gear_index` | `int8` | — | Explicit gear index ($1..$`num_gears`, or $0$ for automatic selection in `DRIVE`). When `0x10` is set, it is $0$ outside `DRIVE` and at most `num_gears` in `DRIVE` (so $0$ without Tier 2), and any other value makes the frame invalid. Bit `0x10` covers both `gear_mode` and `manual_gear_index`. |
+| `wheel_mode` | `enum` | — | `NONE` ($0$), `ANGLE` ($1$), or `TORQUE` ($2$). |
+| `steering_wheel_norm` | `float64` | $[-1.0, 1.0]$ | Under `ANGLE`, the steering wheel angle normalized against $(\delta_{\max} \cdot i_s)$, positive to the left. |
+| `steering_torque_nm` | `float64` | $\text{N}\cdot\text{m}$ | Under `TORQUE`, the column steering torque. Positive torque turns the wheels left. |
+| `gear_mode` | `enum` | — | `NONE` ($0$), `PARK` ($1$), `REVERSE` ($2$), `NEUTRAL` ($3$), or `DRIVE` ($4$). |
+| `manual_gear_index` | `int8` | — | Explicit gear index ($1..$`num_gears`, or $0$ for automatic selection in `DRIVE`). |
+
+An `ActuatorControlFrame` is valid if and only if each mode field holds one of its listed values, `throttle` and `brake` lie in $[0, 1]$ under `PEDALS`, `steering_wheel_norm` lies in $[-1, 1]$ under `ANGLE`, and `manual_gear_index` is 0 outside `DRIVE` and from 0 to `num_gears` in `DRIVE` (so 0 without Tier 2).
 
 ## 5.3 Checkpoint 3: `KinematicState` & Reference-Point Continuity
 Produced by Stage 3 (Physics) at the end of every simulation step $t + \Delta t$.
@@ -135,3 +130,4 @@ Produced by Stage 3 (Physics) at the end of every simulation step $t + \Delta t$
 | **Map Cache** | `road_id` | `char[64]` | — | Current OpenDRIVE road ID cached by World. |
 | | `lane_id` | `int32` | — | Current signed OpenDRIVE lane ID cached by World. |
 | | `frenet_s`, `frenet_d` | `float64` | $\text{m}$ | Cached $(s, d)$ coordinates for $O(1)$ spatial queries. |
+| **Odometer** | `odometer_m` | `float64` | $\text{m}$ | Horizontal distance travelled by the rear-axle origin since spawn: the sum of the horizontal distances between consecutive committed positions. The runtime writes it in Phase 4 ([§11](11-execution.md)), and 0 at spawn. It never decreases. |

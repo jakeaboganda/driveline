@@ -6,6 +6,11 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.209
+
+* Replaced `valid_mask` and the runtime hold rule with required groups. Every command frame states every group through a mode enum (`NONE` = 0), and fields with a no-bound meaning take `+INFINITY`. `NONE` is allowed only in `Override<T>`, the new type of an Arbiter's `secondary`, and in the unstated groups of `Lon<T>`/`Lat<T>`. Trajectory times are absolute `int64` nanoseconds, and `s_stop` becomes `stop_at_odometer` against a runtime-written `KinematicState.odometer_m`, so delivery is a plain copy with no rebase. The runtime keeps no per-connection state. A tier change patches the steering of held outputs and latched frames. `+` branches no longer need equal rates. `BrakeOverrideArbiter` takes each group from the secondary unless it is `NONE`. The example's `BoschPCS_v4` outputs `Override<ActuatorControlFrame>`, and `IntentFrame::decelerate` states the lateral target. `check.py` rejects the retired vocabulary.
+* ABI version 0.16.
+
 ## 0.208
 
 * Step parameters and `let` names get nested scopes, and shadowing an enclosing name is a compile-time error.

@@ -1,7 +1,7 @@
 ---
 title: Component manifests and packaging
 section: 15
-version: 0.189
+version: 0.209
 status: draft
 normative: true
 depends_on: [00-conformance.md, 03-vehicle-parameters.md, 05-checkpoints.md, 07-fmu-packaging.md, 10-composition.md, 12-grammar.md, 16-static-semantics.md, 17-standard-library.md]
@@ -45,8 +45,8 @@ A manifest is one UTF-8 JSON object with these members. Every member is required
 | `inputs` | array | Input ports in declaration order. Each is `{ "name": string, "type": string }`. `type` uses the `TypeSpec` syntax of [§12](12-grammar.md), for example `"SliceBuffer<RadarSlice, 8>"` or `"IntentFrame"`. |
 | `output` | string | Output type in `TypeSpec` syntax. |
 | `parameters` | array | Each is `{ "name": string, "type": "f64" \| "i64" \| "Time" \| "Bool" \| an enum name of [§16.1](16-static-semantics.md), "unit": string (`"1"` for `Bool` and enum types, `"s"` for `Time`), "default": number or null }`. `unit` is a `UnitExpr` of [§12](12-grammar.md), or `"1"` for dimensionless. A `null` default makes the parameter mandatory at the call site. A `default` is written in `unit`, with `Time` in seconds, `Bool` as 0 or 1, and an enum as its numeric value, and the compiler converts it like a call-site argument. |
-| `lon_modes` | array of strings | `lon_mode` values that the component implements, spelled as the [§5.1](05-checkpoints.md) enum names, such as `"VELOCITY_TARGET"`. Optional. The default is empty. |
-| `lat_modes` | array of strings | `lat_mode` values that the component implements, spelled as the [§5.1](05-checkpoints.md) enum names. Optional. The default is empty. |
+| `lon_modes` | array of strings | `lon_mode` values that the component implements, spelled as the [§5.1](05-checkpoints.md) enum names other than `NONE`, such as `"VELOCITY_TARGET"`. Optional. The default is empty. |
+| `lat_modes` | array of strings | `lat_mode` values that the component implements, spelled as the [§5.1](05-checkpoints.md) enum names other than `NONE`. Optional. The default is empty. |
 | `deck_types` | array of strings | Tier 3 `deck_type` values that the component reads ([§3.1](03-vehicle-parameters.md)). Optional. The default is empty. |
 
 ## 15.4 Parameter Passing

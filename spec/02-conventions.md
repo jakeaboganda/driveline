@@ -1,7 +1,7 @@
 ---
 title: Units and coordinate conventions
 section: 2
-version: 0.197
+version: 0.209
 status: draft
 normative: true
 depends_on: [05-checkpoints.md, 06-lifecycle.md]
@@ -12,7 +12,7 @@ depends_on: [05-checkpoints.md, 06-lifecycle.md]
 All conforming runtimes and components must enforce the following mathematical conventions at every port boundary:
 
 * **Strict SI Units:** Distance in meters ($\text{m}$), time in seconds ($\text{s}$), mass in kilograms ($\text{kg}$), force in newtons ($\text{N}$), pressure in pascals ($\text{Pa}$), torque in newton-meters ($\text{N}\cdot\text{m}$), angles in radians ($\text{rad}$), angular velocity in radians per second ($\text{rad/s}$), velocity in meters per second ($\text{m/s}$), acceleration in meters per second squared ($\text{m/s}^2$), and jerk in meters per second cubed ($\text{m/s}^3$). Non-SI units in the DSL (such as `deg` or `Hz`) are syntactic sugar converted to SI (`rad`, $\text{s}^{-1}$) at compile time. Three kinds of port field are not SI quantities, and their tables say so: normalized commands in $[0, 1]$ or $[-1, 1]$, confidences in $[0, 1]$, and radar cross-section in dBsm.
-* **Time Representation:** Every timestamp in a frame, buffer, or ABI struct is an unsigned 64-bit count of nanoseconds since $t = 0$. Time offsets inside a frame, such as `trajectory` times, are `float64` seconds relative to the frame's `timestamp_ns` ([§5.1](05-checkpoints.md)). Every value of the DSL type `Time` is a signed 64-bit count of nanoseconds, so time arithmetic can go below zero: at $t = 0.05\text{ s}$, `t - 0.18s` is $-130{,}000{,}000\text{ ns}$. Overflow in `Time` arithmetic is `DL_STATUS_ERR_NUMERIC`. The compiler converts time literals such as `0.18s` to nanoseconds exactly. Components convert to seconds only inside their own arithmetic.
+* **Time Representation:** Every timestamp in a frame, buffer, or ABI struct is an unsigned 64-bit count of nanoseconds since $t = 0$. Times inside a frame, such as `trajectory` times, are `int64` absolute nanoseconds ([§5.1](05-checkpoints.md)). Every value of the DSL type `Time` is a signed 64-bit count of nanoseconds, so time arithmetic can go below zero: at $t = 0.05\text{ s}$, `t - 0.18s` is $-130{,}000{,}000\text{ ns}$. Overflow in `Time` arithmetic is `DL_STATUS_ERR_NUMERIC`. The compiler converts time literals such as `0.18s` to nanoseconds exactly. Components convert to seconds only inside their own arithmetic.
 * **Inertial World Frame (ISO 8855):** Right-handed Cartesian coordinate system $(X, Y, Z)$ aligned with the OpenDRIVE inertial frame ($+X$ East, $+Y$ North, $+Z$ Up).
 * **Vehicle Body Frame & Euler Sequence (ISO 8855):** Orthogonal right-handed frame anchored to the vehicle with $+x$ longitudinal forward, $+y$ lateral left, and $+z$ vertical up. World orientation $(\text{roll } \phi, \text{pitch } \theta, \text{yaw } \psi)$ follows the **ISO 8855 intrinsic $Z\text{-}Y'\text{-}X''$ (yaw $\psi \rightarrow$ pitch $\theta \rightarrow$ roll $\phi$) rotation sequence**. All angles are counter-clockwise positive by the right-hand rule. Roll, yaw, and every heading are normalized to $(-\pi, \pi]$. Pitch lies in $(-\pi/2, \pi/2)$, the range where the $Z\text{-}Y'\text{-}X''$ angles are unique.
 * **Heading Frame:** The World frame rotated by the yaw $\psi$ about $+Z$: $+x$ is horizontal and forward, $+y$ horizontal and left, $+z$ up. It equals the body frame when roll and pitch are 0.
