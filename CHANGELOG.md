@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.248
+
+* §1.1 states that perception is object-level, and that raw sensor data such as images, point clouds, and radar spectra is out of scope, with the reasons.
+
 ## 0.247
 
 * FMU teardown skips `fmi3Terminate` after `fmi3Error` or `fmi3Fatal` and skips `fmi3FreeInstance` after `fmi3Fatal`. The FMI facts are listed as open items. A Mode B `Float64` parameter with unit `s` expects `Time`.

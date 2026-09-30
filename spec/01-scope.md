@@ -1,7 +1,7 @@
 ---
 title: Scope, principles, and related work
 section: 1
-version: 0.128
+version: 0.248
 status: draft
 normative: false
 depends_on: []
@@ -22,7 +22,8 @@ This section summarizes the design. It states no requirements. The normative sec
    * **Stated Ground-Truth Exceptions:** Three inputs are ground truth by design. Every component receives its own actor's committed `KinematicState` (ideal proprioception, [§9.1](09-abi.md)). The host map callbacks give every native component the exact OpenDRIVE geometry (a perfect-map prior). Standard sensors report the true `target_actor_id` of each track (ideal data association). A sensor model that simulates map error or association error must produce those errors itself.
 2. **Intra-Tick Acyclic Dataflow Chains (`>>`):** Within any single simulation tick $t$, an actor's motion pipeline is a strictly typed Directed Acyclic Graph (DAG) of signal transformers connected via the pipe operator (`>>`). Across ticks, the loop closes through the World ($X(t) \xrightarrow{\text{Phase 1}} \text{SensorSlice}(t) \xrightarrow{\text{Phase 2}} \text{IntentFrame}(t) \xrightarrow{\text{Phase 2}} \text{ControlFrame}(t) \xrightarrow{\text{Phase 3}} X(t + \Delta t)$), imposing a well-defined one-tick ($1 \cdot \Delta t_{\text{base}}$) sensing-to-actuation latency.
 3. **Zero Implicit Control Glue:** The runtime prohibits hidden controller conversions (such as unparameterized speed-to-acceleration gains or implicit pedal maps) between mismatched components. All cross-tier conversions must be declared as explicit, parameterized adapter blocks in the chain, while pure geometric map queries are provided via deterministic host callbacks.
-4. **FMI 3.0 Layered Component Model & Cardinality Agnosticism:** Driveline standardizes port data contracts and lifecycle transitions rather than internal component implementations, allowing native DSL state trees, Behavior Trees, ONNX models, Simulink FMUs, or C++ binaries to be swapped freely. Components support $1\text{:}1$ per-actor bindings, $1\text{:}N$ centralized coordination ("Hive Mind" intent), and $N\text{:}N$ vectorized batch execution.
+4. **Object-Level Perception:** Sensor slices carry object-level data, the level of OSI ground truth: tracks, lane features, and surface values ([§4.3](04-perception.md)). Raw sensor data, such as camera images, lidar point clouds, and radar spectra, is out of scope. Three reasons decide this. Data structs are fixed-size and pointer-free and cross the C-ABI and Mode A FMU boundary byte for byte, and one 1080p RGB frame is about 6.2 MB per buffer entry. Rendering runs on a GPU, which the determinism scope excludes ([§11](11-execution.md)). `Interpolate` and `rate_of` have no meaning for pixels. A stack under test that needs images gets them from a host renderer outside Driveline and aligns them with Driveline ticks by `(actor_id, t_ns)`.
+5. **FMI 3.0 Layered Component Model & Cardinality Agnosticism:** Driveline standardizes port data contracts and lifecycle transitions rather than internal component implementations, allowing native DSL state trees, Behavior Trees, ONNX models, Simulink FMUs, or C++ binaries to be swapped freely. Components support $1\text{:}1$ per-actor bindings, $1\text{:}N$ centralized coordination ("Hive Mind" intent), and $N\text{:}N$ vectorized batch execution.
 
 ## 1.2 Related Work & Standards Positioning
 
