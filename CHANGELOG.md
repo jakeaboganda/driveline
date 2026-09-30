@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.208
+
+* Step parameters and `let` names get nested scopes, and shadowing an enclosing name is a compile-time error.
+
 ## 0.207
 
 * A tier change writes the new steering into the stored steering units of kept connections, so a producer that hasn't stepped yet still delivers it. A replaced secondary chain delivers an empty frame until it steps, and Arbiter output is validated like any other. Partial frames zero out-of-group fields, `Lat<IntentFrame>` keeps `AUX`, rebases use original stamps and drop tied points, and `POLYLINE_PATH` needs at least 2 waypoints.

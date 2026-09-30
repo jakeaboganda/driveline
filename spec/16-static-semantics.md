@@ -1,7 +1,7 @@
 ---
 title: DSL static semantics
 section: 16
-version: 0.206
+version: 0.208
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 07-fmu-packaging.md, 09-abi.md, 10-composition.md, 11-execution.md, 12-grammar.md, 15-manifest.md, 17-standard-library.md]
@@ -57,7 +57,7 @@ Names resolve from the innermost scope outward. A name declared twice in one sco
 | Scenario | Actor names. In `terminate when` and `on` conditions only: `sim_time` (`Time`, [§11](11-execution.md)). |
 | Actor body | `sensors.<name>` and `priors.<name>`, each a single two-part name rather than a member access, and the actor's chain names. |
 | `fn` body | The `fn`'s parameter names. |
-| Component body | Input port names and `param` names. Inside `bind_outputs`, also `fmu`, usable only as `fmu.out(...)`. Inside `bind_inputs` and `step`, also `own_state` (`KinematicState`, the actor's own committed state, [§9.1](09-abi.md)). Inside `step`, also its parameters and `let` names. |
+| Component body | Input port names and `param` names. Inside `bind_outputs`, also `fmu`, usable only as `fmu.out(...)`. Inside `bind_inputs` and `step`, also `own_state` (`KinematicState`, the actor's own committed state, [§9.1](09-abi.md)). Inside `step`, also its parameters, in a scope nested in the component body, and `let` names, in the step block nested in that. A name that shadows any name of an enclosing scope is a compile-time error. |
 
 * **Imports:** `use std::m::{...}` must name a module of [§17](17-standard-library.md) and components or sensors that its section lists. A sensor or standard component is usable only if imported. Other imports follow [§15.2](15-manifest.md).
 * **Actors:** An actor name is visible in the whole scenario, including before its declaration. `a.sensors.n` and `a.priors.n` may appear only in `a`'s own actor body, in a `bind` statement whose list contains `a`, or in a `splice` whose target belongs to `a`. Any other use is a compile-time error.
