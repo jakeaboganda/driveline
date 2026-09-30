@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.231
+
+* Fixed two regressions. The Arbiter fallback clamps `v_ref` at 0, which was negative when reversing since v0.230. A rate clause on a Stage 3 declaration is an error, which v0.206 had contradicted.
+
 ## 0.230
 
 * `IntentFrame` Arbiters fill the unstated motion group from `own_state` in baseline mode when an override states one group over a trajectory. Numeric errors in constant expressions are compile-time errors, and in conditions they stop the run. `Time` literals must fit 64 bits. Minor fixes: merged frames can't fail validation, steering-patched frames keep their stamp, and runtime-detected errors report an empty instance.

@@ -1,7 +1,7 @@
 ---
 title: DSL static semantics
 section: 16
-version: 0.230
+version: 0.231
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 07-fmu-packaging.md, 09-abi.md, 10-composition.md, 11-execution.md, 12-grammar.md, 15-manifest.md, 17-standard-library.md]
@@ -86,7 +86,7 @@ Names resolve from the innermost scope outward. A name that shadows a name of an
   | Mode A FMU ([§7](07-fmu-packaging.md)) | Present | `;` |
   | Mode B FMU ([§7](07-fmu-packaging.md)) | Present | A block with exactly one `bind_inputs` and exactly one `bind_outputs`, and nothing else. |
 
-* **Declaration clauses:** An omitted `required_tier` clause means `required_tier: 0`. Its value must be 0, 1, or 2. An omitted `rate` clause means the base rate ([§11](11-execution.md)). A library component, one imported with `use` rather than declared with `component`, has no rate clause and always runs at the base rate. Every `component` declaration, Mode A included, may carry one.
+* **Declaration clauses:** An omitted `required_tier` clause means `required_tier: 0`. Its value must be 0, 1, or 2. An omitted `rate` clause means the base rate ([§11](11-execution.md)). A library component, one imported with `use` rather than declared with `component`, has no rate clause and always runs at the base rate. Every `component` declaration, Mode A included, may carry one, except one whose output is `KinematicState`, which runs every tick ([§11](11-execution.md)).
 * **`param`:** A parameter's type must be a quantity type, `Time`, `Int`, `Bool`, or an enum. A `param` is not a call-site parameter: a call cannot set it, and it keeps its initializer. Its initializer must have that type and be a constant expression: literals, enum constants, and arithmetic on them, with no names. An array literal of constant expressions is also constant, which matters only for `RouteNodes` priors and `gear_ratios`. A manifest parameter ([§15](15-manifest.md)) of type `f64` with unit $u$ is a quantity of $u$'s dimension, `i64` is `Int`, `Time` is `Time`, `Bool` is `Bool`, and an enum name is that enum type. A call-site argument for a parameter, of a declared or a library component, must have the parameter's type, where quantity types match by dimension, and must be a constant expression, which here also admits an actor's `id`, as does a `fn` argument of a parameter type.
 * **`step`:** Its signature must be `step(t: Time, dt: Time) -> T`, with `T` the component's output type, which for every component form is a checkpoint frame, a partial or override frame of [§16.1](16-static-semantics.md), or `KinematicState`. `t` is the tick time and `dt` the component's period ([§9.1](09-abi.md)). The block must return a value of type `T` on every path. `let x = e;` gives `x` the type of `e`, which must not be a `Chain` or an array type. `let` names are immutable. Each `{ ... }` block opens a nested scope.
 * **`bind_inputs`:** Each expression must be a quantity, a `Time`, an `Int`, or a `Bool`. The runtime writes it to the `Float64` pin as its SI value, a `Time` as the binary64 value nearest its nanoseconds over $10^9$, as the integer's value, or as 1.0 for true and 0.0 for false. Each pin name must be an input variable in the FMU's `modelDescription.xml`.
