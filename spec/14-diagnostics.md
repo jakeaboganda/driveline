@@ -1,7 +1,7 @@
 ---
 title: Status codes and error handling
 section: 14
-version: 0.256
+version: 0.260
 status: draft
 normative: true
 depends_on: [05-checkpoints.md, 06-lifecycle.md, 07-fmu-packaging.md, 09-abi.md, 10-composition.md, 11-execution.md, 18-run-record.md]
@@ -19,7 +19,7 @@ depends_on: [05-checkpoints.md, 06-lifecycle.md, 07-fmu-packaging.md, 09-abi.md,
 | `2` | `DL_STATUS_WARN_FMU_COLD_SPLICE` | The runtime spliced a Mode B FMU without a current warm start ([§7](07-fmu-packaging.md)). |
 | `3` | `DL_STATUS_WARN_TRIM_MISMATCH` | A Stage 2 output differs from its latched trim frame, or a component cannot re-trim ([§6.2](06-lifecycle.md)). |
 | `-1` | `DL_STATUS_ERR_INVALID_ARG` | A parameter, descriptor, or frame is invalid, or `abi_version` or `struct_size` does not match. |
-| `-2` | `DL_STATUS_ERR_TIER_MISSING` | The actor's `vehicle_spec` lacks a tier that the component requires. |
+| `-2` | `DL_STATUS_ERR_TIER_MISSING` | The actor's `vehicle_spec` or `object_spec` lacks a tier that the component requires. |
 | `-3` | `DL_STATUS_ERR_NUMERIC` | A computation produced a non-finite value, or a trim or steady-state solve has no solution. |
 | `-4` | `DL_STATUS_ERR_UNSUPPORTED_MODE` | A component received a mode that it does not implement ([§5](05-checkpoints.md)). |
 | `-5` | `DL_STATUS_ERR_STATE` | A `dl_*` function was called in a lifecycle state where [§6](06-lifecycle.md) does not allow it. |

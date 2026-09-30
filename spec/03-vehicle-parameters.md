@@ -1,7 +1,7 @@
 ---
 title: Vehicle parameter tiers
 section: 3
-version: 0.258
+version: 0.260
 status: draft
 normative: true
 depends_on: [02-conventions.md, 04-perception.md, 06-lifecycle.md, 08-steady-state.md, 11-execution.md, 15-manifest.md, 17-standard-library.md, 19-modules.md]
@@ -23,7 +23,7 @@ Tiers 0–2 describe a two-axle vehicle with a steered front axle and four wheel
 | **Tier 3** *(External Solver Deck)* | `dl_custom_deck_t` | Pacejka Magic Formula `.tir`, IPG CarMaker, Adams/Car | `deck_type` (`NONE`, `PACEJKA_TIR`, `SOLVER_URI`), `precedence_mode` (`OVERRIDE_TIER1_2` or `SUPPLEMENT_ONLY`), and `uri[256]`, a null-terminated path or URI to the deck file. Deck contents are never inlined. |
 
 ## 3.1 Compile-Time Tier Verification & Single Source of Truth
-1. **Compile-Time Tier Check:** Every physics and control component declares its minimum required `vehicle_spec` tier (`required_tier: 0 | 1 | 2`). Binding or splicing a component whose `required_tier` is not populated in the actor's `vehicle_spec` is a **compile-time error**.
+1. **Compile-Time Tier Check:** Every physics and control component declares its minimum required `vehicle_spec` tier (`required_tier: 0 | 1 | 2`). Binding or splicing a component whose `required_tier` is not populated in the actor's `vehicle_spec` or `object_spec` is a **compile-time error**.
 2. **Control-to-Physics Tier Compatibility:**
    * A Tier 0 physics model (`KinematicBicycle`) accepts **only** Tier A `KinematicControlFrame`. Wiring an `ActuatorControlFrame` into `KinematicBicycle` is rejected at compile time.
    * A Tier 1 physics model (`DynamicSingleTrack`) accepts `KinematicControlFrame` natively (using only Tier 0 + Tier 1 parameters), or accepts `ActuatorControlFrame` when preceded by an explicit drivetrain adapter. The standard adapter is `SimpleDrivetrain: ActuatorControlFrame -> KinematicControlFrame`. It requires Tier 2 powertrain parameters $T_{\text{drive,max}}, T_{\text{brake,max}}, R_{\text{eff}}, i_g, i_R, i_{\text{fd}}$, and it converts steering with $\delta = $ `steering_wheel_norm` $\cdot \, \delta_{\max}$.

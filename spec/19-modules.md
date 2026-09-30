@@ -1,7 +1,7 @@
 ---
 title: Modules, catalogs, and the lockfile
 section: 19
-version: 0.259
+version: 0.260
 status: draft
 normative: true
 depends_on: [12-grammar.md, 15-manifest.md, 16-static-semantics.md, 18-run-record.md]
@@ -22,6 +22,6 @@ A module is a `.dline` file in the `ModuleFile` form of [§12](12-grammar.md): i
 
 The resolved inputs of a scenario are the files that the scenario and every module it imports, directly or through other modules, name in any import or declaration, whether or not the scenario uses the declaration, other than the scenario file itself: each module, each native manifest (a Mode A manifest is inside its FMU), the native library file for the platform the compiler targets, each FMU, the map, and each Tier 3 deck whose `uri` is a file path, that is, has no RFC 3986 scheme of two or more characters, so a drive letter such as `C:` is not a scheme. A resolved input that does not exist is a compile-time error.
 
-1. **Location and Form:** The lockfile is next to the scenario file, named as the scenario file with `.lock` appended. It is one UTF-8 JSON object with the single member `files`, an array with one entry `{ "path": string, "sha256": string }`, members in that order, per resolved input. `path` is relative to the scenario file's directory, with `/` separators, and lexically normalized: no empty or `.` segments, and `..` only as leading segments. An input with no relative path, such as one on another drive, is written as its lexically normalized absolute path with `/` separators. Symbolic links are not resolved, and each normalized path has one entry. `sha256` is the lowercase hexadecimal SHA-256 of the file's bytes. Entries are sorted by `path`, compared as UTF-8 bytes. The compiler writes the object in the encoding of [§18.1](18-run-record.md), followed by `\n`.
+1. **Location and Form:** The lockfile is next to the scenario file, named as the scenario file with `.lock` appended. It is one UTF-8 JSON object with the single member `files`, an array with one entry `{ "path": string, "sha256": string }`, members in that order, per resolved input. `path` is relative to the scenario file's directory, with `/` separators, and lexically normalized: no empty or `.` segments, and `..` only as leading segments. An input with no relative path, such as one on another drive, is written as its lexically normalized absolute path with `/` separators and any drive letter in upper case followed by `:`, as in `C:/decks/a.tir`. The compiler reads each input at its normalized path. Symbolic links are not resolved, and each normalized path has one entry. `sha256` is the lowercase hexadecimal SHA-256 of the file's bytes. Entries are sorted by `path`, compared as UTF-8 bytes. The compiler writes the object in the encoding of [§18.1](18-run-record.md), followed by `\n`.
 2. **Checking:** If the lockfile exists, the compiler compares it with the resolved inputs. A resolved input with no entry, an entry with no resolved input, or a different hash is a compile-time error. If the lockfile does not exist, the compiler writes it after it accepts the scenario. Because native libraries differ by platform, a lockfile that lists one pins that platform.
 3. **Run Record:** The run record header lists the same entries in the same order ([§18](18-run-record.md)).

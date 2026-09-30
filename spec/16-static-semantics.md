@@ -1,7 +1,7 @@
 ---
 title: DSL static semantics
 section: 16
-version: 0.257
+version: 0.260
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 07-fmu-packaging.md, 09-abi.md, 10-composition.md, 11-execution.md, 12-grammar.md, 15-manifest.md, 17-standard-library.md, 19-modules.md]
@@ -46,6 +46,7 @@ depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-
 * `-x` requires `x` to be an `Int`, a `Time`, or a quantity, has the type of `x`, and `x` gets the expected type of `-x`, so `-0.1s` is `Time` where `Time` is expected.
 * Comparisons have type `Bool`. `and`, `or`, and `not` take and return `Bool`. `==` and `!=` also accept `Int`, `Bool`, `String`, and enum operands of the same type.
 * The condition of `if`, `on`, and `terminate when` must have type `Bool`.
+* A `ScopedIdent` of more than one segment outside `use` must be a qualified enum constant, such as `GearMode::DRIVE`, or a constructor of [§17.1](17-standard-library.md), such as `IntentFrame::decelerate`. Any other, such as a module path to a declaration, is a compile-time error, because an imported name is written unqualified ([§19.1](19-modules.md)).
 * An unqualified enum constant, such as `Interpolate`, is allowed where the expected type is that enum, and there it takes precedence over any other name. In a `select` argument, this uses the call's expected type. Elsewhere it must be qualified, as in `GearMode::DRIVE`.
 * A dimension mismatch, or an operand of the wrong type, is a compile-time error.
 

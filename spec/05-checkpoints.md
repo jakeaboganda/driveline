@@ -1,7 +1,7 @@
 ---
 title: Checkpoint data contracts
 section: 5
-version: 0.245
+version: 0.260
 status: draft
 normative: true
 depends_on: [02-conventions.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md, 16-static-semantics.md, 17-standard-library.md]
@@ -116,6 +116,7 @@ An `ActuatorControlFrame` is valid if and only if the Override rule holds, each 
 ## 5.3 Checkpoint 3: `KinematicState` & Reference-Point Continuity
 Produced by Stage 3 (Physics) at the end of every simulation step $t + \Delta t$.
 
+* **Validity:** A `KinematicState` is valid if and only if `yaw` and `roll` lie in $(-\pi, \pi]$ and `pitch` lies in $(-\pi/2, \pi/2)$ ([§2](02-conventions.md)).
 * **Resolution of Rear-Axle vs. CG Reference Point:** All pose and twist quantities (`pos_x`, `pos_y`, `pos_z`, `v_lon`, `v_lat`, `a_lon`, `a_lat`) in `KinematicState` are measured at the **rear-axle reference origin** $(x_{\text{ra}}, y_{\text{ra}}, z_{\text{ra}})$. Simultaneously, `slip_angle_beta_cg` stores the sideslip angle at the **Center of Gravity (CG)** $\beta_{\text{cg}}$.
 * **Rigid-Body Transform Between Rear Axle and CG:** Given rear-axle velocities $(v_{\text{lon}}, v_{\text{lat}})$ and yaw rate $\dot{\psi}$, the velocity and sideslip at the CG are related by exact rigid-body kinematics:
   $$v_{x,\text{cg}} = v_{\text{lon}}, \qquad v_{y,\text{cg}} = v_{\text{lat}} + l_r \dot{\psi}, \qquad \beta_{\text{cg}} = \operatorname{atan2}\!\left(\operatorname{sgn}(v_{\text{lon}})\, v_{y,\text{cg}},\ |v_{\text{lon}}|\right)$$

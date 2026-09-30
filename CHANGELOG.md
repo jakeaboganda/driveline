@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.260
+
+* Fold-in review round 5. A sensor target's reference point has an explicit position and height, ignoring roll and pitch as contact does. A `KinematicState` is valid only with yaw and roll in (-π, π] and pitch in (-π/2, π/2), which output validation checks. Mode A `entity` and `deck_types` come from the manifest. A multi-segment name outside `use` must be an enum constant or a §17.1 constructor. Splice replacements get the entity check. Vehicle physics reports `front_wheel_angle` = δ. Tier wording covers `object_spec`, and absolute lockfile paths fix the drive-letter form.
+
 ## 0.259
 
 * Fold-in review round 4. `DL_STATUS_WARN_FMU_COLD_SPLICE` is reported in the splice window when the instance is created. A static actor in a `bind` or as a splice target is an explicit compile-time error. §2 notes that the spawn state and standard physics are planar. `lead_ttc` refers to any lead track. The lockfile covers files named by imports, lists native manifests but not Mode A manifests inside FMUs, and fixes its member order.
