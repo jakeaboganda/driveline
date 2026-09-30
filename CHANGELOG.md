@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.224
+
+* The pre-step output rule is a list by output kind, and a full `IntentFrame` keeps a latched trajectory. A `LANE_OFFSET` lane only needs to exist in some lane section of its road. Synthesized latched control frames carry the committed $\dot{v}_{\text{lon}}$. Minor fixes: count checks cover only used counts, the Mode B form wording, a guard on nonpositive axle loads, and the `Int` conversion exception for `select`/`clamp`.
+
 ## 0.223
 
 * `JERK` integrates the commanded $\dot{v}_{\text{lon}}$, seeded from the committed state after each initialization, and the `ACCEL` bound limits the change of the same quantity.

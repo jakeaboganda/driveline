@@ -1,7 +1,7 @@
 ---
 title: DSL static semantics
 section: 16
-version: 0.222
+version: 0.224
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 07-fmu-packaging.md, 09-abi.md, 10-composition.md, 11-execution.md, 12-grammar.md, 15-manifest.md, 17-standard-library.md]
@@ -33,7 +33,7 @@ depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-
 * A `QuantityLit` has the dimension of its unit, and its value is the binary64 value nearest to its exact decimal value times the unit's SI factor. A `Time` literal is converted from its decimal text to nanoseconds exactly ([§2](02-conventions.md)).
 * The expected type of an expression in a slot with a declared type is that type: a `param` initializer, a call argument (the parameter's or port's type), a `return` value, a `bind_outputs` assignment (the field's type), a record field, and a world statement. Operators and `select` pass it on as described below.
 * A `QuantityLit` with dimension s has type `Time` where the expected type is `Time`. The expected type of an operand of `+`, `-`, or a comparison is the type of the other operand, so `t - 0.1s` is `Time`. When both operands of `+` or `-` are literals, both take the expected type of the whole expression, and in `*` or `/` with an `Int`, the other operand takes it, so `0.1s + 0.08s` and `0.09s * 2` are `Time` where `Time` is expected. A `Time` literal or unqualified enum constant among the arguments of `select` likewise takes the call's expected type, but the expected type never converts an `Int` argument ([§16.5](16-static-semantics.md)). Where no operand has a type of its own and there is no expected type, as in `0.1s + 0.2s <= 0.3s`, the literals are quantities. `clamp` never takes `Time`. Elsewhere it is a quantity. A `Time` literal must be a whole number of nanoseconds.
-* An `IntLit` or `HexLit` has type `Int`, and one above $2^{63} - 1$ is a compile-time error. Where a quantity is expected, an `Int` converts to a dimensionless quantity.
+* An `IntLit` or `HexLit` has type `Int`, and one above $2^{63} - 1$ is a compile-time error. Where a quantity is expected, an `Int` converts to a dimensionless quantity, except among the arguments of `select` and `clamp`, which follow [§16.5](16-static-semantics.md).
 * A `FloatLit` is a dimensionless quantity, a `StringLit` is a `String`, and a `BoolLit` is a `Bool`.
 
 ## 16.3 Expressions

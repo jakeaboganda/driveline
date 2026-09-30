@@ -1,7 +1,7 @@
 ---
 title: Checkpoint data contracts
 section: 5
-version: 0.223
+version: 0.224
 status: draft
 normative: true
 depends_on: [02-conventions.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md, 17-standard-library.md]
@@ -66,7 +66,7 @@ Produced by Stage 1 (Intent) components.
 **Valid `IntentFrame`:** An `IntentFrame` is valid if and only if every rule below holds, together with the Partial and Override rule above.
 * Each mode field holds one of its listed values.
 * `lon_mode` is `SPATIOTEMPORAL_TRAJECTORY` if and only if `lat_mode` is. Then `num_traj_points` is from 1 to 64, and the trajectory follows the Array Semantics below.
-* With `LANE_OFFSET`, `(target_road_id, target_lane_id)` names a lane of the map, so the lane ID is not 0. With `POLYLINE_PATH`, `num_waypoints` is from 2 to 64.
+* With `LANE_OFFSET`, `target_road_id` names a road of the map and some lane section of it has a lane `target_lane_id`, so the lane ID is not 0. With `POLYLINE_PATH`, `num_waypoints` is from 2 to 64.
 * With `GAP_PROFILE`, `gap_target_actor_id` is not 0. Where they apply, `v_ref`, `time_gap_ref`, and `distance_gap_min` are not negative.
 
 **Array Semantics:** `path_points` holds `num_waypoints` entries and `trajectory` holds `num_traj_points` entries. Entries beyond the count are ignored. Both arrays are in the World frame and ordered along the direction of travel. Their curvatures are positive when the path turns left in that direction, each trajectory $v_k \ge 0$, and each $a_k$ is a $\dot{v}_{\text{lon}}$ like `a_ref`. Each `trajectory` time $t_k$ is an absolute simulation time in nanoseconds. The times are not negative and strictly increase. Points earlier than a consumer's tick are in the past, which is normal for a frame that a component forwards or that a consumer reads on a later tick.
