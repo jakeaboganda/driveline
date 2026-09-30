@@ -1,7 +1,7 @@
 ---
 title: FMU packaging
 section: 7
-version: 0.240
+version: 0.247
 status: draft
 normative: true
 depends_on: [05-checkpoints.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md, 16-static-semantics.md]
@@ -25,7 +25,7 @@ A `component ... from_fmu("...")` declaration uses one of two modes. The compile
   * **MIME subtype names:** `<checkpoint-type>`, `<slice-type>`, and `<prior-type>` are the type names written in lowercase with a hyphen before each inner capital: `IntentFrame` is `intent-frame`, `KinematicControlFrame` is `kinematic-control-frame`, and `RadarSlice` is `radar-slice`. A `Lon<T>`, `Lat<T>`, or `Override<T>` port or output uses the MIME type and full struct of `T`, with each unstated group `NONE` and its fields zero.
 * **Mode B (Scalar-Pin FMU):** A legacy FMU with scalar `Float64` pins. `bind_inputs` maps expressions over the `SliceBuffer` ports and `own_state` onto input pins. `bind_outputs` maps output pins onto a checkpoint frame. A splice starts a new instance that initializes at $t_{\text{first}}$ from `bind_inputs` alone, with no init context ([§7.2](07-fmu-packaging.md)), and the runtime reports `DL_STATUS_WARN_FMU_COLD_SPLICE`.
 
-  In `bind_outputs`, the mode field of every group that the output type states must be assigned ([§16.5](16-static-semantics.md)). A frame field that no assignment names is zero, except a field that its assigned mode makes a bound ([§5](05-checkpoints.md)), which is `+INFINITY`. Named call-site arguments that are not input ports are FMI parameters with the same names, set before initialization. Each must name a parameter variable of `modelDescription.xml`, and its type follows that variable: `Float64` takes a quantity of the dimension of its declared unit, or a dimensionless one if it declares none, passed in SI units by the Units rule below, or a `Time` passed in seconds when the unit is `s`, `Int64` takes an `Int`, and `Boolean` takes a `Bool`. A variable of any other type, or an argument of another type, is a compile-time error. Any other name is a compile-time error.
+  In `bind_outputs`, the mode field of every group that the output type states must be assigned ([§16.5](16-static-semantics.md)). A frame field that no assignment names is zero, except a field that its assigned mode makes a bound ([§5](05-checkpoints.md)), which is `+INFINITY`. Named call-site arguments that are not input ports are FMI parameters with the same names, set before initialization. Each must name a parameter variable of `modelDescription.xml`, and its type follows that variable: `Float64` takes a quantity of the dimension of its declared unit, or a dimensionless one if it declares none, passed in SI units by the Units rule below, or, when the unit is `s`, a `Time` passed in seconds, since the expected type there is `Time`, `Int64` takes an `Int`, and `Boolean` takes a `Bool`. A variable of any other type, or an argument of another type, is a compile-time error. Any other name is a compile-time error.
 
   A Mode B FMU cannot be re-trimmed ([§6.2.4](06-lifecycle.md)), because it has no input for `dl_init_context_t`. For the same reason a Mode B output type of `KinematicState` is a compile-time error, so a Mode B FMU is never a physics component.
 
@@ -59,5 +59,5 @@ The runtime drives an FMU through the [§6](06-lifecycle.md) states with these F
 | `dl_enter_warm_start` (splice) | Initialize at $t_{\text{first}}$, the earliest tick time $t' \ge t$ at which the component is scheduled ([§11](11-execution.md)), where $t$ is the tick after the window, so its first `fmi3DoStep` starts at `startTime`. The context's `sim_time_ns` stays $t$, the time of the committed state it describes ([§6.2.4](06-lifecycle.md)). The new instance has already been instantiated and given its parameters, and the outgoing instance is terminated and freed ([§10](10-composition.md)). |
 | `dl_enter_warm_start` (re-trim, Mode A only) | `fmi3Reset`, set the parameters again, and initialize at $t_{\text{first}}$, as for a splice, with the re-trim context ([§6.2.4](06-lifecycle.md)). |
 | `dl_do_step` | `fmi3DoStep` as [§7.1](07-fmu-packaging.md) describes. |
-| `dl_terminate` | `fmi3Terminate` if the FMU is in FMI Step Mode. Otherwise no FMI call, and teardown goes on to `fmi3FreeInstance`. |
-| `dl_free_instance` | `fmi3FreeInstance`. |
+| `dl_terminate` | `fmi3Terminate` if the FMU is in FMI Step Mode and no FMI call on it has returned `fmi3Error` or `fmi3Fatal`. Otherwise no FMI call. |
+| `dl_free_instance` | `fmi3FreeInstance`, unless an FMI call on the instance has returned `fmi3Fatal`, in which case no FMI call. |

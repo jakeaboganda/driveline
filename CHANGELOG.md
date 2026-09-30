@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.247
+
+* FMU teardown skips `fmi3Terminate` after `fmi3Error` or `fmi3Fatal` and skips `fmi3FreeInstance` after `fmi3Fatal`. The FMI facts are listed as open items. A Mode B `Float64` parameter with unit `s` expects `Time`.
+
 ## 0.246
 
 * Output validation checks that every used `char[N]` field is null-terminated, valid UTF-8. Sensor, `load_xodr`, and `friction_zone` calls are allowed only in their designated statements.
