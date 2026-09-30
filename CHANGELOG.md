@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.226
+
+* The zero-slip rule below 1 m/s includes every reverse speed. The trim check skips splices whose latched steering is not `ANGLE`. Every "must" about scenario text, declarations, or manifests is a compile-time error. Expected types pass through parentheses and every `select` branch. Integer range checks include `uint64`, and `i64` manifest parameters have unit `"1"`. Minor fixes: override-output trims and wording for unlisted mode fields.
+
 ## 0.225
 
 * `IntentFrame` requests forward travel only. Reversing goes through an `ActuatorControlFrame` in `REVERSE`. `LANE_OFFSET` gets one Lane Target rule for where the path starts, which StanleyLat now links. The finiteness check covers only array entries below the count. Minor fixes: "every full frame" wording and an example comment.
