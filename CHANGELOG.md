@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.250
+
+* New §18 Run Record: every run writes a JSON Lines record with a header (versions, scenario SHA-256, seed, timestep), one line per report, and an end line with the outcome. The encoding is fixed so identical runs write identical records, apart from report `detail` text. Report transport is no longer implementation-defined.
+
 ## 0.249
 
 * `object_class` has the values UNKNOWN, CAR, TRUCK, PEDESTRIAN, CYCLIST, MOTORCYCLE, ANIMAL, and STATIC, which replace VRU. A `vehicle_spec` names its class (CAR, TRUCK, CYCLIST, or MOTORCYCLE, default CAR). The runtime passes it in `dl_vehicle_spec_t.object_class`, and sensors report it. `ObjectClass` is a DSL enum.
