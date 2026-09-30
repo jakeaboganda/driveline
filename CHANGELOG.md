@@ -6,6 +6,11 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.249
+
+* `object_class` has the values UNKNOWN, CAR, TRUCK, PEDESTRIAN, CYCLIST, MOTORCYCLE, ANIMAL, and STATIC, which replace VRU. A `vehicle_spec` names its class (CAR, TRUCK, CYCLIST, or MOTORCYCLE, default CAR). The runtime passes it in `dl_vehicle_spec_t.object_class`, and sensors report it. `ObjectClass` is a DSL enum.
+* ABI version 0.18.
+
 ## 0.248
 
 * §1.1 states that perception is object-level, and that raw sensor data such as images, point clouds, and radar spectra is out of scope, with the reasons.

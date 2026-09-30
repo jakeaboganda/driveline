@@ -1,15 +1,17 @@
 ---
 title: Vehicle parameter tiers
 section: 3
-version: 0.69
+version: 0.249
 status: draft
 normative: true
-depends_on: [06-lifecycle.md, 08-steady-state.md, 15-manifest.md]
+depends_on: [04-perception.md, 06-lifecycle.md, 08-steady-state.md, 15-manifest.md]
 ---
 
 # 3. Stratified Vehicle Parameter Specification (`vehicle_spec`)
 
 Borrowing the hierarchical model structure of CommonRoad, Driveline defines a four-tier parameter specification attached to the actor entity. Higher tiers strictly require all lower numeric tiers (Tier 2 requires Tiers 0 and 1; Tier 1 requires Tier 0). Tier 3 requires Tier 0.
+
+A `vehicle_spec` also names the vehicle's object class, `class`, which sensors report for it ([§4.3](04-perception.md)): `CAR` (the default), `TRUCK`, `CYCLIST`, or `MOTORCYCLE`. A bicycle or motorcycle is a vehicle, and Tier 0 describes it as a kinematic bicycle.
 
 Tiers 0–2 describe a two-axle vehicle with a steered front axle and four wheels. A vehicle with more axles or wheels needs a Tier 3 deck and a physics component that supports it. That physics component initializes any wheels beyond the four that [§6](06-lifecycle.md) seeds.
 
@@ -31,4 +33,4 @@ Tiers 0–2 describe a two-axle vehicle with a steered front axle and four wheel
    * `SUPPLEMENT_ONLY`: The deck adds behavior that Tiers 1–2 do not describe, such as tire force beyond the linear region. Where the deck and Tiers 1–2 describe the same quantity, the Tier 1–2 value applies. A physics component that does not support the deck ignores it.
    * `OVERRIDE_TIER1_2`: Inside a supporting physics component, deck values replace Tier 1–2 values for every quantity the deck defines. Binding a physics component that does not support the deck is a compile-time error.
    * **Never Overridden:** Tier 0 geometry, which World collision checks use, and the Tier 1 values that the steady-state solve of [§8](08-steady-state.md) uses.
-6. **Runtime Encoding:** The runtime passes each actor's `vehicle_spec` as `dl_vehicle_spec_t`. Bit $k$ of `populated_tiers_mask` is set if and only if Tier $k$ is populated. Every field of an unpopulated tier is zero. `num_gears` is the number of `gear_ratios` values, and the unused entries are zero. `deck_type` and `precedence_mode` hold the header's numeric values for the enum names. `uri` holds the path after resolution against the scenario directory, and a resolved path longer than 255 bytes is a compile-time error.
+6. **Runtime Encoding:** The runtime passes each actor's `vehicle_spec` as `dl_vehicle_spec_t`. `object_class` holds the numeric value of `class`. Bit $k$ of `populated_tiers_mask` is set if and only if Tier $k$ is populated. Every field of an unpopulated tier is zero. `num_gears` is the number of `gear_ratios` values, and the unused entries are zero. `deck_type` and `precedence_mode` hold the header's numeric values for the enum names. `uri` holds the path after resolution against the scenario directory, and a resolved path longer than 255 bytes is a compile-time error.
