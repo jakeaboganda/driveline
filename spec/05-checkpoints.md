@@ -1,7 +1,7 @@
 ---
 title: Checkpoint data contracts
 section: 5
-version: 0.235
+version: 0.237
 status: draft
 normative: true
 depends_on: [02-conventions.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md, 16-static-semantics.md, 17-standard-library.md]
@@ -65,15 +65,15 @@ Produced by Stage 1 (Intent) components.
 
 **Valid `IntentFrame`:** An `IntentFrame` is valid if and only if every rule below holds, together with the Partial and Override rule above.
 * Each mode field holds one of its listed values.
-* `lon_mode` is `SPATIOTEMPORAL_TRAJECTORY` if and only if `lat_mode` is. Then `num_traj_points` is from 1 to 64, and the trajectory follows the Array Semantics below.
-* With `LANE_OFFSET`, `target_road_id` names a road of the map and some lane section of it has a lane `target_lane_id`, so the lane ID is not 0. With `POLYLINE_PATH`, `num_waypoints` is from 2 to 64 and the path follows the Array Semantics below.
+* `lon_mode` is `SPATIOTEMPORAL_TRAJECTORY` if and only if `lat_mode` is. Then `num_traj_points` is from 1 to 64, the trajectory times are not negative and strictly increase, each $v_k \ge 0$, and each `psi` lies in $(-\pi, \pi]$.
+* With `LANE_OFFSET`, `target_road_id` names a road of the map and some lane section of it has a lane `target_lane_id`, so the lane ID is not 0. With `POLYLINE_PATH`, `num_waypoints` is from 2 to 64 and each `psi_ref` lies in $(-\pi, \pi]$.
 * With `GAP_PROFILE`, `gap_target_actor_id` is not 0. Where they apply, `v_ref`, `time_gap_ref`, and `distance_gap_min` are not negative.
 
 **Forward Travel:** An `IntentFrame` requests forward travel. `v_ref` and each $v_k$ are forward speeds, and every path and trajectory heading points along the direction of travel. A reverse maneuver is requested only below the intent stage, through an `ActuatorControlFrame` in `REVERSE`.
 
 **Lane Target:** Under `LANE_OFFSET`, the target path is the centerline of lane `target_lane_id` offset by `d_ref`, followed in the lane's driving direction. On the actor's own road it starts at the actor's `frenet_s` if the lane exists in the lane section there, and otherwise at the first point of that lane ahead of the actor in its driving direction. On another road it starts at the lane's start in its driving direction. A consumer that finds no such point, because the lane lies only behind the actor, returns `DL_STATUS_ERR_INVALID_ARG`.
 
-**Array Semantics:** `path_points` holds `num_waypoints` entries and `trajectory` holds `num_traj_points` entries. Entries beyond the count are ignored. Both arrays are in the World frame and ordered along the direction of travel. Their curvatures are positive when the path turns left in that direction, each trajectory $v_k \ge 0$, and each $a_k$ is a $\dot{v}_{\text{lon}}$ like `a_ref`. Each `trajectory` time $t_k$ is an absolute simulation time in nanoseconds. The times are not negative and strictly increase. Points earlier than a consumer's tick are in the past, which is normal for a frame that a component forwards or that a consumer reads on a later tick. The trajectory defines the target for every time: before $t_0$ it is the first point, between points it follows the component's interpolation, and after the last point it is the last point, held. A trajectory of one point is that point, held. Every path and trajectory heading lies in $(-\pi, \pi]$ ([§2](02-conventions.md)).
+**Array Semantics:** `path_points` holds `num_waypoints` entries and `trajectory` holds `num_traj_points` entries. Entries beyond the count are ignored. Both arrays are in the World frame and ordered along the direction of travel. Their curvatures are positive when the path turns left in that direction, each trajectory $v_k \ge 0$, and each $a_k$ is a $\dot{v}_{\text{lon}}$ like `a_ref`. Each `trajectory` time $t_k$ is an absolute simulation time in nanoseconds. The times are not negative and strictly increase. Points earlier than a consumer's tick are in the past, which is normal for a frame that a component forwards or that a consumer reads on a later tick. The trajectory defines the target for every time: before $t_0$ it is the first point, between points it follows the component's interpolation, and after the last point it is the last point, held. A trajectory of one point is that point, held. Every path and trajectory heading lies in $(-\pi, \pi]$ ([§2](02-conventions.md)). Frame validity checks only the parts of these rules that the list above names. The producer must meet the rest, and the runtime does not check them.
 
 **Stop Target:** The actor's odometer is `odometer_m` in its `KinematicState` ([§5.3](05-checkpoints.md)). A consumer's remaining stopping distance is `stop_at_odometer` $-$ `own.odometer_m`, and a value at or below zero means stop now. The target is absolute, so it stays correct on every tick that a consumer reads the frame.
 
