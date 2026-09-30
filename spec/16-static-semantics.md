@@ -1,7 +1,7 @@
 ---
 title: DSL static semantics
 section: 16
-version: 0.241
+version: 0.242
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 07-fmu-packaging.md, 09-abi.md, 10-composition.md, 11-execution.md, 12-grammar.md, 15-manifest.md, 17-standard-library.md]
@@ -39,7 +39,7 @@ depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-
 ## 16.3 Expressions
 
 * A postfix `.name`, `(...)`, or `[...]` that no rule of [§16](16-static-semantics.md) types is a compile-time error, in every expression.
-* A bare name used as an operand, other than the callee of a call, the field selector of `rate_of`, or a name that [§16.4](16-static-semantics.md) allows in one position only (`fmu`, `any`), must denote a value: a port, a parameter, a `let` name, a `step` or `fn` parameter, an actor, an actor-body `sensors.<name>` or `priors.<name>`, a `vehicle_spec` name where a signature expects one, `own_state`, `sim_time`, or an enum constant. Any other name there, such as a component, `fn`, imported sensor, chain, builtin, or world-statement name, is a compile-time error.
+* A bare name used as an `Expr` operand ([§12](12-grammar.md)), which excludes a `PipeExpr` element such as a chain name, other than the callee of a call, the field selector of `rate_of`, or a name that [§16.4](16-static-semantics.md) allows in one position only (`fmu`, `any`), must denote a value: a port, a parameter, a `let` name, a `step` or `fn` parameter, an actor, an actor-body `sensors.<name>` or `priors.<name>`, a `vehicle_spec` name where a signature expects one, `own_state`, `sim_time`, or an enum constant. Any other name there, such as a component, `fn`, imported sensor, chain, builtin, or world-statement name, is a compile-time error.
 * `+` and `-` accept two `Time` values, which give a `Time`, two quantities of the same dimension, or the `Int` cases below. A `Time` and a quantity of dimension s is a compile-time error, because the result would need rounding to nanoseconds. A literal of dimension s takes `Time` from the other operand ([§16.2](16-static-semantics.md)). `*` and `/` multiply and divide dimensions. `Time * Int`, `Int * Time`, and `Time / Int` are `Time`. An `Int` operand of `*` or `/` whose other operand is a quantity converts to a dimensionless quantity. When `Time` meets any other operand of `*` or `/`, it converts to a quantity in seconds, so `v * dt` is a `Length`, and `Time / Time` is a dimensionless quantity.
 * `+`, `-`, `*`, and `/` on two `Int` operands give an `Int`. `/` on `Int` or `Time` truncates toward zero, and a zero divisor or an overflow makes the step return `DL_STATUS_ERR_NUMERIC`. In a constant expression, a zero divisor, an `Int` or `Time` overflow, or a non-finite binary64 result is a compile-time error. In an `on` or `terminate when` condition, it stops the run with `DL_STATUS_ERR_NUMERIC` in Phase 4, reported against no instance.
 * Comparisons require two `Int` operands or operands of the same dimension. An `Int` operand of `+`, `-`, or a comparison whose other operand is a quantity converts to a dimensionless quantity. When a `Time` meets a quantity of dimension s, the `Time` converts to seconds.

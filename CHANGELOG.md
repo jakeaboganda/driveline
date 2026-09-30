@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.242
+
+* The bare-name rule applies only to `Expr` operands, not `PipeExpr` elements such as chain names.
+
 ## 0.241
 
 * The bare-name rule accepts actor-body `sensors.<name>` and `priors.<name>`, which fixes a v0.236 regression that rejected the example. §16.1 names the four slice types and says `TargetTrack` is an element type, not a slice type.
