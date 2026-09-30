@@ -1,7 +1,7 @@
 ---
 title: Standard library
 section: 17
-version: 0.229
+version: 0.232
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 06-lifecycle.md, 08-steady-state.md, 09-abi.md, 11-execution.md, 15-manifest.md, 16-static-semantics.md]
@@ -76,7 +76,7 @@ All Stage 2 components are `OneToOne`.
 * `VELOCITY_TARGET`: $e = v_{\text{ref}} - \text{own.v\_lon}$. It ignores `stop_at_odometer`, in both modes. If `rebase` is set, the step first sets $e_{\text{prev}} = e$ and $I = (a_{\text{prev}} - k_p e)/k_i - e\, dt$, or $I = 0$ if $k_i = 0$, and clears `rebase`. Then $I \leftarrow I + e\, dt$, $a = k_p e + k_i I + k_d (e - e_{\text{prev}}) / dt$, $e_{\text{prev}} \leftarrow e$, and $a_{\text{prev}} \leftarrow a$. So the first velocity step after initialization or after `ACCEL_TARGET` continues from the previous output without a step when $k_i \ne 0$.
 * Output `ACCEL` with `a_lon_cmd` $= a$.
 
-**`JerkLimiter`:** Tier 0. Input and output `Lon<KinematicControlFrame>`. Parameter `max_jerk: f64 [m/s^3]` (above zero). Output $a_k = a_{k-1} + \operatorname{clamp}(a_{\text{in}} - a_{k-1}, \pm \text{max\_jerk} \cdot dt)$. Initialization sets $a_{k-1}$ to the latched `a_lon_cmd`, and each step then stores $a_k$ as the next $a_{k-1}$. It implements `ACCEL` and ignores its input's `jerk_lon_cmd`. Output `ACCEL` with `a_lon_cmd` $= a_k$.
+**`JerkLimiter`:** Tier 0. Input and output `Lon<KinematicControlFrame>`. Parameter `max_jerk: f64 [m/s^3]` (above zero). Output $a_k = a_{k-1} + \operatorname{clamp}(a_{\text{in}} - a_{k-1}, \pm \text{max\_jerk} \cdot dt)$. Initialization sets $a_{k-1}$ to the latched `a_lon_cmd`, and each step then stores $a_k$ as the next $a_{k-1}$. It implements `ACCEL` and ignores its input's `jerk_lon_cmd`. Output `ACCEL` with `a_lon_cmd` $= a_k$ and `jerk_lon_cmd` $=$ `+INFINITY`.
 
 **`StanleyLat`:** Tier 0. Input `IntentFrame`. Output `Lat<KinematicControlFrame>`. Parameters `k: f64 [Hz]`, `sample_step: f64 [m]` (above zero), `k_soft: f64 [m/s] = 1.0` (above zero). Modes `LANE_OFFSET`, `POLYLINE_PATH`. The reference path is `path_points` for `POLYLINE_PATH`. For `LANE_OFFSET`, it is 64 points from `sample_lane_path` on the target lane at `d_offset = d_ref`, with `ds` $= \sigma_t \cdot$ `sample_step`, where $\sigma_t$ is the target lane's direction sign. Sampling starts at the start point of the Lane Target rule of [§5.1](05-checkpoints.md). The reference point is the rear-axle origin $(X, Y)$. Let $p = (x_p, y_p)$ be the path point nearest to it, with the smallest index winning ties, and let $\psi_p$ and $\kappa_p$ be its heading and curvature. Then $e = -\sin\psi_p\,(X - x_p) + \cos\psi_p\,(Y - y_p)$ is the lateral offset of the rear axle, positive to the path's left, and $\psi_e = \psi_p - \chi$, wrapped to $(-\pi, \pi]$, where $\chi = \psi + \operatorname{atan2}(\text{own.v\_lat}, \text{own.v\_lon})$ is the rear axle's course angle, with $\operatorname{atan2}(0, 0) = 0$. Then
 $$\delta = \operatorname{clamp}\!\left(\arctan(L \kappa_p) + \psi_e + \arctan\!\left(\frac{-k\, e}{k_{\text{soft}} + |\text{own.v\_lon}|}\right),\ \pm\delta_{\max}\right)$$

@@ -1,7 +1,7 @@
 ---
 title: Checkpoint data contracts
 section: 5
-version: 0.229
+version: 0.232
 status: draft
 normative: true
 depends_on: [02-conventions.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md, 17-standard-library.md]
@@ -77,7 +77,7 @@ Produced by Stage 1 (Intent) components.
 
 **Stop Target:** The actor's odometer is `odometer_m` in its `KinematicState` ([§5.3](05-checkpoints.md)). A consumer's remaining stopping distance is `stop_at_odometer` $-$ `own.odometer_m`, and a value at or below zero means stop now. The target is absolute, so it stays correct on every tick that a consumer reads the frame.
 
-**Measured Gap for `GAP_PROFILE`:** `IntentFrame` carries the gap target and the desired gap. It does not carry the measured gap. A Stage 2 component that tracks `GAP_PROFILE` must declare a `SliceBuffer` input port whose slice type contains `tracks[]`. It reads the measured gap $g$ from the `latest()` sample of its first declared such port, from the track whose `target_actor_id` equals `gap_target_actor_id`: $g$ is that track's `rel_x`, the distance along the sensor's $x$ axis from the mount point to the target's footprint center ([§17.2](17-standard-library.md)). `distance_gap_min` and `time_gap_ref` are targets for this same $g$, so they include the sensor's offset from the front bumper and half the target's length. If no such track exists, the component treats the gap target as absent and tracks `v_ref`.
+**Measured Gap for `GAP_PROFILE`:** `IntentFrame` carries the gap target and the desired gap. It does not carry the measured gap. A Stage 2 component measures the gap from a `SliceBuffer` input port whose slice type contains `tracks[]`. A component with no such port treats `GAP_PROFILE` as `VELOCITY_TARGET` with the same `v_ref`. It reads the measured gap $g$ from the `latest()` sample of its first declared such port, from the track whose `target_actor_id` equals `gap_target_actor_id`: $g$ is that track's `rel_x`, the distance along the sensor's $x$ axis from the mount point to the target's footprint center ([§17.2](17-standard-library.md)). `distance_gap_min` and `time_gap_ref` are targets for this same $g$, so they include the sensor's offset from the front bumper and half the target's length. If no such track exists, the component treats the gap target as absent and tracks `v_ref`.
 
 **Unsupported Modes:** A component's manifest lists, for each mode field of its checkpoint inputs, the modes it implements ([§15](15-manifest.md)), and a field that it does not list accepts every mode. A component that receives a mode it does not implement returns `DL_STATUS_ERR_UNSUPPORTED_MODE` from `dl_do_step`, and the runtime stops the scenario. `NONE` is never checked.
 

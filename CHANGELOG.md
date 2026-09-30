@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.232
+
+* Latched control frames after tick 0 convert `JERK`, `RATE`, and `TORQUE` groups to baseline modes from the committed state, so trims don't read zeroed fields. A component without a tracks port treats `GAP_PROFILE` as `VELOCITY_TARGET`. The scope tree is explicit, with shadowing checked before `fn` substitution. `RouteNodes` ports accept `a.priors.n`, and JerkLimiter states its `+INFINITY` jerk bound.
+
 ## 0.231
 
 * Fixed two regressions. The Arbiter fallback clamps `v_ref` at 0, which was negative when reversing since v0.230. A rate clause on a Stage 3 declaration is an error, which v0.206 had contradicted.
