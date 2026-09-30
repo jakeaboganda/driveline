@@ -1,10 +1,10 @@
 ---
 title: Standard library
 section: 17
-version: 0.253
+version: 0.254
 status: draft
 normative: true
-depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 06-lifecycle.md, 08-steady-state.md, 09-abi.md, 11-execution.md, 15-manifest.md, 16-static-semantics.md]
+depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 06-lifecycle.md, 08-steady-state.md, 09-abi.md, 11-execution.md, 15-manifest.md, 16-static-semantics.md, 19-modules.md]
 ---
 
 # 17. Standard Library
@@ -17,7 +17,7 @@ An input written without a name, such as the pipe input, is the port named `inpu
 
 | Name | Signature | Meaning |
 | :--- | :--- | :--- |
-| `load_xodr` | `(path: String) -> OpenDriveMap` | Loads an ASAM OpenDRIVE file. A relative path resolves against the scenario file's directory. |
+| `load_xodr` | `(path: String) -> OpenDriveMap` | Loads an ASAM OpenDRIVE file. A relative path resolves by [§19.1](19-modules.md). |
 | `spawn` | `(id: Int, spec: EntitySpec, road: String, lane: Int, s: Length, d: Length = 0m, v: Velocity = 0m/s) -> Actor` | Places the actor's reference origin at `(road, lane, s, d)`, moving in its lane's driving direction, with speed `v` ≥ 0 ([§2](02-conventions.md)). A negative `v` is a compile-time error. An unknown road or lane, or an `s` off the road, is a compile-time error. |
 | `place` | `(id: Int, spec: EntitySpec, road: String, lane: Int, s: Length, d: Length = 0m) -> Actor` | Creates a static actor at rest at `(road, lane, s, d)`, facing its lane's driving direction, with the compile-time checks of `spawn`. A static actor has no sensors, priors, or components, and its state never changes ([§6.2](06-lifecycle.md)). Sensors see it, and it takes part in contact ([§11](11-execution.md)). |
 | `RouteNodes` | `(nodes: [String]) -> RouteNodes` | At most 64 lane reference strings, each naming a lane of the map. More, or an unknown lane, is a compile-time error ([§2](02-conventions.md)). |

@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.254
+
+* New §19 Modules, Catalogs, and the Lockfile. A catalog is a `.dline` module of declarations, with no scenario, imported with `use` like components (grammar `ModuleFile`). Every relative path resolves against the file that contains it, which also defines `from_fmu` paths for the first time. A lockfile next to the scenario pins the SHA-256 of every resolved input, and a mismatch is a compile-time error. The run record header lists the same entries.
+
 ## 0.253
 
 * Static actors: the new builtin `place` creates an actor at rest at a lane position, facing the lane's driving direction, with no sensors, priors, or components. It shares the actor id space, sensors see it, and it takes part in contact. Its state never changes. `object_spec` class `STATIC` (cones, barriers) is allowed only with `place`, and a parked vehicle is a placed `vehicle_spec`.

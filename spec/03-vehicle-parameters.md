@@ -1,10 +1,10 @@
 ---
 title: Vehicle parameter tiers
 section: 3
-version: 0.253
+version: 0.254
 status: draft
 normative: true
-depends_on: [02-conventions.md, 04-perception.md, 06-lifecycle.md, 08-steady-state.md, 11-execution.md, 15-manifest.md, 17-standard-library.md]
+depends_on: [02-conventions.md, 04-perception.md, 06-lifecycle.md, 08-steady-state.md, 11-execution.md, 15-manifest.md, 17-standard-library.md, 19-modules.md]
 ---
 
 # 3. Stratified Vehicle Parameter Specification (`vehicle_spec`)
@@ -29,11 +29,11 @@ Tiers 0–2 describe a two-axle vehicle with a steered front axle and four wheel
    * A Tier 1 physics model (`DynamicSingleTrack`) accepts `KinematicControlFrame` natively (using only Tier 0 + Tier 1 parameters), or accepts `ActuatorControlFrame` when preceded by an explicit drivetrain adapter. The standard adapter is `SimpleDrivetrain: ActuatorControlFrame -> KinematicControlFrame`. It requires Tier 2 powertrain parameters $T_{\text{drive,max}}, T_{\text{brake,max}}, R_{\text{eff}}, i_g, i_R, i_{\text{fd}}$, and it converts steering with $\delta = $ `steering_wheel_norm` $\cdot \, \delta_{\max}$.
 3. **No Divergent Geometry Overrides:** Physical geometry and mass parameters (`Tier 0`, `Tier 1`, `Tier 2`) belong exclusively to the actor's `vehicle_spec` and **cannot** be overridden inline on individual controller or physics blocks. This guarantees that World collision detection, warm-start trim, and all pipeline stages share a single immutable source of truth.
 4. **Invariant Tolerance:** An invariant written $a == b$ in the tier table holds when $|a - b| \le 10^{-6} \cdot \max(|a|, |b|, 1)$, evaluated in IEEE 754 binary64. Exact equality is not required, because binary64 sums depend on evaluation order: $0.1 + 0.2 + 0.3 \ne 0.6$ while $0.3 + 0.2 + 0.1 = 0.6$. A `vehicle_spec` that breaks an invariant is a compile-time error.
-5. **Tier 3 Deck Semantics:** Only a physics component whose manifest ([§15](15-manifest.md)) lists the deck's `deck_type` in `deck_types` reads a Tier 3 deck. No other component reads it. A relative `uri` resolves against the directory of the scenario file.
+5. **Tier 3 Deck Semantics:** Only a physics component whose manifest ([§15](15-manifest.md)) lists the deck's `deck_type` in `deck_types` reads a Tier 3 deck. No other component reads it. A relative `uri` resolves against the directory of the file that declares the spec ([§19.1](19-modules.md)).
    * `SUPPLEMENT_ONLY`: The deck adds behavior that Tiers 1–2 do not describe, such as tire force beyond the linear region. Where the deck and Tiers 1–2 describe the same quantity, the Tier 1–2 value applies. A physics component that does not support the deck ignores it.
    * `OVERRIDE_TIER1_2`: Inside a supporting physics component, deck values replace Tier 1–2 values for every quantity the deck defines. Binding a physics component that does not support the deck is a compile-time error.
    * **Never Overridden:** Tier 0 geometry, which World collision checks use, and the Tier 1 values that the steady-state solve of [§8](08-steady-state.md) uses.
-6. **Runtime Encoding:** The runtime passes each actor's `vehicle_spec` as `dl_vehicle_spec_t`. `object_class` holds the numeric value of `class`. Bit $k$ of `populated_tiers_mask`, for $k$ from 0 to 3, is set if and only if Tier $k$ is populated, and bit 4 is clear. Every field of an unpopulated tier is zero. `num_gears` is the number of `gear_ratios` values, and the unused entries are zero. `deck_type` and `precedence_mode` hold the header's numeric values for the enum names. `uri` holds the path after resolution against the scenario directory, and a resolved path longer than 255 bytes is a compile-time error.
+6. **Runtime Encoding:** The runtime passes each actor's `vehicle_spec` as `dl_vehicle_spec_t`. `object_class` holds the numeric value of `class`. Bit $k$ of `populated_tiers_mask`, for $k$ from 0 to 3, is set if and only if Tier $k$ is populated, and bit 4 is clear. Every field of an unpopulated tier is zero. `num_gears` is the number of `gear_ratios` values, and the unused entries are zero. `deck_type` and `precedence_mode` hold the header's numeric values for the enum names. `uri` holds the path after that resolution, and a resolved path longer than 255 bytes is a compile-time error.
 
 ## 3.2 Object Specification (`object_spec`)
 

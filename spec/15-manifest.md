@@ -1,10 +1,10 @@
 ---
 title: Component manifests and packaging
 section: 15
-version: 0.252
+version: 0.254
 status: draft
 normative: true
-depends_on: [00-conformance.md, 03-vehicle-parameters.md, 05-checkpoints.md, 07-fmu-packaging.md, 10-composition.md, 12-grammar.md, 16-static-semantics.md, 17-standard-library.md]
+depends_on: [00-conformance.md, 03-vehicle-parameters.md, 05-checkpoints.md, 07-fmu-packaging.md, 10-composition.md, 12-grammar.md, 16-static-semantics.md, 17-standard-library.md, 19-modules.md]
 ---
 
 # 15. Component Manifests and Packaging
@@ -29,7 +29,7 @@ A Mode A declaration in the scenario must match its manifest. The declared ports
 
 * One shared library holds exactly one component. It exports every function prototyped in [`abi/driveline_abi.h`](../abi/driveline_abi.h) under that exact name, with C linkage.
 * The library file is `<Name>.so` on Linux, `<Name>.dylib` on macOS, or `<Name>.dll` on Windows, and its manifest is `<Name>.dcm.json` in the same directory.
-* `use a::b::{Name}` with a first segment other than `std` resolves to `a/b/<Name>.dcm.json`, relative to the directory of the scenario file. A missing manifest is a compile-time error.
+* `use a::b::{Name}` with a first segment other than `std` resolves to a module or to the manifest `a/b/<Name>.dcm.json` by the rule of [§19.1](19-modules.md).
 
 ## 15.3 Manifest Format
 

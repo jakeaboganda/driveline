@@ -1,10 +1,10 @@
 ---
 title: Run record
 section: 18
-version: 0.251
+version: 0.254
 status: draft
 normative: true
-depends_on: [11-execution.md, 14-diagnostics.md]
+depends_on: [11-execution.md, 14-diagnostics.md, 19-modules.md]
 ---
 
 # 18. Run Record
@@ -17,7 +17,7 @@ The record is UTF-8 text in JSON Lines form. Each line is one JSON object follow
 
 ## 18.2 Lines
 
-1. **Header:** The first line. Members: `record` (`"header"`), `spec_version` and `abi_version` (strings, the versions the runtime implements), `scenario_sha256` (the lowercase hexadecimal SHA-256 of the scenario file's bytes), `seed` (the `scenario_seed` of [§11](11-execution.md)), and `timestep_ns` ($\Delta t_{\text{base\_ns}}$).
+1. **Header:** The first line. Members: `record` (`"header"`), `spec_version` and `abi_version` (strings, the versions the runtime implements), `scenario_sha256` (the lowercase hexadecimal SHA-256 of the scenario file's bytes), `seed` (the `scenario_seed` of [§11](11-execution.md)), `timestep_ns` ($\Delta t_{\text{base\_ns}}$), and `files` (the lockfile entries of [§19.2](19-modules.md), in the same order and form).
 2. **Report:** One line per report of [§14.2](14-diagnostics.md). Members: `record` (`"report"`), then the report fields in the order that [§14.2](14-diagnostics.md) lists them.
 3. **Collision:** One line per pair of actors on the first tick that they are in contact ([§11](11-execution.md)). Members: `record` (`"collision"`), `tick` and `sim_time_ns` of the committed state, `actor_a` and `actor_b` (the two `actor_id`s, ascending), and `vx_a`, `vy_a`, `vx_b`, `vy_b`, the World-frame horizontal velocity of each actor's reference origin, $(v_{\text{lon}}\cos\psi - v_{\text{lat}}\sin\psi,\ v_{\text{lon}}\sin\psi + v_{\text{lat}}\cos\psi)$. Lines of one tick follow the pair order of [§11](11-execution.md).
 4. **End:** The last line. Members: `record` (`"end"`), `outcome` (`"success"` or `"failure"`), `tick`, and `sim_time_ns` of the last committed state, or 0 and 0 for a run that fails during cold init.
