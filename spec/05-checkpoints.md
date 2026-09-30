@@ -1,7 +1,7 @@
 ---
 title: Checkpoint data contracts
 section: 5
-version: 0.211
+version: 0.215
 status: draft
 normative: true
 depends_on: [02-conventions.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md, 17-standard-library.md]
@@ -15,7 +15,7 @@ Every checkpoint frame carries `timestamp_ns` (`uint64`, simulation time in nano
 
 | Frame | Group | Mode Field (DSL Type) | Modes | Fields |
 | :--- | :--- | :--- | :--- | :--- |
-| `IntentFrame` | `LON` | `lon_mode` (`LonMode`) | `ACCEL_TARGET`, `VELOCITY_TARGET`, `GAP_PROFILE`, `SPATIOTEMPORAL_TRAJECTORY` | `a_ref`, `v_ref`, `stop_at_odometer`, `gap_target_actor_id`, `time_gap_ref`, `distance_gap_min` |
+| `IntentFrame` | `LON` | `lon_mode` (`LonMode`) | `ACCEL_TARGET`, `VELOCITY_TARGET`, `GAP_PROFILE`, `SPATIOTEMPORAL_TRAJECTORY` | `a_ref`, `v_ref`, `stop_at_odometer`, `gap_target_actor_id`, `time_gap_ref`, `distance_gap_min`, and, shared with `LAT`, `num_traj_points` and `trajectory` |
 | | `LAT` | `lat_mode` (`LatMode`) | `LANE_OFFSET`, `POLYLINE_PATH`, `SPATIOTEMPORAL_TRAJECTORY` | `target_road_id`, `target_lane_id`, `d_ref`, `num_waypoints`, `path_points` |
 | | `SIGNAL` | `turn_signal` (`TurnSignal`) | `OFF`, `LEFT`, `RIGHT`, `HAZARD` | none |
 | `KinematicControlFrame` | `LON` | `accel_mode` (`AccelMode`) | `ACCEL`, `JERK` | `a_lon_cmd`, `jerk_lon_cmd` |
@@ -35,9 +35,9 @@ The listed modes are numbered from 1 in the order shown. Every mode enum also ha
 
 **No-Bound Values:** `jerk_lon_cmd` under `ACCEL`, `steer_rate_cmd` under `ANGLE`, and `stop_at_odometer` bound other fields. The value `+INFINITY` means no bound.
 
-**Frame Validity:** The validity rules of this section apply to every frame a component produces. The runtime checks them in output validation, after the finiteness check ([§14.2](14-diagnostics.md)), and reports a failure as `DL_STATUS_ERR_INVALID_ARG` of the producing call, so every consumer receives only valid frames. After the check, the runtime sets every field that the frame's modes do not use, and every array entry past its count, to zero, so the bytes that consumers receive are deterministic.
+**Frame Validity:** The validity rules of this section apply to every frame a component produces. The runtime checks them in output validation, in the order that [§14.2](14-diagnostics.md) gives, and reports a failure as `DL_STATUS_ERR_INVALID_ARG` of the producing call, so every consumer receives only valid frames. After the check, the runtime sets every field that the frame's modes do not use, and every array entry past its count, to zero, so the bytes that consumers receive are deterministic.
 
-**Delivery:** The runtime delivers each producer's latest output unchanged. On a tick where a producer does not step ([§11](11-execution.md)), its consumers receive its last output again. Trajectory times and the stop target are absolute, so a frame read on a later tick needs no adjustment. A consumer can compare `timestamp_ns` with its own tick time to see how old a frame is.
+**Delivery:** The runtime delivers each producer's latest output unchanged, except for the steering replacement after a tier change ([§6.2.4](06-lifecycle.md)). On a tick where a producer does not step ([§11](11-execution.md)), its consumers receive its last output again. Trajectory times and the stop target are absolute, so a frame read on a later tick needs no adjustment. A consumer can compare `timestamp_ns` with its own tick time to see how old a frame is.
 
 ## 5.1 Checkpoint 1: `IntentFrame`
 Produced by Stage 1 (Intent) components.
@@ -60,7 +60,7 @@ Produced by Stage 1 (Intent) components.
 | | `num_waypoints` | `uint32` | — | Number of valid entries in `path_points`. |
 | | `path_points` | `Waypoint[64]` | $\text{m}, \text{rad}, \text{m}^{-1}$ | Array of $(X, Y, \psi_{\text{ref}}, \kappa_{\text{ref}})$ geometric path targets. |
 | **Coupled Horizon** | `num_traj_points` | `uint32` | — | Number of valid entries in `trajectory`. |
-| | `trajectory` | `TrajPoint[64]` | $\text{ns}, \text{m}, \text{m/s}$ | Time-indexed array $(t_k, X_k, Y_k, \psi_k, v_k, a_k, \kappa_k)$. |
+| | `trajectory` | `TrajPoint[64]` | $\text{ns}, \text{m}, \text{rad}, \text{m/s}, \text{m/s}^2, \text{m}^{-1}$ | Time-indexed array $(t_k, X_k, Y_k, \psi_k, v_k, a_k, \kappa_k)$. |
 | **Signal** | `turn_signal` | `enum` | — | `NONE` ($0$), `OFF` ($1$), `LEFT` ($2$), `RIGHT` ($3$), or `HAZARD` ($4$). |
 
 **Valid `IntentFrame`:** An `IntentFrame` is valid if and only if every rule below holds, together with the Partial and Override rule above.

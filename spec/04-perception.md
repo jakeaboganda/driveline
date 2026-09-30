@@ -1,7 +1,7 @@
 ---
 title: Priors, sensors, and SliceBuffer
 section: 4
-version: 0.183
+version: 0.215
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 06-lifecycle.md, 09-abi.md, 16-static-semantics.md]
@@ -25,7 +25,7 @@ All `SliceBuffer<T, N>` ports enforce deterministic edge-case semantics across f
 2. `buffer[k] / buffer.history(k) -> Timestamped<T>`:
    * **Compile-Time Bounds Check:** If $k$ is a compile-time constant and $k \ge N_c$, compilation fails.
    * **Early-Tick Clamp ($k \ge \text{count}$):** Before $k+1$ samples have been recorded (e.g., on Tick 0 when $\text{count} == 1$), `buffer[k]` returns the oldest available sample `buffer[count - 1]`. `buffer.count` is the number of valid samples, from $1$ to $N_c$. A component that must not use clamped samples checks `k < buffer.count` first. Queries do not change the buffer.
-3. `buffer.rate_of(field_selector, window: k = 1) -> Rate`: Finite-difference derivative helper. `field_selector` names a top-level field ([§16.4](16-static-semantics.md)). `Rate` is `{ float64 value; bool valid; }`. With $m = \min(k, \text{count}-1)$:
+3. `buffer.rate_of(field, window: k = 1) -> Rate`: Finite-difference derivative helper. `field` names a top-level field ([§16.4](16-static-semantics.md)). `Rate` is `{ float64 value; bool valid; }`. With $m = \min(k, \text{count}-1)$:
    $$\text{rate\_of}(f, k) = \begin{cases} \{0.0, \text{false}\} & \text{if } \text{count} < 2 \\ \left\{\dfrac{s[0].f - s[m].f}{s[0].t - s[m].t}, \text{true}\right\} & \text{otherwise} \end{cases}$$
    The denominator is $(s[0].t_{\text{ns}} - s[m].t_{\text{ns}}) / 10^9$, with the integer difference taken first, so `value` has the field's unit per second. For an `ANGLE` field, the difference $s[0].f - s[m].f$ is wrapped to $(-\pi, \pi]$. If $s[0].f$ or $s[m].f$ is not finite, the result is $\{0.0, \text{false}\}$. `valid` is also false if the dependency condition of $f$ ([§4.3](04-perception.md)) fails between $s[0]$ and $s[m]$ (only these two samples are compared), because the difference would then span two targets or two roads, or no target at all. Whenever `valid` is false, `value` is $0.0$. The timestamp invariant makes the denominator positive whenever $\text{count} \ge 2$. Consumers must check `valid`. A `value` of $0.0$ with `valid = false` means "no estimate", not "no motion".
 4. `buffer.at(t_query, mode: Interpolate | Floor) -> Timestamped<T>`:

@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.215
+
+* Output validation checks mode values before finiteness, so the error code is deterministic. Partial-frame fields are the mode field and fields of each stated group. An Arbiter is defined by its signature, and an `Override<T>` port elsewhere is an error. A `fn` call has its declared type. FMU partial ports get converted latched frames. Minor fixes: merges repeat on idle ticks, trajectory fields sit in both motion groups, the `TrajPoint` units, and `rate_of`'s parameter name.
+
 ## 0.214
 
 * `rel_vx`/`rel_vy` are derivatives in the turning sensor frame, so a constant gap on a curve has zero closing speed. Before, two cars 50 m apart at 28 m/s on R = 500 m reported `ttc_lon` ≈ 324 s instead of `+INFINITY`.
