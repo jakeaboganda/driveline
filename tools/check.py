@@ -241,7 +241,7 @@ STRINGLIT: /"(?:\\\\.|[^"\\\\])*"/
 %ignore /\\s+/
 %ignore /\\/\\/[^\\n]*/
 """
-    parser = Lark(src, start="scenario_file", parser="earley", lexer="dynamic")
+    parser = Lark(src, start=["scenario_file", "module_file"], parser="earley", lexer="dynamic")
     std_units = re.findall(r"`\w+: f64 \[([^\]]+)\]", (SPEC / "17-standard-library.md").read_text())
     if not std_units:
         fail("units: no standard-library parameter units to check")
@@ -252,12 +252,15 @@ STRINGLIT: /"(?:\\\\.|[^"\\\\])*"/
         notes.append(f"units: {len(std_units)} standard-library parameter units parse")
     if not list(EXAMPLES.glob("*.dline")):
         fail("grammar: no example scenarios to parse")
-    for path in sorted(EXAMPLES.glob("*.dline")):
+    for path in sorted(EXAMPLES.rglob("*.dline")):
+        # Top-level examples are scenarios. Files in subdirectories are modules (section 19).
+        start = "scenario_file" if path.parent == EXAMPLES else "module_file"
+        name = path.relative_to(EXAMPLES)
         try:
-            parser.parse(path.read_text())
-            notes.append(f"grammar: {path.name} parses ({len(rules)} rules)")
+            parser.parse(path.read_text(), start=start)
+            notes.append(f"grammar: {name} parses as {start} ({len(rules)} rules)")
         except Exception as e:
-            fail(f"grammar: {path.name} does not parse\n{e}")
+            fail(f"grammar: {name} does not parse as {start}\n{e}")
 
 
 def check_vehicle_spec_fields():
@@ -284,7 +287,7 @@ def check_scenario_rules():
         k = Fraction(10**9) / (base_ns * Fraction(hz))
         if k.denominator != 1 or k < 1:
             fail(f"scenario: {hz}Hz does not divide the base clock ({step}s)")
-    ids = [int(i) for i in re.findall(r"spawn\(id:\s*(\d+)", scenario)]
+    ids = [int(i) for i in re.findall(r"(?:spawn|place)\(id:\s*(\d+)", scenario)]
     if len(ids) != len(set(ids)) or min(ids) < 1:
         fail(f"scenario: actor ids {ids} are not unique and >= 1")
     history = {}
@@ -327,6 +330,29 @@ def check_scenario_rules():
     notes.append(f"scenario: rates divide the base clock, ids {sorted(ids)} unique, "
                  f"{args_checked} dimensioned std arguments carry units, "
                  f"{checked} buffer bindings fit their capacities")
+
+
+def check_imports():
+    """Every non-std import in an example names a declaration of an existing module (section 19)."""
+    checked = 0
+    for path in sorted(EXAMPLES.glob("*.dline")):
+        text = re.sub(r"//[^\n]*", "", path.read_text())
+        for segs, names in re.findall(r"use\s+([\w:]+?)::\{([^}]*)\}", text):
+            parts = segs.split("::")
+            if parts[0] == "std":
+                continue
+            module = path.parent.joinpath(*parts[:-1], parts[-1] + ".dline")
+            if not module.exists():
+                fail(f"imports: {path.name}: module {module.relative_to(EXAMPLES)} not found")
+                continue
+            body = module.read_text()
+            for n in re.findall(r"\w+", names):
+                checked += 1
+                if not re.search(r"\b(?:vehicle_spec|object_spec|component|fn)\s+" + n + r"\b", body):
+                    fail(f"imports: {path.name}: {n} is not declared in {module.relative_to(EXAMPLES)}")
+    if checked == 0:
+        fail("imports: no module imports found to check")
+    notes.append(f"imports: {checked} module imports resolve to declarations")
 
 
 def struct_members(header, struct):
@@ -470,6 +496,7 @@ def main():
     check_abi(readme_meta)
     check_grammar(docs)
     check_vehicle_spec_fields()
+    check_imports()
     check_scenario_rules()
     check_frame_tables(docs)
     check_test_vector(docs)

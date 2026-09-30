@@ -1,7 +1,8 @@
 use std::sensors::{HumanVisualSensor, SurroundVisualSensor, MillimeterRadar, MonoCamera, SurfaceContactSensor};
 use std::intent::{PincerHiveMind};
 use std::control::{PIDSpeedController, JerkLimiter, StanleyLat, SimpleDrivetrain, BrakeOverrideArbiter};
-use std::physics::{DynamicSingleTrack, KinematicBicycle};
+use std::physics::{DynamicSingleTrack, KinematicBicycle, PointMassWalker};
+use catalog::people::{Adult};
 
 // ============================================================================
 // 1. STRATIFIED VEHICLE SPECIFICATION (Satisfies all Tier 0, 1, 2 invariants)
@@ -92,6 +93,15 @@ component BoschPCS_v4 from_fmu("fmus/BoschPCS_v4.fmu") (rate: 50Hz) (required_ti
     }
 }
 
+// Native DSL intent for the pedestrian: walk along the shoulder at a steady pace.
+component ShoulderWalk (rate: 10Hz): (
+    route: RouteNodes
+) -> IntentFrame {
+    step(t: Time, dt: Time) -> IntentFrame {
+        return IntentFrame::follow_route(route: route, from: own_state, v_ref: 1.2m/s);
+    }
+}
+
 // Tier A control chain for the Tier 0 KinematicBicycle challengers.
 // Lon branch: PIDSpeedController >> JerkLimiter, both Lon<KinematicControlFrame>.
 // Lat branch: StanleyLat, Lat<KinematicControlFrame>.
@@ -151,6 +161,18 @@ scenario KanagawaExpresswayPinchTest {
         sensors {
             surround = SurroundVisualSensor(range: 150.0m, rate: 25Hz, history: 5);
         }
+    };
+
+    // --- Actors 4 & 5: A stalled car on the shoulder, and its driver walking away from it ---
+    // place() makes a static actor: sensors see it and contact checks include it (§11).
+    actor stalled = place(id: 5, spec: Sedan_2026, road: "road_10", lane: 4, s: 320.0m);
+
+    // An object actor (§3.2): Stage 1 intent straight into object physics, no Stage 2.
+    actor walker = spawn(id: 4, spec: Adult, road: "road_10", lane: 4, s: 330.0m, v: 1.2m/s) with {
+        priors {
+            shoulder = RouteNodes(["road_10:4"]);
+        }
+        physics = ShoulderWalk(route: priors.shoulder) >> PointMassWalker();
     };
 
     // PincerHiveMind is OneToMany (library manifest). Its vision port gets one buffer

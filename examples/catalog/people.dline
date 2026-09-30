@@ -1,0 +1,10 @@
+// Catalog module (§19): declarations only, imported by kanagawa_pinch_test.dline.
+
+object_spec Adult {
+    class  = PEDESTRIAN;
+    length = 0.4m;
+    width  = 0.6m;
+    height = 1.75m;
+    v_max  = 2.5m/s;
+    a_max  = 1.5m/s^2;
+}

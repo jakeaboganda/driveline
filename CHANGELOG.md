@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.255
+
+* The reference scenario gains a pedestrian object actor (`Adult` from the new catalog module `examples/catalog/people.dline`, driven by a declared `ShoulderWalk` intent into `PointMassWalker`) and a stalled car created with `place`. `check.py` parses example subdirectories as modules, checks that module imports resolve to declarations, and counts `place` ids. Each new check was mutation-tested.
+
 ## 0.254
 
 * New §19 Modules, Catalogs, and the Lockfile. A catalog is a `.dline` module of declarations, with no scenario, imported with `use` like components (grammar `ModuleFile`). Every relative path resolves against the file that contains it, which also defines `from_fmu` paths for the first time. A lockfile next to the scenario pins the SHA-256 of every resolved input, and a mismatch is a compile-time error. The run record header lists the same entries.
