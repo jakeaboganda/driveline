@@ -6,6 +6,11 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.252
+
+* Object actors: new `object_spec` (class PEDESTRIAN, ANIMAL, or UNKNOWN, a box, and `v_max`/`a_max`) in §3.2. An object is a Tier 0 vehicle with wheelbase 0, so contact, mounts, and tracks apply unchanged. Its origin is the box center. It must use object physics, per the new manifest `entity` member, and its chains carry no control frames. New std `PointMassWalker` tracks VELOCITY_TARGET with stop targets, and LANE_OFFSET or POLYLINE_PATH through StanleyLat's reference path, within the object's limits. `dl_object_params_t` in `dl_vehicle_spec_t` (mask bit 4). The spec type is `EntitySpec`.
+* ABI version 0.19.
+
 ## 0.251
 
 * Contact is defined in §11 Phase 4. Every actor pair is tested in ascending order with an exact separating-axis test on the bounding-box footprints, plus a height-interval check so crossing roads at different heights are not contacts. First contact writes a `collision` line with both actors' velocities to the run record. `collision()` stays true after first contact. Contact has no physical effect, and the discrete test's tunneling limit is stated.

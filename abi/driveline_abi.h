@@ -9,7 +9,7 @@ extern "C" {
 
 #pragma pack(push, 8)
 
-#define DL_ABI_VERSION_0_18 0x00001200U
+#define DL_ABI_VERSION_0_19 0x00001300U
 
 typedef enum {
     DL_STATUS_OK                    = 0,
@@ -76,12 +76,18 @@ typedef struct {
 } dl_custom_deck_t;
 
 typedef struct {
-    uint32_t populated_tiers_mask; /* Bit 0: Tier0, Bit 1: Tier1, Bit 2: Tier2, Bit 3: Tier3 */
+    double v_max;                                /* [m/s] */
+    double a_max;                                /* [m/s^2] */
+} dl_object_params_t;
+
+typedef struct {
+    uint32_t populated_tiers_mask; /* Bit 0: Tier0, Bit 1: Tier1, Bit 2: Tier2, Bit 3: Tier3, Bit 4: object */
     uint32_t object_class;         /* ObjectClass, as in dl_target_track_t */
     dl_kinematic_params_t    tier0;
     dl_single_track_params_t tier1;
     dl_multibody_params_t    tier2;
     dl_custom_deck_t         tier3;
+    dl_object_params_t       object;
 } dl_vehicle_spec_t;
 
 /* ==========================================================================
@@ -256,7 +262,7 @@ typedef struct {
 } dl_powertrain_state_t;
 
 typedef struct {
-    uint32_t abi_version;                        /* Must equal DL_ABI_VERSION_0_18 */
+    uint32_t abi_version;                        /* Must equal DL_ABI_VERSION_0_19 */
     uint32_t struct_size;                        /* sizeof(dl_init_context_t) */
     uint64_t sim_time_ns;                        /* [ns] */
     uint8_t  is_warm_start;                      /* 0:ColdInit, 1:WarmStart */

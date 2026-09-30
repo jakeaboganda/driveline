@@ -1,7 +1,7 @@
 ---
 title: Standard library
 section: 17
-version: 0.251
+version: 0.252
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 06-lifecycle.md, 08-steady-state.md, 09-abi.md, 11-execution.md, 15-manifest.md, 16-static-semantics.md]
@@ -18,7 +18,7 @@ An input written without a name, such as the pipe input, is the port named `inpu
 | Name | Signature | Meaning |
 | :--- | :--- | :--- |
 | `load_xodr` | `(path: String) -> OpenDriveMap` | Loads an ASAM OpenDRIVE file. A relative path resolves against the scenario file's directory. |
-| `spawn` | `(id: Int, spec: VehicleSpec, road: String, lane: Int, s: Length, d: Length = 0m, v: Velocity = 0m/s) -> Actor` | Places the actor's rear-axle origin at `(road, lane, s, d)`, moving in its lane's driving direction, with speed `v` ≥ 0 ([§2](02-conventions.md)). A negative `v` is a compile-time error. An unknown road or lane, or an `s` off the road, is a compile-time error. |
+| `spawn` | `(id: Int, spec: EntitySpec, road: String, lane: Int, s: Length, d: Length = 0m, v: Velocity = 0m/s) -> Actor` | Places the actor's reference origin at `(road, lane, s, d)`, moving in its lane's driving direction, with speed `v` ≥ 0 ([§2](02-conventions.md)). A negative `v` is a compile-time error. An unknown road or lane, or an `s` off the road, is a compile-time error. |
 | `RouteNodes` | `(nodes: [String]) -> RouteNodes` | At most 64 lane reference strings, each naming a lane of the map. More, or an unknown lane, is a compile-time error ([§2](02-conventions.md)). |
 | `friction_zone` | `(road: String, s_start: Length, s_end: Length, mu: Scalar)` | Inside `environment`. Sets $\mu$ on every lane of `road` for $s_{\text{start}} \le s < s_{\text{end}}$. Where zones overlap, the later statement wins. |
 | `default_friction` | `Scalar` | Inside `environment`. $\mu$ everywhere that no zone covers. The default is `1.0`. |
@@ -91,7 +91,7 @@ Output `ANGLE` with `steer_angle_cmd` $= \delta$. On a path that the rear axle a
 
 ## 17.5 Stage 3 Components
 
-Both physics components are `OneToOne` and run every tick ([§11](11-execution.md)). Each step from $t$ to $t + \Delta t$ runs in this order:
+Every physics component is `OneToOne` and runs every tick ([§11](11-execution.md)). `KinematicBicycle` and `DynamicSingleTrack` are vehicle physics components, and `PointMassWalker` is an object physics component ([§3.2](03-vehicle-parameters.md)). Each step of the two vehicle components from $t$ to $t + \Delta t$ runs in this order:
 
 1. Update the actuator states $\delta$ and $a$ from the command frame, as below.
 2. Evaluate the derivatives at the state of tick $t$, using the updated $\delta$ and $a$.
@@ -114,3 +114,12 @@ It reports $v_{\text{lat}} = 0$, `a_lon` $= a$, and `a_lat` $= v\dot{\psi}$. It 
 $$\alpha_f = \delta - \arctan\frac{v_y + l_f r}{v_x}, \quad \alpha_r = -\arctan\frac{v_y - l_r r}{v_x}, \quad F_{yi} = \operatorname{clamp}(C_{\alpha i}\, \alpha_i,\ \pm\mu_i \max(0, F_{zi}))$$
 $$\dot{v}_y = \frac{F_{yf} + F_{yr}}{m} - v_x r, \quad \dot{r} = \frac{l_f F_{yf} - l_r F_{yr}}{I_{zz}}, \quad \dot{v}_x = \operatorname{clamp}(a,\ \pm \bar{\mu} g)$$
 The front lateral force acts along the body $y$ axis. This small-angle model matches [§8](08-steady-state.md). Explicit Euler is stable only if $|1 + \lambda \Delta t| < 1$ for each eigenvalue $\lambda$ of the linearized lateral dynamics, that is $\Delta t < 2|\operatorname{Re}\lambda| / |\lambda|^2$. The bound is smallest at $v_x = 1\text{ m/s}$: about $15\text{ ms}$ for `Sedan_2026`. Scenario authors choose `timestep` accordingly. The rear-axle lateral velocity is $v_{\text{lat}} = v_y - l_r r$, and the pose moves with $\dot{X} = v_x\cos\psi - v_{\text{lat}}\sin\psi$, $\dot{Y} = v_x\sin\psi + v_{\text{lat}}\cos\psi$, $\dot{\psi} = r$. It reports `a_lon` $= \dot{v}_x - v_{\text{lat}}\, r$ and `a_lat` $= \dot{v}_{\text{lat}} + v_x r$. The regime follows $v_x$ at tick $t$: for $v_x < 1\text{ m/s}$, step 2 uses the `KinematicBicycle` equations with $\dot{v} = \operatorname{clamp}(a, \pm\bar{\mu} g)$, so the friction limit is the same in both regimes. After step 4, if $v_x$ at tick $t$ or the new $v_x$ is below $1\text{ m/s}$, the component sets $r = v_x \tan\delta / L$ and $v_y = l_r r$ from the new $v_x$ and $\delta$. It reports the `KinematicBicycle` outputs, with `a_lon` $= \dot{v}$, on any step where it made this reset, and the dynamic outputs otherwise. Crossing downward, the reported `a_lat` and yaw rate step once to their kinematic values. Crossing upward, the reset leaves both slip angles at 0, so the tire forces build up from 0 over the next few steps and the reported `a_lat` departs from the kinematic value for one or more steps.
+
+**`PointMassWalker`:** Tier 0. Object physics component ([§3.2](03-vehicle-parameters.md)). Input `IntentFrame`. Output `KinematicState`. Parameters `sample_step: f64 [m] = 0.5` (above zero), `lookahead: f64 [m] = 2.0` (above zero), and `max_turn_rate: f64 [Hz] = 3.0` (above zero), the largest heading rate in rad/s. Modes `VELOCITY_TARGET`, `LANE_OFFSET`, `POLYLINE_PATH`. $v_{\max}$ and $a_{\max}$ are the object's limits. The walker faces its direction of travel. Its state is the position, the heading $\psi$, and the speed $v \ge 0$. The reference path, its nearest point $p$ with heading $\psi_p$, and the offset $e$ are those of `StanleyLat` ([§17.4](17-standard-library.md)) with this `sample_step`. Let $w(x)$ wrap $x$ to $(-\pi, \pi]$. Each step from $t$ to $t + \Delta t$:
+1. The target speed is $v_t = \min(\text{v\_ref},\ v_{\max},\ \sqrt{2 a_{\max} \max(0,\ \text{stop\_at\_odometer} - \text{own.odometer\_m})})$, where the square root of `+INFINITY` is `+INFINITY`.
+2. $v' = \max(0,\ v + \operatorname{clamp}(v_t - v, \pm a_{\max} \Delta t))$.
+3. The desired heading is $\psi_d = \psi_p - \arctan(e / \text{lookahead})$, and $\psi' = w(\psi + \operatorname{clamp}(w(\psi_d - \psi), \pm \text{max\_turn\_rate}\, \Delta t))$.
+4. $X' = X + v' \cos\psi'\, \Delta t$ and $Y' = Y + v' \sin\psi'\, \Delta t$. $Z$, roll, and pitch follow step 5 of the vehicle components.
+5. It reports $v_{\text{lon}} = v'$, $v_{\text{lat}} = 0$, `yaw_rate` $= w(\psi' - \psi) / \Delta t$, `a_lon` $= (v' - v) / \Delta t$, `a_lat` $= v' \cdot$ `yaw_rate`, and `front_wheel_angle` and `slip_angle_beta_cg` equal to 0.
+
+On cold init or warm start it sets $X$, $Y$, $\psi$, and $v$ from `chassis_state`. An init context with $v_{\text{lon}} < 0$ makes the enter call return `DL_STATUS_ERR_INVALID_ARG`.
