@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.217
+
+* Only a change between Tier 0 and Tier 1 or 2 is a tier change, which settles the §10/§6 contradiction on Tier 1↔2 splices. Runtime-authored frames use named baseline modes, and manifests must include them, so a runtime-written frame is never an unsupported mode. A latched trajectory intent is rebuilt before conversion to a partial type. Latched frames carry their actor and stamp, and trajectory times are not negative.
+
 ## 0.216
 
 * A chain's head fixes only its input type, and the output comes from its last element. `>>` cannot feed a chain whose input is `()`. Chain conversion never produces a partial type, so a `fn` can't bypass the `+` branch rule. §0 defines an Arbiter exactly as §16 does. Runtime conformance includes §2 and §3.

@@ -1,7 +1,7 @@
 ---
 title: Checkpoint data contracts
 section: 5
-version: 0.215
+version: 0.217
 status: draft
 normative: true
 depends_on: [02-conventions.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md, 17-standard-library.md]
@@ -29,7 +29,7 @@ Every checkpoint frame carries `timestamp_ns` (`uint64`, simulation time in nano
 * `KinematicControlFrame`: `a_lon_cmd` under `ACCEL`, `jerk_lon_cmd` under `ACCEL` and `JERK`, `steer_angle_cmd` under `ANGLE`, and `steer_rate_cmd` under `ANGLE` and `RATE`.
 * `ActuatorControlFrame`: `throttle` and `brake` under `PEDALS`, `steering_wheel_norm` under `ANGLE`, `steering_torque_nm` under `TORQUE`, and `manual_gear_index` under `DRIVE`.
 
-The listed modes are numbered from 1 in the order shown. Every mode enum also has `NONE` ($0$), meaning no request. In `IntentFrame`, `SPATIOTEMPORAL_TRAJECTORY` couples the two motion groups: `num_traj_points` and `trajectory` then govern both, and the other fields of `LON` and `LAT` do not apply.
+The listed modes are numbered from 1 in the order shown. The **baseline mode** of each mode field is the one that runtime-authored frames use ([§6.2](06-lifecycle.md)): `VELOCITY_TARGET` for `lon_mode`, `LANE_OFFSET` for `lat_mode`, `OFF` for `turn_signal`, `ACCEL` for `accel_mode`, `ANGLE` for `steer_mode` and `wheel_mode`, `PEDALS` for `pedal_mode`, and every mode of `gear_mode`. A frame that the runtime writes, rather than a component, uses only baseline modes. Every mode enum also has `NONE` ($0$), meaning no request. In `IntentFrame`, `SPATIOTEMPORAL_TRAJECTORY` couples the two motion groups: `num_traj_points` and `trajectory` then govern both, and the other fields of `LON` and `LAT` do not apply.
 
 **Partial and Override Frames:** A `Lon<T>` frame ([§10.2](10-composition.md)) states the `LON` group and has every other group `NONE`. A `Lat<T>` frame states `LAT`, and for `IntentFrame` also `SIGNAL`, and has `LON` `NONE`. A stated group is never `NONE`, and neither uses `SPATIOTEMPORAL_TRAJECTORY`. An `Override<T>` frame ([§10.3](10-composition.md)) may have any group `NONE`. Every other frame has no `NONE` group.
 
@@ -69,7 +69,7 @@ Produced by Stage 1 (Intent) components.
 * With `LANE_OFFSET`, `(target_road_id, target_lane_id)` names a lane of the map, so the lane ID is not 0. With `POLYLINE_PATH`, `num_waypoints` is from 2 to 64.
 * With `GAP_PROFILE`, `gap_target_actor_id` is not 0. Where they apply, `v_ref`, `time_gap_ref`, and `distance_gap_min` are not negative.
 
-**Array Semantics:** `path_points` holds `num_waypoints` entries and `trajectory` holds `num_traj_points` entries. Entries beyond the count are ignored. Both arrays are in the World frame and ordered along the direction of travel. Their curvatures are positive when the path turns left in that direction, each trajectory $v_k \ge 0$, and each $a_k$ is a $\dot{v}_{\text{lon}}$ like `a_ref`. Each `trajectory` time $t_k$ is an absolute simulation time in nanoseconds. The times strictly increase. Points earlier than a consumer's tick are in the past, which is normal for a frame that a component forwards or that a consumer reads on a later tick.
+**Array Semantics:** `path_points` holds `num_waypoints` entries and `trajectory` holds `num_traj_points` entries. Entries beyond the count are ignored. Both arrays are in the World frame and ordered along the direction of travel. Their curvatures are positive when the path turns left in that direction, each trajectory $v_k \ge 0$, and each $a_k$ is a $\dot{v}_{\text{lon}}$ like `a_ref`. Each `trajectory` time $t_k$ is an absolute simulation time in nanoseconds. The times are not negative and strictly increase. Points earlier than a consumer's tick are in the past, which is normal for a frame that a component forwards or that a consumer reads on a later tick.
 
 **Stop Target:** The actor's odometer is `odometer_m` in its `KinematicState` ([§5.3](05-checkpoints.md)). A consumer's remaining stopping distance is `stop_at_odometer` $-$ `own.odometer_m`, and a value at or below zero means stop now. The target is absolute, so it stays correct on every tick that a consumer reads the frame.
 

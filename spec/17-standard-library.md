@@ -1,7 +1,7 @@
 ---
 title: Standard library
 section: 17
-version: 0.214
+version: 0.217
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 06-lifecycle.md, 08-steady-state.md, 09-abi.md, 11-execution.md, 15-manifest.md, 16-static-semantics.md]
@@ -73,7 +73,7 @@ All Stage 2 components are `OneToOne`.
 **`PIDSpeedController`:** Tier 0. Input `IntentFrame`. Output `Lon<KinematicControlFrame>`. Parameters `kp: f64 [Hz]`, `ki: f64 [Hz^2]`, `kd: f64 [1]`. Modes `ACCEL_TARGET`, `VELOCITY_TARGET`.
 * **State:** the integral $I$, the previous error $e_{\text{prev}}$, the previous output $a_{\text{prev}}$, and a flag `rebase`. Cold init and warm start set $a_{\text{prev}}$ to the latched `a_lon_cmd` and set `rebase`.
 * `ACCEL_TARGET`: $a = $ `a_ref`. The step sets $a_{\text{prev}} = a$ and sets `rebase`. $I$ and $e_{\text{prev}}$ keep their values.
-* `VELOCITY_TARGET`: $e = v_{\text{ref}} - \text{own.v\_lon}$. It ignores `stop_at_odometer`. If `rebase` is set, the step first sets $e_{\text{prev}} = e$ and $I = (a_{\text{prev}} - k_p e)/k_i - e\, dt$, or $I = 0$ if $k_i = 0$, and clears `rebase`. Then $I \leftarrow I + e\, dt$, $a = k_p e + k_i I + k_d (e - e_{\text{prev}}) / dt$, $e_{\text{prev}} \leftarrow e$, and $a_{\text{prev}} \leftarrow a$. So the first velocity step after initialization or after `ACCEL_TARGET` continues from the previous output without a step when $k_i \ne 0$.
+* `VELOCITY_TARGET`: $e = v_{\text{ref}} - \text{own.v\_lon}$. It ignores `stop_at_odometer`, in both modes. If `rebase` is set, the step first sets $e_{\text{prev}} = e$ and $I = (a_{\text{prev}} - k_p e)/k_i - e\, dt$, or $I = 0$ if $k_i = 0$, and clears `rebase`. Then $I \leftarrow I + e\, dt$, $a = k_p e + k_i I + k_d (e - e_{\text{prev}}) / dt$, $e_{\text{prev}} \leftarrow e$, and $a_{\text{prev}} \leftarrow a$. So the first velocity step after initialization or after `ACCEL_TARGET` continues from the previous output without a step when $k_i \ne 0$.
 * Output `ACCEL` with `a_lon_cmd` $= a$.
 
 **`JerkLimiter`:** Tier 0. Input and output `Lon<KinematicControlFrame>`. Parameter `max_jerk: f64 [m/s^3]` (above zero). Output $a_k = a_{k-1} + \operatorname{clamp}(a_{\text{in}} - a_{k-1}, \pm \text{max\_jerk} \cdot dt)$. Initialization sets $a_{k-1}$ to the latched `a_lon_cmd`, and each step then stores $a_k$ as the next $a_{k-1}$. It implements `ACCEL` and ignores its input's `jerk_lon_cmd`. Output `ACCEL` with `a_lon_cmd` $= a_k$.
