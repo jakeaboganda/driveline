@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.229
+
+* Group instances run component-major. Path headings are validated like trajectory headings. Any output feeding an Arbiter `secondary` latches and pre-steps as an override. A native `param` is not settable at the call site. Strings must fit their `char[N]` field. Minor fixes: the radar no-target RCS and merged-frame stamps.
+
 ## 0.228
 
 * A trajectory defines its target at every time: the first point before it starts, the last point held after it ends, and a single point held throughout. Path and trajectory headings lie in (-π, π].

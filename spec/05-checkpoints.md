@@ -1,7 +1,7 @@
 ---
 title: Checkpoint data contracts
 section: 5
-version: 0.228
+version: 0.229
 status: draft
 normative: true
 depends_on: [02-conventions.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md, 17-standard-library.md]
@@ -66,7 +66,7 @@ Produced by Stage 1 (Intent) components.
 **Valid `IntentFrame`:** An `IntentFrame` is valid if and only if every rule below holds, together with the Partial and Override rule above.
 * Each mode field holds one of its listed values.
 * `lon_mode` is `SPATIOTEMPORAL_TRAJECTORY` if and only if `lat_mode` is. Then `num_traj_points` is from 1 to 64, and the trajectory follows the Array Semantics below.
-* With `LANE_OFFSET`, `target_road_id` names a road of the map and some lane section of it has a lane `target_lane_id`, so the lane ID is not 0. With `POLYLINE_PATH`, `num_waypoints` is from 2 to 64.
+* With `LANE_OFFSET`, `target_road_id` names a road of the map and some lane section of it has a lane `target_lane_id`, so the lane ID is not 0. With `POLYLINE_PATH`, `num_waypoints` is from 2 to 64 and the path follows the Array Semantics below.
 * With `GAP_PROFILE`, `gap_target_actor_id` is not 0. Where they apply, `v_ref`, `time_gap_ref`, and `distance_gap_min` are not negative.
 
 **Forward Travel:** An `IntentFrame` requests forward travel. `v_ref` and each $v_k$ are forward speeds, and every path and trajectory heading points along the direction of travel. A reverse maneuver is requested only below the intent stage, through an `ActuatorControlFrame` in `REVERSE`.
