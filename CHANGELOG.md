@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.206
+
+* A library component is one imported with `use`, and any `component` declaration, Mode A included, may carry a rate. This fixes a v0.204 wording that would reject the example's `HumanControl (rate: 100Hz)`. `char[N]` fields read whole as `String`, actor ids are constants in `fn` arguments, and the `+`/`-` rule lists the `Int` cases.
+
 ## 0.205
 
 * Every delivered frame is rebased to its delivery tick. Trajectory times shift, and `s_stop` is reduced by a per-actor odometer distance. This replaces the rules that dropped `s_stop` on held units, latched frames, and forwarding, so stop requests survive multi-rate delivery. Before a replacement's first step, consumers receive its connection's stored values. Partial-frame FMU ports use the full frame's MIME type, and merged frames zero fields outside both groups.
