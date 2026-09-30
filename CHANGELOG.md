@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.244
+
+* `rate_of` results are used only through `.value` or `.valid`. A constant argument outside a §17 parameter range is a compile-time error. Tier 3 records need exactly their three fields.
+
 ## 0.243
 
 * The baseline conversion of latched control frames at t > 0 happens once, and the converted frame is the latched frame in contexts, pre-step outputs, and re-formed merges. Native partial and Override ports use the struct of `T`. Sensor calls take named arguments only.
