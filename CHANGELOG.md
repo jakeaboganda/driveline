@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.234
+
+* A full frame at a `Lon<T>` or `Lat<T>` port is a listed delivery conversion and is validated as the partial type, so `SPATIOTEMPORAL_TRAJECTORY` cannot reach a partial port. World, spawn, and tier-record values must be constant expressions, and a call is never constant. An array literal passes its expected element type to each element.
+
 ## 0.233
 
 * Runtime conformance includes the run-time rules of §16. A splice that replaces a producer feeding a `+` re-forms the merged frame in the splice window. `spawn` accepts `id` positionally. KinematicControlFrame and ActuatorControlFrame validity names the Partial and Override rules. Arbiter output validity points to all of §5. JerkLimiter lists its modes. Demotion sets `a_lat` to the kinematic value.

@@ -1,10 +1,10 @@
 ---
 title: Checkpoint data contracts
 section: 5
-version: 0.233
+version: 0.234
 status: draft
 normative: true
-depends_on: [02-conventions.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md, 17-standard-library.md]
+depends_on: [02-conventions.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md, 16-static-semantics.md, 17-standard-library.md]
 ---
 
 # 5. Canonical Checkpoint Data Contracts
@@ -31,13 +31,13 @@ Every checkpoint frame carries `timestamp_ns` (`uint64`, simulation time in nano
 
 The listed modes are numbered from 1 in the order shown. The **baseline mode** of each mode field is the one that runtime-authored frames use ([§6.2](06-lifecycle.md)): `VELOCITY_TARGET` for `lon_mode`, `LANE_OFFSET` for `lat_mode`, `OFF` for `turn_signal`, `ACCEL` for `accel_mode`, `ANGLE` for `steer_mode` and `wheel_mode`, `PEDALS` for `pedal_mode`, and every mode of `gear_mode`. A frame that the runtime builds by the rules of Pass 1 step 5 uses only baseline modes, and the steering that the runtime writes after a tier change uses `ANGLE`. Every mode enum also has `NONE` ($0$), meaning no request. In `IntentFrame`, `SPATIOTEMPORAL_TRAJECTORY` couples the two motion groups: `num_traj_points` and `trajectory` then govern both, and the other fields of `LON` and `LAT` do not apply.
 
-**Partial and Override Frames:** A `Lon<T>` frame ([§10.2](10-composition.md)) states the `LON` group and has every other group `NONE`. A `Lat<T>` frame states `LAT`, and for `IntentFrame` also `SIGNAL`, and has `LON` `NONE`. A stated group is never `NONE`, and neither uses `SPATIOTEMPORAL_TRAJECTORY`. An `Override<T>` frame ([§10.3](10-composition.md)) may have any group `NONE`. Every other frame has no `NONE` group.
+**Partial and Override Frames:** A `Lon<T>` frame ([§10.2](10-composition.md)) states the `LON` group and has every other group `NONE`. A `Lat<T>` frame states `LAT`, and for `IntentFrame` also `SIGNAL`, and has `LON` `NONE`. A stated group is never `NONE`, and neither uses `SPATIOTEMPORAL_TRAJECTORY`. A full frame produced for a `Lon<T>` or `Lat<T>` port ([§16.1](16-static-semantics.md)) is validated as that partial type too, so a producer whose output reaches such a port must not use `SPATIOTEMPORAL_TRAJECTORY`. An `Override<T>` frame ([§10.3](10-composition.md)) may have any group `NONE`. Every other frame has no `NONE` group.
 
 **No-Bound Values:** `jerk_lon_cmd` under `ACCEL`, `steer_rate_cmd` under `ANGLE`, and `stop_at_odometer` bound other fields. The value `+INFINITY` means no bound.
 
 **Frame Validity:** The validity rules of this section apply to every frame a component produces. The runtime checks them in output validation, in the order that [§14.2](14-diagnostics.md) gives, and reports a failure as `DL_STATUS_ERR_INVALID_ARG` of the producing call, so every consumer receives only valid frames. After the check, the runtime sets every field that the frame's modes do not use, and every array entry past its count, to zero, so the bytes that consumers receive are deterministic.
 
-**Delivery:** The runtime delivers each producer's latest output, as validated, zeroed, and stamped, without further change, except for the steering replacement after a tier change and the conversion before a replacement's first step ([§6.2.4](06-lifecycle.md)). A `+` merged frame is formed as [§10.2](10-composition.md) describes. On a tick where a producer does not step ([§11](11-execution.md)), its consumers receive its last output again. Trajectory times and the stop target are absolute, so a frame read on a later tick needs no adjustment. A consumer can compare `timestamp_ns` with its own tick time to see how old a frame is.
+**Delivery:** The runtime delivers each producer's latest output, as validated, zeroed, and stamped, without further change, except for the steering replacement after a tier change, the conversion before a replacement's first step ([§6.2.4](06-lifecycle.md)), and the conversion of a full frame at a `Lon<T>` or `Lat<T>` port, which sets the unstated groups to `NONE` and their fields to zero ([§16.1](16-static-semantics.md)). A `+` merged frame is formed as [§10.2](10-composition.md) describes. On a tick where a producer does not step ([§11](11-execution.md)), its consumers receive its last output again. Trajectory times and the stop target are absolute, so a frame read on a later tick needs no adjustment. A consumer can compare `timestamp_ns` with its own tick time to see how old a frame is.
 
 ## 5.1 Checkpoint 1: `IntentFrame`
 Produced by Stage 1 (Intent) components.
