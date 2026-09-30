@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.245
+
+* The baseline conversion of latched frames at t > 0 now covers every frame type, `IntentFrame` included, so pre-step outputs always use baseline modes, as the manifest rule assumes. This replaces the separate trajectory replacement. Duplicate named arguments, `bind_inputs` pins, `vehicle_spec` keys, and record fields are compile-time errors. Validity failures use the §14.2 codes.
+
 ## 0.244
 
 * `rate_of` results are used only through `.value` or `.valid`. A constant argument outside a §17 parameter range is a compile-time error. Tier 3 records need exactly their three fields.

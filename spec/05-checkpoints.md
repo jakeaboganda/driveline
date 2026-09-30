@@ -1,7 +1,7 @@
 ---
 title: Checkpoint data contracts
 section: 5
-version: 0.238
+version: 0.245
 status: draft
 normative: true
 depends_on: [02-conventions.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md, 16-static-semantics.md, 17-standard-library.md]
@@ -35,7 +35,7 @@ The listed modes are numbered from 1 in the order shown. The **baseline mode** o
 
 **No-Bound Values:** `jerk_lon_cmd` under `ACCEL`, `steer_rate_cmd` under `ANGLE`, and `stop_at_odometer` bound other fields. The value `+INFINITY` means no bound.
 
-**Frame Validity:** The validity rules of this section apply to every frame a component produces. The runtime checks them in output validation, in the order that [§14.2](14-diagnostics.md) gives, and reports a failure as `DL_STATUS_ERR_INVALID_ARG` of the producing call, so every consumer receives only valid frames. After the check, the runtime sets every field that the frame's modes do not use, and every array entry past its count, to zero, so the bytes that consumers receive are deterministic. The same zeroing applies to every frame the runtime writes itself: latched frames, converted and rebuilt frames, merged frames, pre-step outputs, and frames with replaced steering ([§6.2](06-lifecycle.md), [§10](10-composition.md)).
+**Frame Validity:** The validity rules of this section apply to every frame a component produces. The runtime checks them in output validation, in the order that [§14.2](14-diagnostics.md) gives, and reports a failure with the code that [§14.2](14-diagnostics.md) assigns, against the producing call, so every consumer receives only valid frames. After the check, the runtime sets every field that the frame's modes do not use, and every array entry past its count, to zero, so the bytes that consumers receive are deterministic. The same zeroing applies to every frame the runtime writes itself: latched frames, converted and rebuilt frames, merged frames, pre-step outputs, and frames with replaced steering ([§6.2](06-lifecycle.md), [§10](10-composition.md)).
 
 **Delivery:** The runtime delivers each producer's latest output, as validated, zeroed, and stamped, without further change, except for the steering replacement after a tier change, the conversion before a replacement's first step ([§6.2.4](06-lifecycle.md)), and the conversion of a full frame at a `Lon<T>` or `Lat<T>` port, which sets the unstated groups to `NONE` and their fields to zero ([§16.1](16-static-semantics.md)). A `+` merged frame is formed as [§10.2](10-composition.md) describes. On a tick where a producer does not step ([§11](11-execution.md)), its consumers receive its last output again. Trajectory times and the stop target are absolute, so a frame read on a later tick needs no adjustment. A consumer can compare `timestamp_ns` with its own tick time to see how old a frame is.
 
