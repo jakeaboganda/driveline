@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.246
+
+* Output validation checks that every used `char[N]` field is null-terminated, valid UTF-8. Sensor, `load_xodr`, and `friction_zone` calls are allowed only in their designated statements.
+
 ## 0.245
 
 * The baseline conversion of latched frames at t > 0 now covers every frame type, `IntentFrame` included, so pre-step outputs always use baseline modes, as the manifest rule assumes. This replaces the separate trajectory replacement. Duplicate named arguments, `bind_inputs` pins, `vehicle_spec` keys, and record fields are compile-time errors. Validity failures use the §14.2 codes.
