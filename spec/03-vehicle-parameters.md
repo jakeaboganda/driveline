@@ -1,7 +1,7 @@
 ---
 title: Vehicle parameter tiers
 section: 3
-version: 0.261
+version: 0.262
 status: draft
 normative: true
 depends_on: [02-conventions.md, 04-perception.md, 06-lifecycle.md, 08-steady-state.md, 11-execution.md, 15-manifest.md, 17-standard-library.md, 19-modules.md]
@@ -33,11 +33,11 @@ Tiers 0–2 describe a two-axle vehicle with a steered front axle and four wheel
    * `SUPPLEMENT_ONLY`: The deck adds behavior that Tiers 1–2 do not describe, such as tire force beyond the linear region. Where the deck and Tiers 1–2 describe the same quantity, the Tier 1–2 value applies. A physics component that does not support the deck ignores it.
    * `OVERRIDE_TIER1_2`: Inside a supporting physics component, deck values replace Tier 1–2 values for every quantity the deck defines. Binding a physics component that does not support the deck is a compile-time error.
    * **Never Overridden:** Tier 0 geometry, which World collision checks use, and the Tier 1 values that the steady-state solve of [§8](08-steady-state.md) uses.
-6. **Runtime Encoding:** The runtime passes each actor's `vehicle_spec` as `dl_vehicle_spec_t`. `object_class` holds the numeric value of `class`. Bit $k$ of `populated_tiers_mask`, for $k$ from 0 to 3, is set if and only if Tier $k$ is populated, and bit 4 is clear. Every field of an unpopulated tier is zero, and so is `object`. `num_gears` is the number of `gear_ratios` values, and the unused entries are zero. `deck_type` and `precedence_mode` hold the header's numeric values for the enum names. `uri` holds the absolute path after that resolution, lexically normalized with `/` separators, and a path longer than 255 bytes is a compile-time error.
+6. **Runtime Encoding:** The runtime passes each actor's `vehicle_spec` as `dl_vehicle_spec_t`. `object_class` holds the numeric value of `class`. Bit $k$ of `populated_tiers_mask`, for $k$ from 0 to 3, is set if and only if Tier $k$ is populated, and bit 4 is clear. Every field of an unpopulated tier is zero, and so is `object`. `num_gears` is the number of `gear_ratios` values, and the unused entries are zero. `deck_type` and `precedence_mode` hold the header's numeric values for the enum names. For a `uri` that is a file path ([§19.2](19-modules.md)), `uri` holds the absolute path after that resolution, lexically normalized with `/` separators. Any other `uri` is passed through byte for byte. A value longer than 255 bytes is a compile-time error.
 
 ## 3.2 Object Specification (`object_spec`)
 
-An `object_spec` describes an actor that is not a vehicle, such as a pedestrian or an animal. It has a `class` (`PEDESTRIAN`, `ANIMAL`, `UNKNOWN`, or `STATIC` for a fixed object such as a cone or barrier, which only `place` may use, [§17.1](17-standard-library.md)), a box of `length`, `width`, and `height`, a speed limit `v_max`, and an acceleration limit `a_max`, each value above zero.
+An `object_spec` describes an actor that is not a vehicle, such as a pedestrian or an animal. It has a `class` (`PEDESTRIAN`, `ANIMAL`, `UNKNOWN`, or `STATIC` for a fixed object such as a cone or barrier, which only `place` may use, [§17.1](17-standard-library.md)), a box of `length`, `width`, and `height`, a speed limit `v_max`, and an acceleration limit `a_max`, each value above zero. An object physics component keeps $|v_{\text{lon}}| \le v_{\max}$ and $|\dot{v}_{\text{lon}}| \le a_{\max}$, and the runtime does not check them.
 
 1. **Geometry:** An object is a Tier 0 vehicle with $L = 0$, $o_f = o_r = $ `length` $/ 2$, $L_{\text{bbox}} = $ `length`, $W_{\text{bbox}} = $ `width`, $H_{\text{bbox}} = $ `height`, and $\delta_{\max} = \dot{\delta}_{\max} = i_s = 0$. Every rule that uses Tier 0 geometry, such as contact ([§11](11-execution.md)) and sensor mounts and tracks ([§17.2](17-standard-library.md)), applies with these values. Its reference origin is the center of the box's footprint on the ground ([§2](02-conventions.md)). Its steady state ([§8](08-steady-state.md)) is therefore the `KS` one with $v_{\text{lat,ra}} = \delta_{\text{ss}} = \beta_{\text{cg}} = 0$, and an object physics component reports `front_wheel_angle` 0. Where a rule divides by $\delta_{\max}$, the quotient is 0 for an object. An object has no Tier 1, 2, or 3.
 2. **Pipeline:** An object actor's physics component must be an object physics component, and a vehicle actor's must be a vehicle physics component ([§15.3](15-manifest.md) `entity`). An object actor's chains carry no `KinematicControlFrame` or `ActuatorControlFrame`. A violation is a compile-time error.

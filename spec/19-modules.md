@@ -1,7 +1,7 @@
 ---
 title: Modules, catalogs, and the lockfile
 section: 19
-version: 0.261
+version: 0.262
 status: draft
 normative: true
 depends_on: [12-grammar.md, 15-manifest.md, 16-static-semantics.md, 18-run-record.md]
@@ -13,9 +13,9 @@ A module is a `.dline` file in the `ModuleFile` form of [§12](12-grammar.md): i
 
 ## 19.1 Modules
 
-1. **Import Resolution:** `use a::…::b::{N_1, …, N_k}` with a first segment other than `std` resolves relative to the directory of the importing file. If the file `a/…/b.dline` exists, each $N_i$ names a top-level declaration of that module. Otherwise each $N_i$ is a native library component with the manifest `a/…/b/N_i.dcm.json` ([§15.2](15-manifest.md)). A missing file or name, or a module file and a manifest directory that both exist, is a compile-time error.
+1. **Import Resolution:** `use a::…::b::{N_1, …, N_k}` with a first segment other than `std` resolves relative to the directory of the importing file. If the file `a/…/b.dline` exists, each $N_i$ names a top-level declaration of that module. Otherwise each $N_i$ is a native library component with the manifest `a/…/b/N_i.dcm.json` ([§15.2](15-manifest.md)). A missing file or name, or a module file `a/…/b.dline` together with a manifest `a/…/b/N_i.dcm.json` for an imported $N_i$, is a compile-time error.
 2. **Relative Paths:** Every relative path in a file, including an import, a `from_fmu` path, a `load_xodr` path, and a Tier 3 `uri`, resolves against the directory of the file that contains it.
-3. **Names:** An imported name joins the File scope of the importing file ([§16.4](16-static-semantics.md)) under its own name, with that scope's rules. The body of an imported `component` or `fn` resolves its names in the module that declares it, before any substitution. A module exports every top-level declaration it contains and nothing it imports, so its own imports reach only the module itself.
+3. **Names:** An imported name joins the File scope of the importing file ([§16.4](16-static-semantics.md)) under its own name, with that scope's rules. The body of an imported `component` or `fn` resolves its names in the module that declares it, before any substitution. A module exports every top-level declaration it contains and nothing it imports, so its own imports reach only the module itself. Importing one declaration more than once, through any paths, adds one name.
 4. **Compilation:** An imported file must parse as a `ModuleFile`, so one that contains a scenario is a compile-time error. The compiler checks each module once, with the rules of [§16](16-static-semantics.md) that apply to declarations. A cycle of imports is a compile-time error.
 
 ## 19.2 Lockfile

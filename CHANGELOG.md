@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.262
+
+* Fold-in review round 7. A Tier 3 `uri` with a scheme is passed through unchanged, and only file paths are resolved. An object's `v_max` and `a_max` bound `|v_lon|` and `|dv_lon/dt|`, and the object physics component enforces them. The module-versus-manifest conflict is defined per imported name, and repeated imports add one name. The spawn curvature check covers `place`. §18 explains why collision and report ticks differ. The constant-expression wording is fixed.
+
 ## 0.261
 
 * Fold-in review round 6. The cold-init spawn pose names `pos_z` and yaw. A vehicle's `dl_vehicle_spec_t.object` is zero. A library component is an imported one with no `component` declaration, which fixes a v0.256 wording that caught Mode A rate clauses. The Prelude scope holds the §16.1 type names and enum constants, so declarations cannot reuse them. The `EntitySpec` and import cross-references are corrected, and the lockfile wording covers world statements.
