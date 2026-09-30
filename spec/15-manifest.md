@@ -1,7 +1,7 @@
 ---
 title: Component manifests and packaging
 section: 15
-version: 0.256
+version: 0.258
 status: draft
 normative: true
 depends_on: [00-conformance.md, 03-vehicle-parameters.md, 05-checkpoints.md, 07-fmu-packaging.md, 10-composition.md, 12-grammar.md, 16-static-semantics.md, 17-standard-library.md, 19-modules.md]
@@ -23,7 +23,7 @@ A manifest tells the compiler and the runtime what a library component is: its p
 
 A component whose signature comes from its declaration is `OneToOne`, reads no Tier 3 deck, and, if it is a Stage 3 component, is a vehicle physics component ([§3.2](03-vehicle-parameters.md)). A component with a `step` block reads its input modes itself, so no mode list applies. Every input port of a Mode B declaration must be a `SliceBuffer`, because `bind_inputs` reads only buffers and `own_state` ([§7](07-fmu-packaging.md)). A checkpoint input on a Mode B declaration is a compile-time error.
 
-A Mode A declaration in the scenario must match its manifest. The declared ports, output type, and `required_tier` must equal the manifest's. A mismatch is a compile-time error.
+A Mode A declaration, in the scenario or a module, must match its manifest. The declared ports, output type, and `required_tier` must equal the manifest's. A mismatch is a compile-time error.
 
 ## 15.2 Native Library Packaging
 

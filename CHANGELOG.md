@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.258
+
+* Fold-in review round 3. The run record `spec_version` is a string copied from the README. The lockfile lists the target platform's native library, is written only after acceptance, and treats a drive letter as a path. An imported file must be a `ModuleFile`. Mode A declarations in modules must match their manifests. A Tier 3 `uri` is the normalized absolute path. An object's origin is its footprint center, and its steady state and `front_wheel_angle` are stated. `spawn` rejects `v` above an object's `v_max`. §13 says which external files are not shipped.
+
 ## 0.257
 
 * Fold-in review round 2. Phase 4 commits, odometer, and map-cache updates apply only to spawned actors, and a static actor keeps every field except `timestamp_ns`, including its `actor_id`. Tier 3 requires Tier 1 in §3 as in §16.6, fixing an older contradiction. The File scope lists module imports. Lockfile inputs are every file that any declaration of the scenario or its modules names, and each must exist. An absolute input is written normalized. The run record takes `spec_version` from the README and `abi_version` from the macro name. The init-context gear cites SimpleDrivetrain's Gear ratio rule.

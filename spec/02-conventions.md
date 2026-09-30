@@ -1,7 +1,7 @@
 ---
 title: Units and coordinate conventions
 section: 2
-version: 0.252
+version: 0.258
 status: draft
 normative: true
 depends_on: [03-vehicle-parameters.md, 05-checkpoints.md, 06-lifecycle.md]
@@ -16,7 +16,7 @@ All conforming runtimes and components must enforce the following mathematical c
 * **Inertial World Frame (ISO 8855):** Right-handed Cartesian coordinate system $(X, Y, Z)$ aligned with the OpenDRIVE inertial frame ($+X$ East, $+Y$ North, $+Z$ Up).
 * **Vehicle Body Frame & Euler Sequence (ISO 8855):** Orthogonal right-handed frame anchored to the vehicle with $+x$ longitudinal forward, $+y$ lateral left, and $+z$ vertical up. World orientation $(\text{roll } \phi, \text{pitch } \theta, \text{yaw } \psi)$ follows the **ISO 8855 intrinsic $Z\text{-}Y'\text{-}X''$ (yaw $\psi \rightarrow$ pitch $\theta \rightarrow$ roll $\phi$) rotation sequence**. All angles are counter-clockwise positive by the right-hand rule. Roll, yaw, and every heading are normalized to $(-\pi, \pi]$. Pitch lies in $(-\pi/2, \pi/2)$, the range where the $Z\text{-}Y'\text{-}X''$ angles are unique.
 * **Heading Frame:** The World frame rotated by the yaw $\psi$ about $+Z$: $+x$ is horizontal and forward, $+y$ horizontal and left, $+z$ up. It equals the body frame when roll and pitch are 0.
-* **Actor Reference Origin:** Standardized at the **center of the rear axle projected onto the ground plane** $(x_{\text{ra}}, y_{\text{ra}}, z_{\text{ra}})$. The Center of Gravity (CG) is located at longitudinal distance $l_r$ forward of the rear axle, $l_f$ behind the front axle, and height $h_{\text{cg}}$ above the ground plane. For an object actor ([§3.2](03-vehicle-parameters.md)), the reference origin is the center of its box on the ground plane, and a rule that names the rear axle means this point.
+* **Actor Reference Origin:** Standardized at the **center of the rear axle projected onto the ground plane** $(x_{\text{ra}}, y_{\text{ra}}, z_{\text{ra}})$. The Center of Gravity (CG) is located at longitudinal distance $l_r$ forward of the rear axle, $l_f$ behind the front axle, and height $h_{\text{cg}}$ above the ground plane. For an object actor ([§3.2](03-vehicle-parameters.md)), the reference origin is the center of its box's footprint on the ground plane, and a rule that names the rear axle means this point.
 * **OpenDRIVE Road & Lane Referencing `(road_id, lane_id, s, d)`:**
   * `road_id` (`char[64]`): Null-terminated OpenDRIVE `<road id="...">` identifier.
   * `lane_id` (`int32_t`): Signed OpenDRIVE lane index ($-1, -2, \dots$ right of reference line; $+1, +2, \dots$ left of reference line; $0$ is the road reference line, which has no centerline, so lane 0 in a callback argument is `DL_STATUS_ERR_INVALID_ARG`, and a frame targeting it is invalid by [§5.1](05-checkpoints.md)).
