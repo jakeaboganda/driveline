@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.216
+
+* A chain's head fixes only its input type, and the output comes from its last element. `>>` cannot feed a chain whose input is `()`. Chain conversion never produces a partial type, so a `fn` can't bypass the `+` branch rule. §0 defines an Arbiter exactly as §16 does. Runtime conformance includes §2 and §3.
+
 ## 0.215
 
 * Output validation checks mode values before finiteness, so the error code is deterministic. Partial-frame fields are the mode field and fields of each stated group. An Arbiter is defined by its signature, and an `Override<T>` port elsewhere is an error. A `fn` call has its declared type. FMU partial ports get converted latched frames. Minor fixes: merges repeat on idle ticks, trajectory fields sit in both motion groups, the `TrajPoint` units, and `rate_of`'s parameter name.
