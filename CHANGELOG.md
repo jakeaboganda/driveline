@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.243
+
+* The baseline conversion of latched control frames at t > 0 happens once, and the converted frame is the latched frame in contexts, pre-step outputs, and re-formed merges. Native partial and Override ports use the struct of `T`. Sensor calls take named arguments only.
+
 ## 0.242
 
 * The bare-name rule applies only to `Expr` operands, not `PipeExpr` elements such as chain names.
