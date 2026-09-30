@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.212
+
+* Typing for the new frame types: constant forbidden modes are compile-time errors and computed ones fail output validation, `Lat<IntentFrame>` includes `turn_signal`, `+` branches must already be partial, splices and `fn` bodies accept converting output types, and a pipe input must be a frame type.
+
 ## 0.211
 
 * One latched-frame rule covers re-trims and splices. Partial outputs latch as the merged frame, `Override<T>` frames never latch, and uncovered types are always synthesized. Tier-change steering also reaches merged `+` frames. Array tails are zeroed. `LANE_OFFSET` targets must exist in the map, and gap and speed targets are not negative. Mode B defaults `+INFINITY` only where the mode makes a field a bound.
