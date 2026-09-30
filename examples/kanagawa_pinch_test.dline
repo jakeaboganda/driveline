@@ -114,7 +114,7 @@ scenario KanagawaExpresswayPinchTest {
         friction_zone(road: "road_10", s_start: 150.0m, s_end: 250.0m, mu: 0.25);
     }
 
-    // --- Actor 1: Ego Vehicle (Tier-B Actuators -> SimpleDrivetrain -> Tier-1 Single-Track) ---
+    // --- Actor 1: Ego Vehicle (Tier-B Actuators -> SimpleDrivetrain -> Tier-1 Single-Track (SimpleDrivetrain needs Tier 2)) ---
     actor ego = spawn(id: 1, spec: Sedan_2026, road: "road_10", lane: 2, s: 15.0m, v: 28.0m/s) with {
         priors {
             nav_route = RouteNodes(["road_10:2", "road_40:1", "road_11:2"]); // road_40: junction connecting road

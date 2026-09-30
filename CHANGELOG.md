@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.225
+
+* `IntentFrame` requests forward travel only. Reversing goes through an `ActuatorControlFrame` in `REVERSE`. `LANE_OFFSET` gets one Lane Target rule for where the path starts, which StanleyLat now links. The finiteness check covers only array entries below the count. Minor fixes: "every full frame" wording and an example comment.
+
 ## 0.224
 
 * The pre-step output rule is a list by output kind, and a full `IntentFrame` keeps a latched trajectory. A `LANE_OFFSET` lane only needs to exist in some lane section of its road. Synthesized latched control frames carry the committed $\dot{v}_{\text{lon}}$. Minor fixes: count checks cover only used counts, the Mode B form wording, a guard on nonpositive axle loads, and the `Int` conversion exception for `select`/`clamp`.

@@ -1,7 +1,7 @@
 ---
 title: Checkpoint data contracts
 section: 5
-version: 0.224
+version: 0.225
 status: draft
 normative: true
 depends_on: [02-conventions.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md, 17-standard-library.md]
@@ -11,7 +11,7 @@ depends_on: [02-conventions.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 1
 
 Every checkpoint frame carries `timestamp_ns` (`uint64`, simulation time in nanoseconds) and `actor_id` (`uint64`), which the runtime writes ([§9.1](09-abi.md)). For the three command frames, `timestamp_ns` is the tick that produced the frame. `KinematicState` has fixed fields, and physics fills every one except the header, the map cache, and `odometer_m`, which the runtime writes ([§9.1](09-abi.md)).
 
-**Groups and Modes:** `IntentFrame`, `KinematicControlFrame`, and `ActuatorControlFrame` consist of the header and a fixed set of groups. Each group has a mode field that selects one variant, and the mode decides which of the group's fields apply. Every output states every group, so a frame has no optional fields and a consumer reads each frame on its own. A consumer never needs an earlier frame to interpret the current one.
+**Groups and Modes:** `IntentFrame`, `KinematicControlFrame`, and `ActuatorControlFrame` consist of the header and a fixed set of groups. Each group has a mode field that selects one variant, and the mode decides which of the group's fields apply. Every full frame states every group, so a frame has no optional fields and a consumer reads each frame on its own. A consumer never needs an earlier frame to interpret the current one.
 
 | Frame | Group | Mode Field (DSL Type) | Modes | Fields |
 | :--- | :--- | :--- | :--- | :--- |
@@ -68,6 +68,10 @@ Produced by Stage 1 (Intent) components.
 * `lon_mode` is `SPATIOTEMPORAL_TRAJECTORY` if and only if `lat_mode` is. Then `num_traj_points` is from 1 to 64, and the trajectory follows the Array Semantics below.
 * With `LANE_OFFSET`, `target_road_id` names a road of the map and some lane section of it has a lane `target_lane_id`, so the lane ID is not 0. With `POLYLINE_PATH`, `num_waypoints` is from 2 to 64.
 * With `GAP_PROFILE`, `gap_target_actor_id` is not 0. Where they apply, `v_ref`, `time_gap_ref`, and `distance_gap_min` are not negative.
+
+**Forward Travel:** An `IntentFrame` requests forward travel. `v_ref` and each $v_k$ are forward speeds, and every path and trajectory heading points along the direction of travel. A reverse maneuver is requested only below the intent stage, through an `ActuatorControlFrame` in `REVERSE`.
+
+**Lane Target:** Under `LANE_OFFSET`, the target path is the centerline of lane `target_lane_id` offset by `d_ref`, followed in the lane's driving direction. On the actor's own road it starts at the actor's `frenet_s` if the lane exists in the lane section there, and otherwise at the first point of that lane ahead of the actor in its driving direction. On another road it starts at the lane's start in its driving direction. A consumer that finds no such point, because the lane lies only behind the actor, returns `DL_STATUS_ERR_INVALID_ARG`.
 
 **Array Semantics:** `path_points` holds `num_waypoints` entries and `trajectory` holds `num_traj_points` entries. Entries beyond the count are ignored. Both arrays are in the World frame and ordered along the direction of travel. Their curvatures are positive when the path turns left in that direction, each trajectory $v_k \ge 0$, and each $a_k$ is a $\dot{v}_{\text{lon}}$ like `a_ref`. Each `trajectory` time $t_k$ is an absolute simulation time in nanoseconds. The times are not negative and strictly increase. Points earlier than a consumer's tick are in the past, which is normal for a frame that a component forwards or that a consumer reads on a later tick.
 
