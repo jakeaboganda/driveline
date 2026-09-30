@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.261
+
+* Fold-in review round 6. The cold-init spawn pose names `pos_z` and yaw. A vehicle's `dl_vehicle_spec_t.object` is zero. A library component is an imported one with no `component` declaration, which fixes a v0.256 wording that caught Mode A rate clauses. The Prelude scope holds the §16.1 type names and enum constants, so declarations cannot reuse them. The `EntitySpec` and import cross-references are corrected, and the lockfile wording covers world statements.
+
 ## 0.260
 
 * Fold-in review round 5. A sensor target's reference point has an explicit position and height, ignoring roll and pitch as contact does. A `KinematicState` is valid only with yaw and roll in (-π, π] and pitch in (-π/2, π/2), which output validation checks. Mode A `entity` and `deck_types` come from the manifest. A multi-segment name outside `use` must be an enum constant or a §17.1 constructor. Splice replacements get the entity check. Vehicle physics reports `front_wheel_angle` = δ. Tier wording covers `object_spec`, and absolute lockfile paths fix the drive-letter form.
