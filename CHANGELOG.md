@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.221
+
+* Inside a type-argument list, `>>` closes two lists, so `Chain<X, Lon<T>>` lexes under the longest-match rule. Partial and override frames are structured types with field access.
+
 ## 0.220
 
 * Output validation checks modes and counts before finiteness, and it checks only the `KinematicState` fields that physics fills. The tier-change steering replacement zeroes fields its new mode doesn't use. Re-trims run per instance, synthesized frames carry the next tick's stamp, and the baseline-mode rule names exactly which frames the runtime builds.
