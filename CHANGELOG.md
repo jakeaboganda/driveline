@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.238
+
+* Every frame the runtime writes itself has its unused fields and array tails zeroed. A latched control frame converted to baseline modes keeps its `timestamp_ns`.
+
 ## 0.237
 
 * Frame validity names the array rules it checks, and the other Array Semantics rules bind the producer only. Latched frames get a tie-break among equally near edges, and a latched frame from a partial edge with no `+` fills its `NONE` groups from the Pass 1 step 5 build. The `rate_of` field selector is exempt from the bare-name rule, which fixes a v0.236 regression. `fmu.out` takes a `String` literal, and `Time` parameters accept only `Time`.
