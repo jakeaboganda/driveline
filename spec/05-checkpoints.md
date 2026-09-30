@@ -1,7 +1,7 @@
 ---
 title: Checkpoint data contracts
 section: 5
-version: 0.263
+version: 0.264
 status: draft
 normative: true
 depends_on: [02-conventions.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md, 16-static-semantics.md, 17-standard-library.md]
@@ -138,4 +138,4 @@ Produced by Stage 3 (Physics) at the end of every simulation step $t + \Delta t$
 | **Map Cache** | `road_id` | `char[64]` | — | Current OpenDRIVE road ID cached by World. |
 | | `lane_id` | `int32` | — | Current signed OpenDRIVE lane ID cached by World. |
 | | `frenet_s`, `frenet_d` | `float64` | $\text{m}$ | Cached $(s, d)$ coordinates for $O(1)$ spatial queries. |
-| **Odometer** | `odometer_m` | `float64` | $\text{m}$ | Horizontal distance travelled by the rear-axle origin since spawn: the sum of the horizontal distances between consecutive committed positions. The runtime writes it in Phase 4 ([§11](11-execution.md)), and 0 at spawn. It never decreases. |
+| **Odometer** | `odometer_m` | `float64` | $\text{m}$ | Horizontal distance travelled by the rear-axle origin since spawn: the sum of the horizontal distances $\sqrt{\Delta X \cdot \Delta X + \Delta Y \cdot \Delta Y}$ between consecutive committed positions, evaluated left to right. The runtime writes it in Phase 4 ([§11](11-execution.md)), and 0 at spawn. It never decreases. |

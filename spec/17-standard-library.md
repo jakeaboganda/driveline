@@ -1,7 +1,7 @@
 ---
 title: Standard library
 section: 17
-version: 0.260
+version: 0.264
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 06-lifecycle.md, 08-steady-state.md, 09-abi.md, 11-execution.md, 15-manifest.md, 16-static-semantics.md, 19-modules.md]
@@ -31,7 +31,7 @@ An input written without a name, such as the pipe input, is the port named `inpu
 
 Both constructors set `stop_at_odometer` to `+INFINITY`.
 
-The world friction field is $\mu(X, Y)$: the zone or default value at the lane that `world_to_frenet` returns for $(X, Y)$, called with the actor's yaw as `psi` and its current `road_id` as `hint_road_id`.
+The world friction field is $\mu(X, Y)$: the zone or default value at the lane that `world_to_frenet` returns for $(X, Y)$, called with the actor's yaw as `psi` and its current `road_id` as `hint_road_id`. The map elevation at $(X, Y)$ is the $Z$ that `frenet_to_world` returns at the `(road_id, lane_id, s, d)` that the same `world_to_frenet` call returns.
 
 ## 17.2 Sensors
 
@@ -123,4 +123,4 @@ The front lateral force acts along the body $y$ axis. This small-angle model mat
 4. $X' = X + v' \cos\psi'\, \Delta t$ and $Y' = Y + v' \sin\psi'\, \Delta t$. $Z$, roll, and pitch follow step 5 of the vehicle components.
 5. It reports $v_{\text{lon}} = v'$, $v_{\text{lat}} = 0$, `yaw_rate` $= w(\psi' - \psi) / \Delta t$, `a_lon` $= (v' - v) / \Delta t$, `a_lat` $= v' \cdot$ `yaw_rate`, and `front_wheel_angle` and `slip_angle_beta_cg` equal to 0.
 
-On cold init or warm start it sets $X$, $Y$, $\psi$, and $v$ from `chassis_state`. An init context with $v_{\text{lon}} < 0$ makes the enter call return `DL_STATUS_ERR_INVALID_ARG`.
+On cold init or warm start it sets $X$, $Y$, $\psi$, and $v$ from `chassis_state`, with $v$ capped at $v_{\max}$. An init context with $v_{\text{lon}} < 0$ makes the enter call return `DL_STATUS_ERR_INVALID_ARG`.

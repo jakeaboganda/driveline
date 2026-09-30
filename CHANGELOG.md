@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.264
+
+* Fold-in review round 9. The Tick 0 trim check runs only on outputs that pass output validation. Map elevation at (X, Y) is defined through `world_to_frenet` and `frenet_to_world`. The object-actor frame ban covers partial and Override frames in every chain that serves the actor. Import paths must match directory entries byte for byte, case included, and non-UTF-8 input paths are compile-time errors. Tier 3 `uri` normalization defers to §19.2. The odometer distance formula is fixed for bit-exact stop targets. `PointMassWalker` caps its initial speed at `v_max`.
+
 ## 0.263
 
 * Fold-in review round 8. Warm-start axle loads use grade and bank relative to the actor's heading, so an actor facing against its lane gets the right load transfer (an older gap). A module's identity is its normalized path: one module imported twice adds one name, the same name from two modules is a duplicate, and `std` imports name no file. A track's `object_class` types as `ObjectClass`. β_cg wording covers `object_spec`, and per-actor elements are checked against ports or `fn` parameters.
