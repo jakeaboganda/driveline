@@ -1,7 +1,7 @@
 ---
 title: Checkpoint data contracts
 section: 5
-version: 0.232
+version: 0.233
 status: draft
 normative: true
 depends_on: [02-conventions.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md, 17-standard-library.md]
@@ -95,7 +95,7 @@ Produced by Stage 1 (Intent) components.
 | `steer_angle_cmd` | `float64` | $\text{rad}$ | Under `ANGLE`, the front road-wheel steering angle target $\delta_{\text{cmd}}$, positive to the left. |
 | `steer_rate_cmd` | `float64` | $\text{rad/s}$ | Under `ANGLE`, the maximum rate used to reach `steer_angle_cmd`, above zero, or `+INFINITY` for none. Under `RATE`, a rate command that physics integrates into its steering angle $\delta$, which starts from the committed `front_wheel_angle` after each initialization ([§5.3](05-checkpoints.md)). |
 
-A `KinematicControlFrame` is valid if and only if each mode field holds one of its listed values, and the bounds under `ACCEL` and `ANGLE` are above zero.
+A `KinematicControlFrame` is valid if and only if the Partial and Override rule holds, each mode field holds one of its listed values, and the bounds under `ACCEL` and `ANGLE` are above zero.
 
 ### Tier B: `ActuatorControlFrame`
 | Field Name | Type | Unit | Specification & Semantics |
@@ -111,7 +111,7 @@ A `KinematicControlFrame` is valid if and only if each mode field holds one of i
 | `gear_mode` | `enum` | — | `NONE` ($0$), `PARK` ($1$), `REVERSE` ($2$), `NEUTRAL` ($3$), or `DRIVE` ($4$). |
 | `manual_gear_index` | `int8` | — | Explicit gear index ($1..$`num_gears`, or $0$ for automatic selection in `DRIVE`). |
 
-An `ActuatorControlFrame` is valid if and only if each mode field holds one of its listed values, `throttle` and `brake` lie in $[0, 1]$ under `PEDALS`, `steering_wheel_norm` lies in $[-1, 1]$ under `ANGLE`, and under `DRIVE` `manual_gear_index` is from 0 to `num_gears` (so 0 without Tier 2).
+An `ActuatorControlFrame` is valid if and only if the Override rule holds, each mode field holds one of its listed values, `throttle` and `brake` lie in $[0, 1]$ under `PEDALS`, `steering_wheel_norm` lies in $[-1, 1]$ under `ANGLE`, and under `DRIVE` `manual_gear_index` is from 0 to `num_gears` (so 0 without Tier 2).
 
 ## 5.3 Checkpoint 3: `KinematicState` & Reference-Point Continuity
 Produced by Stage 3 (Physics) at the end of every simulation step $t + \Delta t$.

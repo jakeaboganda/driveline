@@ -1,7 +1,7 @@
 ---
 title: DSL static semantics
 section: 16
-version: 0.232
+version: 0.233
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 07-fmu-packaging.md, 09-abi.md, 10-composition.md, 11-execution.md, 12-grammar.md, 15-manifest.md, 17-standard-library.md]
@@ -66,7 +66,7 @@ Names resolve from the innermost scope outward. The scopes nest as follows: Prel
 * **World Separation:** `actor.state`, `sim_time`, and calls to `collision` are allowed only in `terminate when` and `on` conditions. `any` is allowed only as the second argument of `collision`. Using them anywhere else, including as a component argument, is a compile-time error. Components see the World only through sensors, priors, host map callbacks, and their own actor's `own_state` ([§1.1](01-scope.md)).
 * **Field Selectors:** The first argument of `rate_of` is a field name of the buffer's slice type, resolved in that type's scope. It must name a top-level `float64` field of the slice type, so track fields inside `tracks[]` cannot be selected. `window` must be a constant `Int` of at least 1. `Rate.value` has the field's dimension divided by time, and `Rate.valid` is `Bool`.
 * **`spawn`:** Every actor initializer must be a `spawn` call, and `spawn` may appear nowhere else.
-* **Actor IDs:** Every `spawn` must pass `id:` as an `Int` literal of at least 1. IDs must be unique within the scenario. `0` means "no actor" in frame fields such as `gap_target_actor_id`.
+* **Actor IDs:** The `id` argument of every `spawn`, given positionally or by name, must be an `Int` literal of at least 1. IDs must be unique within the scenario. `0` means "no actor" in frame fields such as `gap_target_actor_id`.
 
 ## 16.5 Calls and Chains
 

@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.233
+
+* Runtime conformance includes the run-time rules of §16. A splice that replaces a producer feeding a `+` re-forms the merged frame in the splice window. `spawn` accepts `id` positionally. KinematicControlFrame and ActuatorControlFrame validity names the Partial and Override rules. Arbiter output validity points to all of §5. JerkLimiter lists its modes. Demotion sets `a_lat` to the kinematic value.
+
 ## 0.232
 
 * Latched control frames after tick 0 convert `JERK`, `RATE`, and `TORQUE` groups to baseline modes from the committed state, so trims don't read zeroed fields. A component without a tracks port treats `GAP_PROFILE` as `VELOCITY_TARGET`. The scope tree is explicit, with shadowing checked before `fn` substitution. `RouteNodes` ports accept `a.priors.n`, and JerkLimiter states its `+INFINITY` jerk bound.
