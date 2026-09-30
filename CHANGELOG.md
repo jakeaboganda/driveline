@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.219
+
+* `+` branches share one input type, and the group has a chain type that may head a chain. Partial frames never carry the trajectory fields. Unary minus takes only `Int`, `Time`, or quantities. `Override<T>` ports are checked in manifests too. Minor fixes: the delivery exceptions are listed, the no-memory wording, and the reverse standstill branch of `SimpleDrivetrain`.
+
 ## 0.218
 
 * `fn` bodies use only the §16.1 chain conversion, which removes a v0.215 contradiction. `Arbitrate` secondaries accept any chain that converts to `Override<T>`, partial chains included. A constant `select` branch with a forbidden mode is a compile-time error.

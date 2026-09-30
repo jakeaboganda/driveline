@@ -1,7 +1,7 @@
 ---
 title: Checkpoint data contracts
 section: 5
-version: 0.217
+version: 0.219
 status: draft
 normative: true
 depends_on: [02-conventions.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md, 17-standard-library.md]
@@ -11,7 +11,7 @@ depends_on: [02-conventions.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 1
 
 Every checkpoint frame carries `timestamp_ns` (`uint64`, simulation time in nanoseconds) and `actor_id` (`uint64`), which the runtime writes ([§9.1](09-abi.md)). For the three command frames, `timestamp_ns` is the tick that produced the frame. `KinematicState` has fixed fields, and physics fills every one except the header, the map cache, and `odometer_m`, which the runtime writes ([§9.1](09-abi.md)).
 
-**Groups and Modes:** `IntentFrame`, `KinematicControlFrame`, and `ActuatorControlFrame` consist of the header and a fixed set of groups. Each group has a mode field that selects one variant, and the mode decides which of the group's fields apply. Every output states every group, so a frame has no optional fields and a consumer reads each frame on its own. The runtime keeps no memory of earlier frames.
+**Groups and Modes:** `IntentFrame`, `KinematicControlFrame`, and `ActuatorControlFrame` consist of the header and a fixed set of groups. Each group has a mode field that selects one variant, and the mode decides which of the group's fields apply. Every output states every group, so a frame has no optional fields and a consumer reads each frame on its own. A consumer never needs an earlier frame to interpret the current one.
 
 | Frame | Group | Mode Field (DSL Type) | Modes | Fields |
 | :--- | :--- | :--- | :--- | :--- |
@@ -37,7 +37,7 @@ The listed modes are numbered from 1 in the order shown. The **baseline mode** o
 
 **Frame Validity:** The validity rules of this section apply to every frame a component produces. The runtime checks them in output validation, in the order that [§14.2](14-diagnostics.md) gives, and reports a failure as `DL_STATUS_ERR_INVALID_ARG` of the producing call, so every consumer receives only valid frames. After the check, the runtime sets every field that the frame's modes do not use, and every array entry past its count, to zero, so the bytes that consumers receive are deterministic.
 
-**Delivery:** The runtime delivers each producer's latest output unchanged, except for the steering replacement after a tier change ([§6.2.4](06-lifecycle.md)). On a tick where a producer does not step ([§11](11-execution.md)), its consumers receive its last output again. Trajectory times and the stop target are absolute, so a frame read on a later tick needs no adjustment. A consumer can compare `timestamp_ns` with its own tick time to see how old a frame is.
+**Delivery:** The runtime delivers each producer's latest output, as validated, zeroed, and stamped, without further change, except for the steering replacement after a tier change and the conversion before a replacement's first step ([§6.2.4](06-lifecycle.md)). A `+` merged frame is formed as [§10.2](10-composition.md) describes. On a tick where a producer does not step ([§11](11-execution.md)), its consumers receive its last output again. Trajectory times and the stop target are absolute, so a frame read on a later tick needs no adjustment. A consumer can compare `timestamp_ns` with its own tick time to see how old a frame is.
 
 ## 5.1 Checkpoint 1: `IntentFrame`
 Produced by Stage 1 (Intent) components.
