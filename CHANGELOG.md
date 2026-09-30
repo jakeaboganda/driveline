@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.211
+
+* One latched-frame rule covers re-trims and splices. Partial outputs latch as the merged frame, `Override<T>` frames never latch, and uncovered types are always synthesized. Tier-change steering also reaches merged `+` frames. Array tails are zeroed. `LANE_OFFSET` targets must exist in the map, and gap and speed targets are not negative. Mode B defaults `+INFINITY` only where the mode makes a field a bound.
+
 ## 0.210
 
 * Completed the group model. §5 lists which fields each mode uses. Stated groups of partial frames are never `NONE`. Past trajectory points are valid, so forwarding arbiters no longer fail. Merged frames carry their tick and are validated. Manifest `modes` covers every mode field, replacing `lon_modes`/`lat_modes`, and FMUs are pre-checked on every checkpoint input. A Mode B FMU's held output gets the tier-change steering. Source-chain typing covers `Arbitrate`, named-chain, and `fn` heads. Header enum comments use the full mode names.
