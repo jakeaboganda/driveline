@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.227
+
+* A spliced `+` forms its first merged frame in the window. `IntentFrame` Arbiters take both motion groups from one source around trajectories, a deterministic rule the runtime checks through output validity. Runtime-written wheel steering is clamped to [-1, 1]. `RATE` integrates from the committed wheel angle. Per-actor arrays check each element separately, `SliceBuffer` queries work on any value of that type, and manifest `Time` defaults convert exactly.
+
 ## 0.226
 
 * The zero-slip rule below 1 m/s includes every reverse speed. The trim check skips splices whose latched steering is not `ANGLE`. Every "must" about scenario text, declarations, or manifests is a compile-time error. Expected types pass through parentheses and every `select` branch. Integer range checks include `uint64`, and `i64` manifest parameters have unit `"1"`. Minor fixes: override-output trims and wording for unlisted mode fields.

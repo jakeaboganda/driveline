@@ -1,7 +1,7 @@
 ---
 title: Checkpoint data contracts
 section: 5
-version: 0.225
+version: 0.227
 status: draft
 normative: true
 depends_on: [02-conventions.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md, 17-standard-library.md]
@@ -93,7 +93,7 @@ Produced by Stage 1 (Intent) components.
 | `jerk_lon_cmd` | `float64` | $\text{m/s}^3$ | Under `ACCEL`, the maximum jerk used to reach `a_lon_cmd`, above zero, or `+INFINITY` for none. Under `JERK`, a jerk command: physics integrates it into its commanded $\dot{v}_{\text{lon}}$, which starts from the committed $\dot{v}_{\text{lon}} = a_{\text{lon}} + v_{\text{lat}}\dot{\psi}$ after each initialization ([§5.3](05-checkpoints.md)). Under `ACCEL`, the bound limits the change of that same quantity. |
 | `steer_mode` | `enum` | — | `NONE` ($0$), `ANGLE` ($1$), or `RATE` ($2$). |
 | `steer_angle_cmd` | `float64` | $\text{rad}$ | Under `ANGLE`, the front road-wheel steering angle target $\delta_{\text{cmd}}$, positive to the left. |
-| `steer_rate_cmd` | `float64` | $\text{rad/s}$ | Under `ANGLE`, the maximum rate used to reach `steer_angle_cmd`, above zero, or `+INFINITY` for none. Under `RATE`, a rate command that physics integrates. |
+| `steer_rate_cmd` | `float64` | $\text{rad/s}$ | Under `ANGLE`, the maximum rate used to reach `steer_angle_cmd`, above zero, or `+INFINITY` for none. Under `RATE`, a rate command that physics integrates into its steering angle $\delta$, which starts from the committed `front_wheel_angle` after each initialization ([§5.3](05-checkpoints.md)). |
 
 A `KinematicControlFrame` is valid if and only if each mode field holds one of its listed values, and the bounds under `ACCEL` and `ANGLE` are above zero.
 
