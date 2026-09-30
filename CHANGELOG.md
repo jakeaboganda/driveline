@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.214
+
+* `rel_vx`/`rel_vy` are derivatives in the turning sensor frame, so a constant gap on a curve has zero closing speed. Before, two cars 50 m apart at 28 m/s on R = 500 m reported `ttc_lon` ≈ 324 s instead of `+INFINITY`.
+
 ## 0.213
 
 * An `Override<T>` output has the stage of `T`, which gives the example's `BoschPCS_v4` a stage. Partial frames convert to `Override<T>`. Chain conversion is defined once, from the value conversions. `bind_outputs` requires the mode fields of the stated groups only. A spliced partial producer delivers its latched frame converted to its partial type.
