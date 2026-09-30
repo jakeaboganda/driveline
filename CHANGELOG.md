@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.236
+
+* The all-`NONE` Override frame before a first step has a defined header: the served actor's `actor_id` and the next tick's time. A bare name used as an operand must denote a value.
+
 ## 0.235
 
 * A full frame at a partial port has only the added `SPATIOTEMPORAL_TRAJECTORY` restriction, not the partial `NONE` rules. A pre-step latched trajectory frame bound for a partial port is replaced like a partial output. The `GAP_PROFILE` fallback applies only to components that accept `GAP_PROFILE`.
