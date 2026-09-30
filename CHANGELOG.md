@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.205
+
+* Every delivered frame is rebased to its delivery tick. Trajectory times shift, and `s_stop` is reduced by a per-actor odometer distance. This replaces the rules that dropped `s_stop` on held units, latched frames, and forwarding, so stop requests survive multi-rate delivery. Before a replacement's first step, consumers receive its connection's stored values. Partial-frame FMU ports use the full frame's MIME type, and merged frames zero fields outside both groups.
+
 ## 0.204
 
 * Below 1 m/s a tier change keeps the committed wheel angle, which overrides the $\delta_{\text{KS}}$ formula. Library components run at the base rate. `Lon<T>`/`Lat<T>` have only their group's fields plus `valid_mask`. Minor fixes: gear selection by largest index, every tier-record member required, and `sensors.n`/`priors.n` as single names.

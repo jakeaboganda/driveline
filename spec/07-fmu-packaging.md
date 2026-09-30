@@ -1,7 +1,7 @@
 ---
 title: FMU packaging
 section: 7
-version: 0.202
+version: 0.205
 status: draft
 normative: true
 depends_on: [05-checkpoints.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md, 16-static-semantics.md]
@@ -22,7 +22,7 @@ A `component ... from_fmu("...")` declaration uses one of two modes. The compile
   * Component parameters are FMI parameters with the same names.
   * The actor's own state ([§9.1](09-abi.md)) is the `fmi3Binary` input `own_state` with MIME type `application/x-driveline.kinematic-state;version=0.15`. The runtime sets it on every step.
   * A Mode A manifest's `cardinality` must be `OneToOne`. Any other value is a compile-time error.
-  * **MIME subtype names:** `<checkpoint-type>`, `<slice-type>`, and `<prior-type>` are the type names written in lowercase with a hyphen before each inner capital: `IntentFrame` is `intent-frame`, `KinematicControlFrame` is `kinematic-control-frame`, and `RadarSlice` is `radar-slice`.
+  * **MIME subtype names:** `<checkpoint-type>`, `<slice-type>`, and `<prior-type>` are the type names written in lowercase with a hyphen before each inner capital: `IntentFrame` is `intent-frame`, `KinematicControlFrame` is `kinematic-control-frame`, and `RadarSlice` is `radar-slice`. A `Lon<T>` or `Lat<T>` port or output uses the MIME type and full struct of `T`, with the bits and fields of the other group zero.
 * **Mode B (Scalar-Pin FMU):** A legacy FMU with scalar `Float64` pins. `bind_inputs` maps expressions over the `SliceBuffer` ports and `own_state` onto input pins. `bind_outputs` maps output pins onto a checkpoint frame. A splice starts a new instance that initializes at $t_{\text{first}}$ from `bind_inputs` alone, with no init context ([§7.2](07-fmu-packaging.md)), and the runtime reports `DL_STATUS_WARN_FMU_COLD_SPLICE`.
 
   In `bind_outputs`, a frame field that no assignment names is zero. If `valid_mask` is not assigned, it is the union of the bits that cover the assigned fields ([§5](05-checkpoints.md)), and a union that [§5](05-checkpoints.md) forbids, such as `0x04` with `0x08`, is a compile-time error. Named call-site arguments that are not input ports are FMI parameters with the same names, set before initialization. Each must name a parameter variable of `modelDescription.xml`, and its type follows that variable: `Float64` takes a quantity of the dimension of its declared unit, or a dimensionless one if it declares none, passed in SI units by the Units rule below, or a `Time` passed in seconds when the unit is `s`, `Int64` takes an `Int`, and `Boolean` takes a `Bool`. A variable of any other type, or an argument of another type, is a compile-time error. Any other name is a compile-time error.
