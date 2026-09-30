@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.241
+
+* The bare-name rule accepts actor-body `sensors.<name>` and `priors.<name>`, which fixes a v0.236 regression that rejected the example. §16.1 names the four slice types and says `TargetTrack` is an element type, not a slice type.
+
 ## 0.240
 
 * Mode B `bind_inputs` pins and `fmu.out` variables must be `Float64`. `fmu.out` output variables are exempt from the unit check, and the scenario converts units explicitly.
