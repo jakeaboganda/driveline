@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.228
+
+* A trajectory defines its target at every time: the first point before it starts, the last point held after it ends, and a single point held throughout. Path and trajectory headings lie in (-π, π].
+
 ## 0.227
 
 * A spliced `+` forms its first merged frame in the window. `IntentFrame` Arbiters take both motion groups from one source around trajectories, a deterministic rule the runtime checks through output validity. Runtime-written wheel steering is clamped to [-1, 1]. `RATE` integrates from the committed wheel angle. Per-actor arrays check each element separately, `SliceBuffer` queries work on any value of that type, and manifest `Time` defaults convert exactly.

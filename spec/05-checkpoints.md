@@ -1,7 +1,7 @@
 ---
 title: Checkpoint data contracts
 section: 5
-version: 0.227
+version: 0.228
 status: draft
 normative: true
 depends_on: [02-conventions.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md, 17-standard-library.md]
@@ -73,7 +73,7 @@ Produced by Stage 1 (Intent) components.
 
 **Lane Target:** Under `LANE_OFFSET`, the target path is the centerline of lane `target_lane_id` offset by `d_ref`, followed in the lane's driving direction. On the actor's own road it starts at the actor's `frenet_s` if the lane exists in the lane section there, and otherwise at the first point of that lane ahead of the actor in its driving direction. On another road it starts at the lane's start in its driving direction. A consumer that finds no such point, because the lane lies only behind the actor, returns `DL_STATUS_ERR_INVALID_ARG`.
 
-**Array Semantics:** `path_points` holds `num_waypoints` entries and `trajectory` holds `num_traj_points` entries. Entries beyond the count are ignored. Both arrays are in the World frame and ordered along the direction of travel. Their curvatures are positive when the path turns left in that direction, each trajectory $v_k \ge 0$, and each $a_k$ is a $\dot{v}_{\text{lon}}$ like `a_ref`. Each `trajectory` time $t_k$ is an absolute simulation time in nanoseconds. The times are not negative and strictly increase. Points earlier than a consumer's tick are in the past, which is normal for a frame that a component forwards or that a consumer reads on a later tick.
+**Array Semantics:** `path_points` holds `num_waypoints` entries and `trajectory` holds `num_traj_points` entries. Entries beyond the count are ignored. Both arrays are in the World frame and ordered along the direction of travel. Their curvatures are positive when the path turns left in that direction, each trajectory $v_k \ge 0$, and each $a_k$ is a $\dot{v}_{\text{lon}}$ like `a_ref`. Each `trajectory` time $t_k$ is an absolute simulation time in nanoseconds. The times are not negative and strictly increase. Points earlier than a consumer's tick are in the past, which is normal for a frame that a component forwards or that a consumer reads on a later tick. The trajectory defines the target for every time: before $t_0$ it is the first point, between points it follows the component's interpolation, and after the last point it is the last point, held. A trajectory of one point is that point, held. Every path and trajectory heading lies in $(-\pi, \pi]$ ([§2](02-conventions.md)).
 
 **Stop Target:** The actor's odometer is `odometer_m` in its `KinematicState` ([§5.3](05-checkpoints.md)). A consumer's remaining stopping distance is `stop_at_odometer` $-$ `own.odometer_m`, and a value at or below zero means stop now. The target is absolute, so it stays correct on every tick that a consumer reads the frame.
 
