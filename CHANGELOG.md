@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.223
+
+* `JERK` integrates the commanded $\dot{v}_{\text{lon}}$, seeded from the committed state after each initialization, and the `ACCEL` bound limits the change of the same quantity.
+
 ## 0.222
 
 * Splices use the chain conversion, so a partial target needs a partial replacement. `fn` buffer parameters follow the capacity rule. Shadowing is an error in every scope. Type expressions must be well-formed.

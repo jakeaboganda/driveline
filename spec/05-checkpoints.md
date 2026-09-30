@@ -1,7 +1,7 @@
 ---
 title: Checkpoint data contracts
 section: 5
-version: 0.220
+version: 0.223
 status: draft
 normative: true
 depends_on: [02-conventions.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md, 17-standard-library.md]
@@ -86,7 +86,7 @@ Produced by Stage 1 (Intent) components.
 | `timestamp_ns` | `uint64` | $\text{ns}$ | Simulation time of the tick that produced the frame. |
 | `accel_mode` | `enum` | — | `NONE` ($0$), `ACCEL` ($1$), or `JERK` ($2$). |
 | `a_lon_cmd` | `float64` | $\text{m/s}^2$ | Under `ACCEL`, the commanded rate of change $\dot{v}_{\text{lon}}$ of `v_lon` ([§5.3](05-checkpoints.md)). In a turn it differs from the reported `a_lon` of [§5.3](05-checkpoints.md) by $v_{\text{lat}} \dot{\psi}$. |
-| `jerk_lon_cmd` | `float64` | $\text{m/s}^3$ | Under `ACCEL`, the maximum jerk used to reach `a_lon_cmd`, above zero, or `+INFINITY` for none. Under `JERK`, a jerk command that physics integrates. |
+| `jerk_lon_cmd` | `float64` | $\text{m/s}^3$ | Under `ACCEL`, the maximum jerk used to reach `a_lon_cmd`, above zero, or `+INFINITY` for none. Under `JERK`, a jerk command: physics integrates it into its commanded $\dot{v}_{\text{lon}}$, which starts from the committed $\dot{v}_{\text{lon}} = a_{\text{lon}} + v_{\text{lat}}\dot{\psi}$ after each initialization ([§5.3](05-checkpoints.md)). Under `ACCEL`, the bound limits the change of that same quantity. |
 | `steer_mode` | `enum` | — | `NONE` ($0$), `ANGLE` ($1$), or `RATE` ($2$). |
 | `steer_angle_cmd` | `float64` | $\text{rad}$ | Under `ANGLE`, the front road-wheel steering angle target $\delta_{\text{cmd}}$, positive to the left. |
 | `steer_rate_cmd` | `float64` | $\text{rad/s}$ | Under `ANGLE`, the maximum rate used to reach `steer_angle_cmd`, above zero, or `+INFINITY` for none. Under `RATE`, a rate command that physics integrates. |
