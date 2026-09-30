@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.213
+
+* An `Override<T>` output has the stage of `T`, which gives the example's `BoschPCS_v4` a stage. Partial frames convert to `Override<T>`. Chain conversion is defined once, from the value conversions. `bind_outputs` requires the mode fields of the stated groups only. A spliced partial producer delivers its latched frame converted to its partial type.
+
 ## 0.212
 
 * Typing for the new frame types: constant forbidden modes are compile-time errors and computed ones fail output validation, `Lat<IntentFrame>` includes `turn_signal`, `+` branches must already be partial, splices and `fn` bodies accept converting output types, and a pipe input must be a frame type.

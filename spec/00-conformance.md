@@ -1,7 +1,7 @@
 ---
 title: Conformance and terminology
 section: 0
-version: 0.209
+version: 0.213
 status: draft
 normative: true
 depends_on: [04-perception.md, 05-checkpoints.md, 06-lifecycle.md, 07-fmu-packaging.md, 09-abi.md, 10-composition.md, 11-execution.md, 12-grammar.md, 14-diagnostics.md, 15-manifest.md, 17-standard-library.md]
@@ -39,6 +39,7 @@ In normative documents, these words have fixed meanings:
   * **Stage 1 (Intent):** Output `IntentFrame`, `Lon<IntentFrame>`, or `Lat<IntentFrame>`.
   * **Stage 2 (Control):** Output `KinematicControlFrame`, `ActuatorControlFrame`, `Lon<KinematicControlFrame>`, or `Lat<KinematicControlFrame>`. Drivetrain adapters such as `SimpleDrivetrain` are Stage 2.
   * **Stage 3 (Physics):** Output `KinematicState`.
+  * An output `Override<T>` has the stage of `T`.
 * **Arbiter:** A component with an input port `primary` of checkpoint type $T$, an input port `secondary` of type `Override<T>`, and output type $T$. Its stage is the stage of $T$.
 * **Chain:** A `>>` expression of components ([§10](10-composition.md)).
 * **Group:** The actors listed in one `bind [a, b, ...]` statement.
