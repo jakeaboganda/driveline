@@ -1,7 +1,7 @@
 ---
 title: Vehicle parameter tiers
 section: 3
-version: 0.254
+version: 0.257
 status: draft
 normative: true
 depends_on: [02-conventions.md, 04-perception.md, 06-lifecycle.md, 08-steady-state.md, 11-execution.md, 15-manifest.md, 17-standard-library.md, 19-modules.md]
@@ -9,7 +9,7 @@ depends_on: [02-conventions.md, 04-perception.md, 06-lifecycle.md, 08-steady-sta
 
 # 3. Stratified Vehicle Parameter Specification (`vehicle_spec`)
 
-Borrowing the hierarchical model structure of CommonRoad, Driveline defines a four-tier parameter specification attached to the actor entity. Higher tiers strictly require all lower numeric tiers (Tier 2 requires Tiers 0 and 1; Tier 1 requires Tier 0). Tier 3 requires Tier 0.
+Borrowing the hierarchical model structure of CommonRoad, Driveline defines a four-tier parameter specification attached to the actor entity. Higher tiers strictly require all lower numeric tiers (Tier 2 requires Tiers 0 and 1; Tier 1 requires Tier 0). Tier 3 requires Tier 1, and so Tier 0.
 
 A `vehicle_spec` also names the vehicle's object class, `class`, which sensors report for it ([§4.3](04-perception.md)): `CAR` (the default), `TRUCK`, `CYCLIST`, or `MOTORCYCLE`. A bicycle or motorcycle is a vehicle, and Tier 0 describes it as a kinematic bicycle.
 

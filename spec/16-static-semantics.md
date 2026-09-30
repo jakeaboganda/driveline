@@ -1,10 +1,10 @@
 ---
 title: DSL static semantics
 section: 16
-version: 0.256
+version: 0.257
 status: draft
 normative: true
-depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 07-fmu-packaging.md, 09-abi.md, 10-composition.md, 11-execution.md, 12-grammar.md, 15-manifest.md, 17-standard-library.md]
+depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 07-fmu-packaging.md, 09-abi.md, 10-composition.md, 11-execution.md, 12-grammar.md, 15-manifest.md, 17-standard-library.md, 19-modules.md]
 ---
 
 # 16. DSL Static Semantics
@@ -56,7 +56,7 @@ Names resolve from the innermost scope outward. The scopes nest as follows: Prel
 | Scope | Names |
 | :--- | :--- |
 | Prelude | The builtins and constructors of [§17.1](17-standard-library.md). No name declared anywhere in the file, including ports, parameters, `let` names, chains, sensors, priors, and actors, and no imported name may equal one of them. |
-| File | Imported components and sensors, `vehicle_spec` and `object_spec` names, `component` names, and `fn` names. |
+| File | Imported names: components, sensors, and module declarations ([§19.1](19-modules.md)). `vehicle_spec` and `object_spec` names, `component` names, and `fn` names. |
 | Scenario | Actor names. In `terminate when` and `on` conditions only: `sim_time` (`Time`, [§11](11-execution.md)). |
 | Actor body | `sensors.<name>` and `priors.<name>`, each a single two-part name rather than a member access, and the actor's chain names. |
 | `fn` body | The `fn`'s parameter names. |
