@@ -1,7 +1,7 @@
 ---
 title: Checkpoint data contracts
 section: 5
-version: 0.219
+version: 0.220
 status: draft
 normative: true
 depends_on: [02-conventions.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md, 17-standard-library.md]
@@ -29,7 +29,7 @@ Every checkpoint frame carries `timestamp_ns` (`uint64`, simulation time in nano
 * `KinematicControlFrame`: `a_lon_cmd` under `ACCEL`, `jerk_lon_cmd` under `ACCEL` and `JERK`, `steer_angle_cmd` under `ANGLE`, and `steer_rate_cmd` under `ANGLE` and `RATE`.
 * `ActuatorControlFrame`: `throttle` and `brake` under `PEDALS`, `steering_wheel_norm` under `ANGLE`, `steering_torque_nm` under `TORQUE`, and `manual_gear_index` under `DRIVE`.
 
-The listed modes are numbered from 1 in the order shown. The **baseline mode** of each mode field is the one that runtime-authored frames use ([§6.2](06-lifecycle.md)): `VELOCITY_TARGET` for `lon_mode`, `LANE_OFFSET` for `lat_mode`, `OFF` for `turn_signal`, `ACCEL` for `accel_mode`, `ANGLE` for `steer_mode` and `wheel_mode`, `PEDALS` for `pedal_mode`, and every mode of `gear_mode`. A frame that the runtime writes, rather than a component, uses only baseline modes. Every mode enum also has `NONE` ($0$), meaning no request. In `IntentFrame`, `SPATIOTEMPORAL_TRAJECTORY` couples the two motion groups: `num_traj_points` and `trajectory` then govern both, and the other fields of `LON` and `LAT` do not apply.
+The listed modes are numbered from 1 in the order shown. The **baseline mode** of each mode field is the one that runtime-authored frames use ([§6.2](06-lifecycle.md)): `VELOCITY_TARGET` for `lon_mode`, `LANE_OFFSET` for `lat_mode`, `OFF` for `turn_signal`, `ACCEL` for `accel_mode`, `ANGLE` for `steer_mode` and `wheel_mode`, `PEDALS` for `pedal_mode`, and every mode of `gear_mode`. A frame that the runtime builds by the rules of Pass 1 step 5 uses only baseline modes, and the steering that the runtime writes after a tier change uses `ANGLE`. Every mode enum also has `NONE` ($0$), meaning no request. In `IntentFrame`, `SPATIOTEMPORAL_TRAJECTORY` couples the two motion groups: `num_traj_points` and `trajectory` then govern both, and the other fields of `LON` and `LAT` do not apply.
 
 **Partial and Override Frames:** A `Lon<T>` frame ([§10.2](10-composition.md)) states the `LON` group and has every other group `NONE`. A `Lat<T>` frame states `LAT`, and for `IntentFrame` also `SIGNAL`, and has `LON` `NONE`. A stated group is never `NONE`, and neither uses `SPATIOTEMPORAL_TRAJECTORY`. An `Override<T>` frame ([§10.3](10-composition.md)) may have any group `NONE`. Every other frame has no `NONE` group.
 
