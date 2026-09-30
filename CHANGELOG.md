@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.251
+
+* Contact is defined in §11 Phase 4. Every actor pair is tested in ascending order with an exact separating-axis test on the bounding-box footprints, plus a height-interval check so crossing roads at different heights are not contacts. First contact writes a `collision` line with both actors' velocities to the run record. `collision()` stays true after first contact. Contact has no physical effect, and the discrete test's tunneling limit is stated.
+
 ## 0.250
 
 * New §18 Run Record: every run writes a JSON Lines record with a header (versions, scenario SHA-256, seed, timestep), one line per report, and an end line with the outcome. The encoding is fixed so identical runs write identical records, apart from report `detail` text. Report transport is no longer implementation-defined.

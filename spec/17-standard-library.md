@@ -1,7 +1,7 @@
 ---
 title: Standard library
 section: 17
-version: 0.249
+version: 0.251
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 06-lifecycle.md, 08-steady-state.md, 09-abi.md, 11-execution.md, 15-manifest.md, 16-static-semantics.md]
@@ -22,7 +22,7 @@ An input written without a name, such as the pipe input, is the port named `inpu
 | `RouteNodes` | `(nodes: [String]) -> RouteNodes` | At most 64 lane reference strings, each naming a lane of the map. More, or an unknown lane, is a compile-time error ([§2](02-conventions.md)). |
 | `friction_zone` | `(road: String, s_start: Length, s_end: Length, mu: Scalar)` | Inside `environment`. Sets $\mu$ on every lane of `road` for $s_{\text{start}} \le s < s_{\text{end}}$. Where zones overlap, the later statement wins. |
 | `default_friction` | `Scalar` | Inside `environment`. $\mu$ everywhere that no zone covers. The default is `1.0`. |
-| `collision` | `(a: Actor, b: Actor) -> Bool`, where `b` may also be `any` ([§16.4](16-static-semantics.md)) | True if the footprints of `a` and `b` overlap or touch. `any` matches every other actor. A footprint is the $xy$ extent of the Tier 0 bounding box ([§3](03-vehicle-parameters.md)), placed by the committed pose. |
+| `collision` | `(a: Actor, b: Actor) -> Bool`, where `b` may also be `any` ([§16.4](16-static-semantics.md)) | True if `a` and `b` have been in contact ([§11](11-execution.md)) on the current tick or an earlier one. `any` matches every other actor. |
 | `select` | `(c: Bool, a: T, b: T) -> T` | `a` if `c`, else `b`. |
 | `clamp` | `(x: T, lo: T, hi: T) -> T` | $\min(\max(x, lo), hi)$ for a quantity type `T`. |
 | `IntentFrame::decelerate` | `(a_ref: Acceleration, route: RouteNodes, from: KinematicState) -> IntentFrame` | `lon_mode = ACCEL_TARGET` with `a_ref`, and the lateral and signal groups of `follow_route` with the same `route` and `from`. |
