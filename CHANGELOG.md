@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.222
+
+* Splices use the chain conversion, so a partial target needs a partial replacement. `fn` buffer parameters follow the capacity rule. Shadowing is an error in every scope. Type expressions must be well-formed.
+
 ## 0.221
 
 * Inside a type-argument list, `>>` closes two lists, so `Chain<X, Lon<T>>` lexes under the longest-match rule. Partial and override frames are structured types with field access.
