@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.218
+
+* `fn` bodies use only the §16.1 chain conversion, which removes a v0.215 contradiction. `Arbitrate` secondaries accept any chain that converts to `Override<T>`, partial chains included. A constant `select` branch with a forbidden mode is a compile-time error.
+
 ## 0.217
 
 * Only a change between Tier 0 and Tier 1 or 2 is a tier change, which settles the §10/§6 contradiction on Tier 1↔2 splices. Runtime-authored frames use named baseline modes, and manifests must include them, so a runtime-written frame is never an unsupported mode. A latched trajectory intent is rebuilt before conversion to a partial type. Latched frames carry their actor and stamp, and trajectory times are not negative.
