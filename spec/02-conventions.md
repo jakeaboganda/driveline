@@ -1,10 +1,10 @@
 ---
 title: Units and coordinate conventions
 section: 2
-version: 0.258
+version: 0.259
 status: draft
 normative: true
-depends_on: [03-vehicle-parameters.md, 05-checkpoints.md, 06-lifecycle.md]
+depends_on: [03-vehicle-parameters.md, 05-checkpoints.md, 06-lifecycle.md, 17-standard-library.md]
 ---
 
 # 2. Global Units & Coordinate Conventions
@@ -24,4 +24,4 @@ All conforming runtimes and components must enforce the following mathematical c
   * `d` (`float64`, $\text{m}$): Orthogonal lateral offset measured from the **centerline of `lane_id`** (positive to the left in the reference line direction).
   * **Lane Reference String:** Where the DSL writes a lane as a string, the format is `"<road_id>:<lane_id>"`. The text after the last colon is the signed lane index. Junction connecting roads are roads and use their own `road_id`.
 * **Driving Direction & Spawn Heading:** A lane's driving direction comes from the OpenDRIVE road `rule` attribute. For `RHT`, negative lanes drive toward increasing $s$. For `LHT`, positive lanes drive toward increasing $s$. A lane's direction sign $\sigma$ is $+1$ if it drives toward increasing $s$ and $-1$ otherwise. `spawn` starts an actor moving in its lane's driving direction, with the heading of [§6.2](06-lifecycle.md), so the actor's `frenet_s` increases with time only on lanes that drive toward increasing $s$.
-* **Road Grade & Bank Signs:** `road_grade` $\theta_{\text{road}}$ is positive when the road rises in the driving direction of the actor's lane. `road_bank` $\phi_{\text{road}}$ is positive when the road is higher on the left than on the right, relative to that direction. An actor that drives against its lane, such as in reverse, still gets these lane-relative signs. The runtime computes both from the map at the query point: $\theta_{\text{road}} = \sigma \arctan(dz/ds)$ from the OpenDRIVE elevation profile, and $\phi_{\text{road}} = \sigma \cdot$ the OpenDRIVE superelevation, with $\sigma$ of the actor's lane. These are road properties. They are not the vehicle's ISO 8855 Euler angles. On an uphill road, a vehicle facing its lane's driving direction has ISO 8855 pitch $\theta = -\theta_{\text{road}}$ because positive ISO pitch is nose-down, and one facing the other way has $\theta = +\theta_{\text{road}}$.
+* **Road Grade & Bank Signs:** `road_grade` $\theta_{\text{road}}$ is positive when the road rises in the driving direction of the actor's lane. `road_bank` $\phi_{\text{road}}$ is positive when the road is higher on the left than on the right, relative to that direction. An actor that drives against its lane, such as in reverse, still gets these lane-relative signs. The runtime computes both from the map at the query point: $\theta_{\text{road}} = \sigma \arctan(dz/ds)$ from the OpenDRIVE elevation profile, and $\phi_{\text{road}} = \sigma \cdot$ the OpenDRIVE superelevation, with $\sigma$ of the actor's lane. These are road properties. They are not the vehicle's ISO 8855 Euler angles. On an uphill road, a vehicle facing its lane's driving direction has ISO 8855 pitch $\theta = -\theta_{\text{road}}$ because positive ISO pitch is nose-down, and one facing the other way has $\theta = +\theta_{\text{road}}$. The spawn state and the standard physics are planar and report roll and pitch 0 ([§17.5](17-standard-library.md)).

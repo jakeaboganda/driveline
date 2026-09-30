@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.259
+
+* Fold-in review round 4. `DL_STATUS_WARN_FMU_COLD_SPLICE` is reported in the splice window when the instance is created. A static actor in a `bind` or as a splice target is an explicit compile-time error. §2 notes that the spawn state and standard physics are planar. `lead_ttc` refers to any lead track. The lockfile covers files named by imports, lists native manifests but not Mode A manifests inside FMUs, and fixes its member order.
+
 ## 0.258
 
 * Fold-in review round 3. The run record `spec_version` is a string copied from the README. The lockfile lists the target platform's native library, is written only after acceptance, and treats a drive letter as a path. An imported file must be a `ModuleFile`. Mode A declarations in modules must match their manifests. A Tier 3 `uri` is the normalized absolute path. An object's origin is its footprint center, and its steady state and `front_wheel_angle` are stated. `spawn` rejects `v` above an object's `v_max`. §13 says which external files are not shipped.
