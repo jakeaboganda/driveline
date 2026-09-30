@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.240
+
+* Mode B `bind_inputs` pins and `fmu.out` variables must be `Float64`. `fmu.out` output variables are exempt from the unit check, and the scenario converts units explicitly.
+
 ## 0.239
 
 * One defined term, the committed baseline frame, now gives the committed-state substitutions, the reverse rule (`v_ref` $= \max(v_{\text{lon}}, 0)$ and `REVERSE`), and the next-tick stamp. Latched conversion, uncovered types, partial-edge fills, trajectory replacement, and the Arbiter fallback all use it. `Timestamped<T>.t` follows the §4.2 entry time. `InterpMode` and `Mount` constants are numbered. `RouteNodes` `fn` parameters accept per-actor arrays. Mode B parameters are linked to §7.
