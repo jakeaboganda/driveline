@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.230
+
+* `IntentFrame` Arbiters fill the unstated motion group from `own_state` in baseline mode when an override states one group over a trajectory. Numeric errors in constant expressions are compile-time errors, and in conditions they stop the run. `Time` literals must fit 64 bits. Minor fixes: merged frames can't fail validation, steering-patched frames keep their stamp, and runtime-detected errors report an empty instance.
+
 ## 0.229
 
 * Group instances run component-major. Path headings are validated like trajectory headings. Any output feeding an Arbiter `secondary` latches and pre-steps as an override. A native `param` is not settable at the call site. Strings must fit their `char[N]` field. Minor fixes: the radar no-target RCS and merged-frame stamps.

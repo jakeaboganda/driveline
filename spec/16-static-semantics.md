@@ -1,7 +1,7 @@
 ---
 title: DSL static semantics
 section: 16
-version: 0.229
+version: 0.230
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 07-fmu-packaging.md, 09-abi.md, 10-composition.md, 11-execution.md, 12-grammar.md, 15-manifest.md, 17-standard-library.md]
@@ -30,7 +30,7 @@ depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-
 
 ## 16.2 Literals
 
-* A `QuantityLit` has the dimension of its unit, and its value is the binary64 value nearest to its exact decimal value times the unit's SI factor. A `Time` literal is converted from its decimal text to nanoseconds exactly ([§2](02-conventions.md)).
+* A `QuantityLit` has the dimension of its unit, and its value is the binary64 value nearest to its exact decimal value times the unit's SI factor. A `Time` literal is converted from its decimal text to nanoseconds exactly ([§2](02-conventions.md)), and one outside $[-2^{63}, 2^{63} - 1]$ nanoseconds is a compile-time error.
 * The expected type of an expression in a slot with a declared type is that type: a `param` initializer, a call argument (the parameter's or port's type), a `return` value, a `bind_outputs` assignment (the field's type), a record field, and a world statement. Operators and `select` pass it on as described below, a parenthesized expression passes it to its content, and every branch argument of `select` receives it whatever its form.
 * A `QuantityLit` with dimension s has type `Time` where the expected type is `Time`. The expected type of an operand of `+`, `-`, or a comparison is the type of the other operand, so `t - 0.1s` is `Time`. When both operands of `+` or `-` are literals, both take the expected type of the whole expression, and in `*` or `/` with an `Int`, the other operand takes it, so `0.1s + 0.08s` and `0.09s * 2` are `Time` where `Time` is expected. A `Time` literal or unqualified enum constant among the arguments of `select` likewise takes the call's expected type, but the expected type never converts an `Int` argument ([§16.5](16-static-semantics.md)). Where no operand has a type of its own and there is no expected type, as in `0.1s + 0.2s <= 0.3s`, the literals are quantities. `clamp` never takes `Time`. Elsewhere a `QuantityLit` of dimension s is a quantity. A `Time` literal must be a whole number of nanoseconds.
 * An `IntLit` or `HexLit` has type `Int`, and one above $2^{63} - 1$ is a compile-time error. Where a quantity is expected, an `Int` converts to a dimensionless quantity, except among the arguments of `select` and `clamp`, which follow [§16.5](16-static-semantics.md).
@@ -40,7 +40,7 @@ depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-
 
 * A postfix `.name`, `(...)`, or `[...]` that no rule of [§16](16-static-semantics.md) types is a compile-time error, in every expression.
 * `+` and `-` accept two `Time` values, which give a `Time`, two quantities of the same dimension, or the `Int` cases below. A `Time` and a quantity of dimension s is a compile-time error, because the result would need rounding to nanoseconds. A literal of dimension s takes `Time` from the other operand ([§16.2](16-static-semantics.md)). `*` and `/` multiply and divide dimensions. `Time * Int`, `Int * Time`, and `Time / Int` are `Time`. An `Int` operand of `*` or `/` whose other operand is a quantity converts to a dimensionless quantity. When `Time` meets any other operand of `*` or `/`, it converts to a quantity in seconds, so `v * dt` is a `Length`, and `Time / Time` is a dimensionless quantity.
-* `+`, `-`, `*`, and `/` on two `Int` operands give an `Int`. `/` on `Int` or `Time` truncates toward zero, and a zero divisor or an overflow makes the step return `DL_STATUS_ERR_NUMERIC`.
+* `+`, `-`, `*`, and `/` on two `Int` operands give an `Int`. `/` on `Int` or `Time` truncates toward zero, and a zero divisor or an overflow makes the step return `DL_STATUS_ERR_NUMERIC`. In a constant expression, a zero divisor, an `Int` or `Time` overflow, or a non-finite binary64 result is a compile-time error. In an `on` or `terminate when` condition, it stops the run with `DL_STATUS_ERR_NUMERIC` in Phase 4, reported against no instance.
 * Comparisons require two `Int` operands or operands of the same dimension. An `Int` operand of `+`, `-`, or a comparison whose other operand is a quantity converts to a dimensionless quantity. When a `Time` meets a quantity of dimension s, the `Time` converts to seconds.
 * `-x` requires `x` to be an `Int`, a `Time`, or a quantity, has the type of `x`, and `x` gets the expected type of `-x`, so `-0.1s` is `Time` where `Time` is expected.
 * Comparisons have type `Bool`. `and`, `or`, and `not` take and return `Bool`. `==` and `!=` also accept `Int`, `Bool`, `String`, and enum operands of the same type.
