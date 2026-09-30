@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.253
+
+* Static actors: the new builtin `place` creates an actor at rest at a lane position, facing the lane's driving direction, with no sensors, priors, or components. It shares the actor id space, sensors see it, and it takes part in contact. Its state never changes. `object_spec` class `STATIC` (cones, barriers) is allowed only with `place`, and a parked vehicle is a placed `vehicle_spec`.
+
 ## 0.252
 
 * Object actors: new `object_spec` (class PEDESTRIAN, ANIMAL, or UNKNOWN, a box, and `v_max`/`a_max`) in §3.2. An object is a Tier 0 vehicle with wheelbase 0, so contact, mounts, and tracks apply unchanged. Its origin is the box center. It must use object physics, per the new manifest `entity` member, and its chains carry no control frames. New std `PointMassWalker` tracks VELOCITY_TARGET with stop targets, and LANE_OFFSET or POLYLINE_PATH through StanleyLat's reference path, within the object's limits. `dl_object_params_t` in `dl_vehicle_spec_t` (mask bit 4). The spec type is `EntitySpec`.

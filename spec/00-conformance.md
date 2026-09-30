@@ -1,7 +1,7 @@
 ---
 title: Conformance and terminology
 section: 0
-version: 0.252
+version: 0.253
 status: draft
 normative: true
 depends_on: [02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 06-lifecycle.md, 07-fmu-packaging.md, 09-abi.md, 10-composition.md, 11-execution.md, 12-grammar.md, 14-diagnostics.md, 15-manifest.md, 16-static-semantics.md, 17-standard-library.md, 18-run-record.md]
@@ -31,7 +31,7 @@ In normative documents, these words have fixed meanings:
 
 * **World:** The ground truth that the runtime owns: the map, the friction field, and every actor's `KinematicState`. $X(t)$ is the World state at time $t$.
 * **World-truth types:** `OpenDriveMap` (the type of `map`) and `FrictionField` (the type of `environment`). They appear only in scenario world statements. Passing a value of a world-truth type to a component port is a compile-time error.
-* **Actor:** A vehicle or object that the scenario spawns. Each actor has a unique `actor_id`, a `vehicle_spec` or `object_spec` ([§3](03-vehicle-parameters.md)), sensors, priors, and exactly one physics component.
+* **Actor:** A vehicle or object that the scenario spawns. Each actor has a unique `actor_id`, a `vehicle_spec` or `object_spec` ([§3](03-vehicle-parameters.md)), sensors, priors, and exactly one physics component, except a static actor, which `place` creates and which has no sensors, priors, or components ([§17.1](17-standard-library.md)).
 * **Tick:** One step of the base clock ([§11](11-execution.md)). Tick $k$ starts at $t = k \cdot \Delta t_{\text{base}}$.
 * **Runtime:** The program that runs a compiled scenario. FMI documents call it the importer or master. This specification says runtime.
 * **Component:** A unit with typed input ports and one typed output. Its stage follows from its output type:

@@ -1,7 +1,7 @@
 ---
 title: Vehicle parameter tiers
 section: 3
-version: 0.252
+version: 0.253
 status: draft
 normative: true
 depends_on: [02-conventions.md, 04-perception.md, 06-lifecycle.md, 08-steady-state.md, 11-execution.md, 15-manifest.md, 17-standard-library.md]
@@ -37,7 +37,7 @@ Tiers 0–2 describe a two-axle vehicle with a steered front axle and four wheel
 
 ## 3.2 Object Specification (`object_spec`)
 
-An `object_spec` describes an actor that is not a vehicle, such as a pedestrian or an animal. It has a `class` (`PEDESTRIAN`, `ANIMAL`, or `UNKNOWN`), a box of `length`, `width`, and `height`, a speed limit `v_max`, and an acceleration limit `a_max`, each value above zero.
+An `object_spec` describes an actor that is not a vehicle, such as a pedestrian or an animal. It has a `class` (`PEDESTRIAN`, `ANIMAL`, `UNKNOWN`, or `STATIC` for a fixed object such as a cone or barrier, which only `place` may use, [§17.1](17-standard-library.md)), a box of `length`, `width`, and `height`, a speed limit `v_max`, and an acceleration limit `a_max`, each value above zero.
 
 1. **Geometry:** An object is a Tier 0 vehicle with $L = 0$, $o_f = o_r = $ `length` $/ 2$, $L_{\text{bbox}} = $ `length`, $W_{\text{bbox}} = $ `width`, $H_{\text{bbox}} = $ `height`, and $\delta_{\max} = \dot{\delta}_{\max} = i_s = 0$. Every rule that uses Tier 0 geometry, such as contact ([§11](11-execution.md)) and sensor mounts and tracks ([§17.2](17-standard-library.md)), applies with these values. Its reference origin is the center of the box ([§2](02-conventions.md)). Where a rule divides by $\delta_{\max}$, the quotient is 0 for an object. An object has no Tier 1, 2, or 3.
 2. **Pipeline:** An object actor's physics component must be an object physics component, and a vehicle actor's must be a vehicle physics component ([§15.3](15-manifest.md) `entity`). An object actor's chains carry no `KinematicControlFrame` or `ActuatorControlFrame`. A violation is a compile-time error.
