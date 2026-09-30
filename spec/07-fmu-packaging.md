@@ -1,7 +1,7 @@
 ---
 title: FMU packaging
 section: 7
-version: 0.209
+version: 0.210
 status: draft
 normative: true
 depends_on: [05-checkpoints.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md, 16-static-semantics.md]
@@ -12,15 +12,15 @@ depends_on: [05-checkpoints.md, 06-lifecycle.md, 09-abi.md, 10-composition.md, 1
 A `component ... from_fmu("...")` declaration uses one of two modes. The compiler picks the mode from the declaration. A declaration with `bind_inputs` or `bind_outputs` blocks is Mode B. A declaration without them is Mode A, and its body must be `;` ([§16.5](16-static-semantics.md)).
 
 * **Mode A (Driveline-Aware FMU):** The FMU implements the FMI 3.0 layered standard `org.driveline.dcm`. It ships a manifest at `extra/org.driveline.dcm/manifest.json` in the format of [§15](15-manifest.md). A Mode A declaration whose FMU has no manifest is a compile-time error.
-  * Each checkpoint port is an `fmi3Binary` variable with MIME type `application/x-driveline.<checkpoint-type>;version=0.16`. The value is the [§9](09-abi.md) struct layout in the byte order below. An `output` value whose length is not the struct's size is `DL_STATUS_ERR_FMU`, and every input value the runtime sets has exactly its struct's size, or $16 + \text{count} \cdot$ `entry_size` bytes for a `SliceBuffer`.
-  * Each prior port, such as `RouteNodes`, is an `fmi3Binary` variable with MIME type `application/x-driveline.<prior-type>;version=0.16`, holding its struct (`dl_route_t` for `RouteNodes`). The runtime sets it in initialization mode.
+  * Each checkpoint port is an `fmi3Binary` variable with MIME type `application/x-driveline.<checkpoint-type>;version=0.17`. The value is the [§9](09-abi.md) struct layout in the byte order below. An `output` value whose length is not the struct's size is `DL_STATUS_ERR_FMU`, and every input value the runtime sets has exactly its struct's size, or $16 + \text{count} \cdot$ `entry_size` bytes for a `SliceBuffer`.
+  * Each prior port, such as `RouteNodes`, is an `fmi3Binary` variable with MIME type `application/x-driveline.<prior-type>;version=0.17`, holding its struct (`dl_route_t` for `RouteNodes`). The runtime sets it in initialization mode.
   * Every `fmi3Binary` value uses little-endian byte order and IEEE 754 binary64 for `double`, whatever the host.
   * Times inside a frame, such as `trajectory` times, are absolute simulation times ([§5.1](05-checkpoints.md)), even though the outputs of `fmi3DoStep` describe the FMU at $t + h$ ([§7.1](07-fmu-packaging.md)).
-  * Each `SliceBuffer` port is an `fmi3Binary` variable with MIME type `application/x-driveline.slice-buffer.<slice-type>;version=0.16`. The value is a `dl_slice_buffer_header_t` followed by `count` entries, newest first. Each entry is a `uint64_t t_ns` followed by the slice struct.
-  * Initialization uses the `fmi3Binary` input `dl_init_context` (MIME type `application/x-driveline.init-context;version=0.16`), set in initialization mode ([§7.2](07-fmu-packaging.md)). `is_warm_start` tells cold init from warm start.
+  * Each `SliceBuffer` port is an `fmi3Binary` variable with MIME type `application/x-driveline.slice-buffer.<slice-type>;version=0.17`. The value is a `dl_slice_buffer_header_t` followed by `count` entries, newest first. Each entry is a `uint64_t t_ns` followed by the slice struct.
+  * Initialization uses the `fmi3Binary` input `dl_init_context` (MIME type `application/x-driveline.init-context;version=0.17`), set in initialization mode ([§7.2](07-fmu-packaging.md)). `is_warm_start` tells cold init from warm start.
   * **Variable names:** Each input port is the FMI variable with the port's manifest name and causality `input`. The output is the single variable named `output` with causality `output`. `dl_init_context` and `own_state` are inputs with those names, and a port named `output`, `own_state`, or `dl_init_context` is a compile-time error. A missing variable, or a variable with another type or MIME type, is a compile-time error.
   * Component parameters are FMI parameters with the same names.
-  * The actor's own state ([§9.1](09-abi.md)) is the `fmi3Binary` input `own_state` with MIME type `application/x-driveline.kinematic-state;version=0.16`. The runtime sets it on every step.
+  * The actor's own state ([§9.1](09-abi.md)) is the `fmi3Binary` input `own_state` with MIME type `application/x-driveline.kinematic-state;version=0.17`. The runtime sets it on every step.
   * A Mode A manifest's `cardinality` must be `OneToOne`. Any other value is a compile-time error.
   * **MIME subtype names:** `<checkpoint-type>`, `<slice-type>`, and `<prior-type>` are the type names written in lowercase with a hyphen before each inner capital: `IntentFrame` is `intent-frame`, `KinematicControlFrame` is `kinematic-control-frame`, and `RadarSlice` is `radar-slice`. A `Lon<T>`, `Lat<T>`, or `Override<T>` port or output uses the MIME type and full struct of `T`, with each unstated group `NONE` and its fields zero.
 * **Mode B (Scalar-Pin FMU):** A legacy FMU with scalar `Float64` pins. `bind_inputs` maps expressions over the `SliceBuffer` ports and `own_state` onto input pins. `bind_outputs` maps output pins onto a checkpoint frame. A splice starts a new instance that initializes at $t_{\text{first}}$ from `bind_inputs` alone, with no init context ([§7.2](07-fmu-packaging.md)), and the runtime reports `DL_STATUS_WARN_FMU_COLD_SPLICE`.
@@ -39,7 +39,7 @@ In both modes:
 
 Both modes use FMI 3.0 Co-Simulation. On each tick $t$ where the component is scheduled, with period $h = k_{\text{div}} \cdot \Delta t_{\text{base}}$ ([§11](11-execution.md)), the runtime does three things in order:
 
-1. It sets the inputs for tick $t$. Before that, for a Mode A FMU, it checks the modes of each `IntentFrame` input against the manifest's `lon_modes` and `lat_modes` by the rule of [§5](05-checkpoints.md). A failed check is reported as `DL_STATUS_ERR_UNSUPPORTED_MODE`, as a native consumer would return it, and `fmi3DoStep` is not called.
+1. It sets the inputs for tick $t$. Before that, for a Mode A FMU, it checks the modes of each checkpoint input against the manifest's `modes` by the rule of [§5](05-checkpoints.md). A failed check is reported as `DL_STATUS_ERR_UNSUPPORTED_MODE`, as a native consumer would return it, and `fmi3DoStep` is not called.
 2. It calls `fmi3DoStep` with the `currentCommunicationPoint` of tick $t$ by the Times rule of [§7](07-fmu-packaging.md) and `communicationStepSize` $= h$.
 3. It reads the outputs and uses them as the component's output for tick $t$. An FMI return of `fmi3Warning` counts as `fmi3OK`. Any worse return, or a step that sets `terminateSimulation` or `earlyReturn`, is `DL_STATUS_ERR_FMU` ([§14](14-diagnostics.md)). The runtime instantiates every FMU with `eventModeUsed` and `earlyReturnAllowed` false and enters initialization with no tolerance and no stop time.
 
@@ -59,5 +59,5 @@ The runtime drives an FMU through the [§6](06-lifecycle.md) states with these F
 | `dl_enter_warm_start` (splice) | Initialize at $t_{\text{first}}$, the earliest tick time $t' \ge t$ at which the component is scheduled ([§11](11-execution.md)), where $t$ is the tick after the window, so its first `fmi3DoStep` starts at `startTime`. The context's `sim_time_ns` stays $t$, the time of the committed state it describes ([§6.2.4](06-lifecycle.md)). The new instance has already been instantiated and given its parameters, and the outgoing instance is terminated and freed ([§10](10-composition.md)). |
 | `dl_enter_warm_start` (re-trim, Mode A only) | `fmi3Reset`, set the parameters again, and initialize at $t_{\text{first}}$, as for a splice, with the re-trim context ([§6.2.4](06-lifecycle.md)). |
 | `dl_do_step` | `fmi3DoStep` as [§7.1](07-fmu-packaging.md) describes. |
-| `dl_terminate` | `fmi3Terminate` if the FMU is in FMI Step Mode. Otherwise none, and teardown goes on to `fmi3FreeInstance`. |
+| `dl_terminate` | `fmi3Terminate` if the FMU is in FMI Step Mode. Otherwise no FMI call, and teardown goes on to `fmi3FreeInstance`. |
 | `dl_free_instance` | `fmi3FreeInstance`. |

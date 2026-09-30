@@ -9,7 +9,7 @@ extern "C" {
 
 #pragma pack(push, 8)
 
-#define DL_ABI_VERSION_0_16 0x00001000U
+#define DL_ABI_VERSION_0_17 0x00001100U
 
 typedef enum {
     DL_STATUS_OK                    = 0,
@@ -178,8 +178,8 @@ typedef struct {
 typedef struct {
     uint64_t actor_id;
     uint64_t timestamp_ns;                       /* [ns] */
-    uint8_t  lon_mode;                           /* 0:NONE, 1:ACCEL, 2:VELOCITY, 3:GAP, 4:TRAJECTORY */
-    uint8_t  lat_mode;                           /* 0:NONE, 1:LANE_OFFSET, 2:POLYLINE, 3:TRAJECTORY */
+    uint8_t  lon_mode;                           /* LonMode: 0:NONE, 1:ACCEL_TARGET, 2:VELOCITY_TARGET, 3:GAP_PROFILE, 4:SPATIOTEMPORAL_TRAJECTORY */
+    uint8_t  lat_mode;                           /* LatMode: 0:NONE, 1:LANE_OFFSET, 2:POLYLINE_PATH, 3:SPATIOTEMPORAL_TRAJECTORY */
     uint8_t  turn_signal;                        /* 0:NONE, 1:OFF, 2:LEFT, 3:RIGHT, 4:HAZARD */
     uint8_t  _pad[5];
     double   a_ref, v_ref;                       /* [m/s^2], [m/s] */
@@ -256,7 +256,7 @@ typedef struct {
 } dl_powertrain_state_t;
 
 typedef struct {
-    uint32_t abi_version;                        /* Must equal DL_ABI_VERSION_0_16 */
+    uint32_t abi_version;                        /* Must equal DL_ABI_VERSION_0_17 */
     uint32_t struct_size;                        /* sizeof(dl_init_context_t) */
     uint64_t sim_time_ns;                        /* [ns] */
     uint8_t  is_warm_start;                      /* 0:ColdInit, 1:WarmStart */

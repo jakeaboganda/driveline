@@ -1,7 +1,7 @@
 ---
 title: Standard library
 section: 17
-version: 0.209
+version: 0.210
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 06-lifecycle.md, 08-steady-state.md, 09-abi.md, 11-execution.md, 15-manifest.md, 16-static-semantics.md]
@@ -66,7 +66,7 @@ where $x$ and $v_x$ are the track's `rel_x` and `rel_vx`. In both cases, `stop_a
 
 ## 17.4 Stage 2 Components
 
-**Modes:** Each component lists the modes it implements. Any other mode of its input returns `DL_STATUS_ERR_UNSUPPORTED_MODE` ([§5](05-checkpoints.md)). Every output below states its groups in full, with each no-bound field `+INFINITY`.
+**Modes:** Each component lists the modes it implements, which are its manifest's `modes` ([§15](15-manifest.md)). Any other mode of a listed field returns `DL_STATUS_ERR_UNSUPPORTED_MODE` ([§5](05-checkpoints.md)), and a mode field that a component does not list is ignored. Every output below states its groups in full, with each no-bound field `+INFINITY`.
 
 All Stage 2 components are `OneToOne`.
 

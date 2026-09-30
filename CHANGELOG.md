@@ -6,6 +6,11 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.210
+
+* Completed the group model. §5 lists which fields each mode uses. Stated groups of partial frames are never `NONE`. Past trajectory points are valid, so forwarding arbiters no longer fail. Merged frames carry their tick and are validated. Manifest `modes` covers every mode field, replacing `lon_modes`/`lat_modes`, and FMUs are pre-checked on every checkpoint input. A Mode B FMU's held output gets the tier-change steering. Source-chain typing covers `Arbitrate`, named-chain, and `fn` heads. Header enum comments use the full mode names.
+* ABI version 0.17.
+
 ## 0.209
 
 * Replaced `valid_mask` and the runtime hold rule with required groups. Every command frame states every group through a mode enum (`NONE` = 0), and fields with a no-bound meaning take `+INFINITY`. `NONE` is allowed only in `Override<T>`, the new type of an Arbiter's `secondary`, and in the unstated groups of `Lon<T>`/`Lat<T>`. Trajectory times are absolute `int64` nanoseconds, and `s_stop` becomes `stop_at_odometer` against a runtime-written `KinematicState.odometer_m`, so delivery is a plain copy with no rebase. The runtime keeps no per-connection state. A tier change patches the steering of held outputs and latched frames. `+` branches no longer need equal rates. `BrakeOverrideArbiter` takes each group from the secondary unless it is `NONE`. The example's `BoschPCS_v4` outputs `Override<ActuatorControlFrame>`, and `IntentFrame::decelerate` states the lateral target. `check.py` rejects the retired vocabulary.
