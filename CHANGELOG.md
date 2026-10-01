@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.268
+
+* Fold-in review round 13. §0.2 makes every stated restriction on scenario text, declarations, or manifests a compile-time rule, however it is worded. A named argument that is neither a port nor a call-site parameter is a compile-time error. Other string escape sequences and raw control characters are lexical errors, and `//` inside a string is not a comment. Init-context wheel `surface_mu` uses the SurfaceContactSensor corner points. The run-record identity claim exempts native library entries across platforms, and only end-of-run teardown reports move to the end. The Tier 3 `uri` absolute base is defined. Path-case matching exempts `.`, `..`, and drive letters.
+
 ## 0.267
 
 * Fold-in review round 12. `DL_STATUS_WARN_FMU_COLD_SPLICE` is reported right after a successful `dl_instantiate` and before `dl_set_parameters`, and never when instantiation fails. A native component's identity is its normalized manifest path. `collision` between two static actors is always false.

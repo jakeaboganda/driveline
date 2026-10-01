@@ -1,7 +1,7 @@
 ---
 title: Run record
 section: 18
-version: 0.262
+version: 0.268
 status: draft
 normative: true
 depends_on: [11-execution.md, 14-diagnostics.md, 19-modules.md]
@@ -9,7 +9,7 @@ depends_on: [11-execution.md, 14-diagnostics.md, 19-modules.md]
 
 # 18. Run Record
 
-Every run writes one run record: the header that identifies the run, the reports of [§14](14-diagnostics.md), the events of the run, and its outcome. Where the runtime writes the record is implementation-defined. Two runs that [§11](11-execution.md) requires to be bit-identical write records that differ only in the `detail` text of reports.
+Every run writes one run record: the header that identifies the run, the reports of [§14](14-diagnostics.md), the events of the run, and its outcome. Where the runtime writes the record is implementation-defined. Two runs that [§11](11-execution.md) requires to be bit-identical write records that differ only in the `detail` text of reports, and, across platforms, in the native library entries of the header's `files` ([§19.2](19-modules.md)).
 
 ## 18.1 Encoding
 
@@ -22,4 +22,4 @@ The record is UTF-8 text in JSON Lines form. Each line is one JSON object follow
 3. **Collision:** One line per pair of actors on the first tick that they are in contact ([§11](11-execution.md)). Members: `record` (`"collision"`), `tick` and `sim_time_ns` of the committed state, `actor_a` and `actor_b` (the two `actor_id`s, ascending), and `vx_a`, `vy_a`, `vx_b`, `vy_b`, the World-frame horizontal velocity of each actor's reference origin, $(v_{\text{lon}}\cos\psi - v_{\text{lat}}\sin\psi,\ v_{\text{lon}}\sin\psi + v_{\text{lat}}\cos\psi)$. Lines of one tick follow the pair order of [§11](11-execution.md).
 4. **End:** The last line. Members: `record` (`"end"`), `outcome` (`"success"` or `"failure"`), `tick`, and `sim_time_ns` of the last committed state, or 0 and 0 for a run that fails during cold init.
 
-The committed state after Phase 4 of tick $k$ has tick $k + 1$ and time $(k + 1)\,\Delta t_{\text{base\_ns}}$. So a collision line carries the committed state's tick, while a report from the same Phase 4 carries the executing tick $k$ ([§14.2](14-diagnostics.md)), and ticks need not increase from line to line. Lines between the header and the end line appear in the order that sequential execution in the order of [§11](11-execution.md) produces them. Teardown reports come after every other report and before the end line.
+The committed state after Phase 4 of tick $k$ has tick $k + 1$ and time $(k + 1)\,\Delta t_{\text{base\_ns}}$. So a collision line carries the committed state's tick, while a report from the same Phase 4 carries the executing tick $k$ ([§14.2](14-diagnostics.md)), and ticks need not increase from line to line. Lines between the header and the end line appear in the order that sequential execution in the order of [§11](11-execution.md) produces them. Reports of the end-of-run teardown ([§14.2](14-diagnostics.md) item 3) come after every other report and before the end line. Reports of a splice window's teardown calls stay in sequence.
