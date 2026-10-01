@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.266
+
+* Fold-in review round 11. Warm-start powertrain gear state follows the latched ActuatorControlFrame when one flows, with defined gear index and engine speed for each gear mode. The Gear ratio rule uses |v|. A `dl_terminate` error in a splice window stops the run, and the end-of-run teardown visits the leftover outgoing instances first. Lockfile paths are derived purely lexically, and absolute source paths are recorded as normalized absolute paths. Repeated `std` or native imports add one name. Two static actors are never tested for contact. The Tier 3 `uri` length limit applies after resolution.
+
 ## 0.265
 
 * Fold-in review round 10. A `with` body on a placed actor is an explicit compile-time error. The byte-exact case rule and the `/` separator apply to every path in a file, not only imports.

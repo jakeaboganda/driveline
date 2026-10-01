@@ -1,7 +1,7 @@
 ---
 title: Standard library
 section: 17
-version: 0.264
+version: 0.266
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 06-lifecycle.md, 08-steady-state.md, 09-abi.md, 11-execution.md, 15-manifest.md, 16-static-semantics.md, 19-modules.md]
@@ -84,7 +84,7 @@ $$\delta = \operatorname{clamp}\!\left(\arctan(L \kappa_p) + \psi_e + \arctan\!\
 Output `ANGLE` with `steer_angle_cmd` $= \delta$. On a path that the rear axle already follows, $e = 0$ and $\psi_e = 0$, so the output is $\arctan(L\kappa_p)$, which is $\delta_{\text{KS}}$ ([§8](08-steady-state.md)). It does not reproduce $\delta_{\text{ss}}$, so with Tier 1 or 2 physics, at cold init or after a promotion, the trim check reports `DL_STATUS_WARN_TRIM_MISMATCH` ([§6.2](06-lifecycle.md)) when $\delta_{\text{ss}}$ and $\delta_{\text{KS}}$ differ by more than its tolerance. A reference path with no points, or a failed `sample_lane_path` call, is `DL_STATUS_ERR_INVALID_ARG`.
 
 **`SimpleDrivetrain`:** Tier 2. Input `ActuatorControlFrame`. Output `KinematicControlFrame`. No parameters. It implements `PEDALS`, the `ANGLE` wheel mode, and every gear mode. `TORQUE` returns `DL_STATUS_ERR_UNSUPPORTED_MODE`. With $v = $ `own.v_lon`:
-* **Gear ratio $i$:** `DRIVE` with `manual_gear_index` $= 0$ uses the largest gear index $g$ with $(v / R_{\text{eff}})\, i_g\, i_{\text{fd}} \ge 157.08\text{ rad/s}$, or gear 1 if none qualifies. `DRIVE` with an index $n$ from 1 to `num_gears` uses gear $n$. Any other index makes the frame invalid by [§5.2](05-checkpoints.md), so it never reaches `SimpleDrivetrain`. `REVERSE` uses $-i_R$. `NEUTRAL` and `PARK` use no drive force.
+* **Gear ratio $i$:** `DRIVE` with `manual_gear_index` $= 0$ uses the largest gear index $g$ with $(|v| / R_{\text{eff}})\, i_g\, i_{\text{fd}} \ge 157.08\text{ rad/s}$, or gear 1 if none qualifies. `DRIVE` with an index $n$ from 1 to `num_gears` uses gear $n$. Any other index makes the frame invalid by [§5.2](05-checkpoints.md), so it never reaches `SimpleDrivetrain`. `REVERSE` uses $-i_R$. `NEUTRAL` and `PARK` use no drive force.
 * **Forces:** $F_{\text{drive}} = \text{throttle} \cdot T_{\text{drive,max}}\, i\, i_{\text{fd}} / R_{\text{eff}}$. $F_{\text{brake}} = \text{brake} \cdot T_{\text{brake,max}} / R_{\text{eff}}$, or $T_{\text{brake,max}} / R_{\text{eff}}$ in `PARK`. $F_{\text{res}} = \tfrac{1}{2}\rho_{\text{air}} C_d A_f v |v| + C_{rr}\, m\, g \operatorname{sgn}(v)$, with $\operatorname{sgn}(0) = 0$ here and in every `SimpleDrivetrain` formula.
 * **Output:** $a = (F_{\text{drive}} - F_{\text{res}} - F_{\text{brake}} \operatorname{sgn}(v)) / m + (\text{own.v\_lat} + l_r\, \text{own.yaw\_rate}) \cdot \text{own.yaw\_rate}$, where the last term, the CG lateral velocity times the yaw rate, turns the net-force acceleration of the CG into $\dot{v}_{\text{lon}}$ ([§5.3](05-checkpoints.md)). If $|v| < 0.01\text{ m/s}$, the brake and rolling resistance instead oppose the drive force. With $F_{\text{hold}} = F_{\text{brake}} + C_{rr}\, m\, g$: if $|F_{\text{drive}}| > F_{\text{hold}}$, then $a = \operatorname{sgn}(F_{\text{drive}}) (|F_{\text{drive}}| - F_{\text{hold}}) / m$. Otherwise $a = -\operatorname{sgn}(v) \min(|v| / dt,\ (F_{\text{hold}} - |F_{\text{drive}}|) / m)$, so the actor comes to rest instead of creeping. Output `ACCEL` with `a_lon_cmd` $= a$, and `ANGLE` with `steer_angle_cmd` $= $ `steering_wheel_norm` $\cdot\, \delta_{\max}$.
 
