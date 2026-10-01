@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.267
+
+* Fold-in review round 12. `DL_STATUS_WARN_FMU_COLD_SPLICE` is reported right after a successful `dl_instantiate` and before `dl_set_parameters`, and never when instantiation fails. A native component's identity is its normalized manifest path. `collision` between two static actors is always false.
+
 ## 0.266
 
 * Fold-in review round 11. Warm-start powertrain gear state follows the latched ActuatorControlFrame when one flows, with defined gear index and engine speed for each gear mode. The Gear ratio rule uses |v|. A `dl_terminate` error in a splice window stops the run, and the end-of-run teardown visits the leftover outgoing instances first. Lockfile paths are derived purely lexically, and absolute source paths are recorded as normalized absolute paths. Repeated `std` or native imports add one name. Two static actors are never tested for contact. The Tier 3 `uri` length limit applies after resolution.
