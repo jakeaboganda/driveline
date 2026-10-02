@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.277
+
+* Fold-in review round 19. The gear frame is searched in the graph before the window's first splice, with nearest meaning fewest edges and ties to the last component in Phase 2 order. Literal-operand typing applies only to seconds literals where `Time` is expected, and other literals keep their own type. `RouteNodes(...)` calls may appear only as `priors` entries. The promotion yaw names which γ each step uses.
+
 ## 0.276
 
 * §14.2 says the spawn state at tick 0 is the last committed state before the first Phase 4, and that replacement instances created by a failed splice window belong to the current graph for teardown.
