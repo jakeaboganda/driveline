@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.273
+
+* Fold-in review round 16. The warm-start gear state comes from one defined gear frame: the last ActuatorControlFrame that reached the ActuatorControlFrame input of the component nearest physics, Override and Arbiter-secondary inputs excluded, so its gear group is never NONE. The Mode B re-trim warning has a fixed place in the report order. The cold-init friction lookup uses ψ₀ and the spawn road.
+
 ## 0.272
 
 * Fold-in review round 15. The warm-start gear state reads the last ActuatorControlFrame delivered before the window on an edge leading to physics, and falls back to DRIVE/REVERSE when there is none. `frenet_to_world` Z includes the superelevation term, ignores lateral shape, and is listed as an open item. Import existence uses the byte-exact entry rule. Sensor and prior entry names are compared bare. The Tier 0 KCF-only rule applies to vehicle physics. Lockfile entries are absolute whenever the lexical join is absolute.
