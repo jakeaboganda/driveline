@@ -1,7 +1,7 @@
 ---
 title: Component lifecycle
 section: 6
-version: 0.270
+version: 0.271
 status: draft
 normative: true
 depends_on: [02-conventions.md, 05-checkpoints.md, 07-fmu-packaging.md, 08-steady-state.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md, 17-standard-library.md]
