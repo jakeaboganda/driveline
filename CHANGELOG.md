@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.270
+
+* Fold-in review round 14. The warm-start powertrain gear comes from the last ActuatorControlFrame the actor's physics chain consumed, the same for every context of that actor. KS physics gets zero slip angles at warm start as at cold init. Actor ids may be `IntLit` or `HexLit` and are compared by value. Detection defines atan2(0, 0) = 0. `collision(a, a)` is a compile-time error. Object physics manifests require `required_tier` 0.
+
 ## 0.269
 
 * After a failed `dl_terminate` in a splice window, the end-of-run teardown does not call `dl_terminate` on that instance again.

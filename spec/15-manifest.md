@@ -1,7 +1,7 @@
 ---
 title: Component manifests and packaging
 section: 15
-version: 0.260
+version: 0.270
 status: draft
 normative: true
 depends_on: [00-conformance.md, 03-vehicle-parameters.md, 05-checkpoints.md, 07-fmu-packaging.md, 10-composition.md, 12-grammar.md, 16-static-semantics.md, 17-standard-library.md, 19-modules.md]
@@ -42,7 +42,7 @@ A manifest is one UTF-8 JSON object with these members. Every member is required
 | `stage` | integer | `1`, `2`, or `3` ([§0](00-conformance.md)). It must agree with `output`. |
 | `cardinality` | string | `OneToOne`, `OneToMany`, or `ManyToMany` ([§10](10-composition.md)). |
 | `required_tier` | integer | `0`, `1`, or `2` ([§3.1](03-vehicle-parameters.md)). |
-| `entity` | string | `"vehicle"` or `"object"`: the kind of actor that a Stage 3 component simulates ([§3.2](03-vehicle-parameters.md)). Optional, and allowed only in a Stage 3 manifest. The default is `"vehicle"`. |
+| `entity` | string | `"vehicle"` or `"object"`: the kind of actor that a Stage 3 component simulates ([§3.2](03-vehicle-parameters.md)). Optional, and allowed only in a Stage 3 manifest. The default is `"vehicle"`. `"object"` requires `required_tier` 0. |
 | `inputs` | array | Input ports in declaration order. Each is `{ "name": string, "type": string }`. `type` uses the `TypeSpec` syntax of [§12](12-grammar.md), for example `"SliceBuffer<RadarSlice, 8>"` or `"IntentFrame"`. |
 | `output` | string | Output type in `TypeSpec` syntax. |
 | `parameters` | array | Each is `{ "name": string, "type": "f64" \| "i64" \| "Time" \| "Bool" \| an enum name of [§16.1](16-static-semantics.md), "unit": string (`"1"` for `i64`, `Bool`, and enum types, `"s"` for `Time`, and any other value a compile-time error for those types), "default": number or null }`. `unit` is a `UnitExpr` of [§12](12-grammar.md), or `"1"` for dimensionless. A `null` default makes the parameter mandatory at the call site. A `default` is written in `unit`, with `Time` in seconds, `Bool` as 0 or 1, and an enum as its numeric value, and the compiler converts it like a call-site argument, from the JSON number's decimal text exactly. A `Time` default that is not a whole number of nanoseconds is a compile-time error. |
