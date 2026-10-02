@@ -1,7 +1,7 @@
 ---
 title: DSL static semantics
 section: 16
-version: 0.274
+version: 0.275
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 07-fmu-packaging.md, 09-abi.md, 10-composition.md, 11-execution.md, 12-grammar.md, 15-manifest.md, 17-standard-library.md, 19-modules.md]
@@ -52,14 +52,14 @@ depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-
 
 ## 16.4 Names and Scopes
 
-Names resolve from the innermost scope outward. The scopes nest as follows: Prelude encloses File; File encloses Scenario, every component body, and every `fn` body, which are siblings; Scenario encloses every actor body; and a component body encloses its `step` scope. Shadowing is checked on the source text, before `fn` substitution. A name that shadows a name of any enclosing scope is a compile-time error, in every scope. A name declared twice in one scope is a compile-time error, and so is an actor name equal to a File-scope name.
+Names resolve from the innermost scope outward. For `sensors.<name>` and `priors.<name>`, the entry name `<name>` alone is what the Prelude, duplicate, and shadowing rules compare, and declaring an actor, port, parameter, `let`, chain, or `fn` parameter named `sensors` or `priors` is a compile-time error. The scopes nest as follows: Prelude encloses File; File encloses Scenario, every component body, and every `fn` body, which are siblings; Scenario encloses every actor body; and a component body encloses its `step` scope. Shadowing is checked on the source text, before `fn` substitution. A name that shadows a name of any enclosing scope is a compile-time error, in every scope. A name declared twice in one scope is a compile-time error, and so is an actor name equal to a File-scope name.
 
 | Scope | Names |
 | :--- | :--- |
 | Prelude | The builtins and constructors of [§17.1](17-standard-library.md), and the type names and enum constants of [§16.1](16-static-semantics.md). No name declared anywhere in the file, including ports, parameters, `let` names, chains, sensors, priors, and actors, and no imported name may equal one of them. |
 | File | Imported names: components, sensors, and module declarations ([§19.1](19-modules.md)). `vehicle_spec` and `object_spec` names, `component` names, and `fn` names. |
 | Scenario | Actor names. In `terminate when` and `on` conditions only: `sim_time` (`Time`, [§11](11-execution.md)). |
-| Actor body | `sensors.<name>` and `priors.<name>`, each a single two-part name rather than a member access. The entry name `<name>` alone is what the Prelude, duplicate, and shadowing rules compare. Declaring an actor, port, parameter, `let`, chain, or `fn` parameter named `sensors` or `priors` is a compile-time error, and the actor's chain names. |
+| Actor body | `sensors.<name>` and `priors.<name>`, each a single two-part name rather than a member access, and the actor's chain names. |
 | `fn` body | The `fn`'s parameter names. |
 | Component body | Input port names and `param` names. Inside `bind_outputs`, also `fmu`, usable only as `fmu.out(...)`. Inside `bind_inputs` and `step`, also `own_state` (`KinematicState`, the actor's own committed state, [§9.1](09-abi.md)). Inside `step`, also its parameters, in a scope nested in the component body, and `let` names, in the step block nested in that. |
 

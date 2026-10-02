@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.275
+
+* The §16.4 Actor body scope row is restored as a plain list that names sensor, prior, and chain names, fixing a garbled row from v0.272 and v0.274. The rules for bare entry names and the reserved `sensors` and `priors` names move to the scope paragraph.
+
 ## 0.274
 
 * Fold-in review round 17. The warm-start slip-angle exception uses the physics `required_tier` after the window's last splice. Element j of a per-actor array must belong to bind member j. The names `sensors` and `priors` cannot be declared.
