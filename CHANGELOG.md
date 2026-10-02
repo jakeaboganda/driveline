@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.274
+
+* Fold-in review round 17. The warm-start slip-angle exception uses the physics `required_tier` after the window's last splice. Element j of a per-actor array must belong to bind member j. The names `sensors` and `priors` cannot be declared.
+
 ## 0.273
 
 * Fold-in review round 16. The warm-start gear state comes from one defined gear frame: the last ActuatorControlFrame that reached the ActuatorControlFrame input of the component nearest physics, Override and Arbiter-secondary inputs excluded, so its gear group is never NONE. The Mode B re-trim warning has a fixed place in the report order. The cold-init friction lookup uses ψ₀ and the spawn road.

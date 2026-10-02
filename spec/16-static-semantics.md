@@ -1,7 +1,7 @@
 ---
 title: DSL static semantics
 section: 16
-version: 0.272
+version: 0.274
 status: draft
 normative: true
 depends_on: [00-conformance.md, 02-conventions.md, 03-vehicle-parameters.md, 04-perception.md, 05-checkpoints.md, 07-fmu-packaging.md, 09-abi.md, 10-composition.md, 11-execution.md, 12-grammar.md, 15-manifest.md, 17-standard-library.md, 19-modules.md]
@@ -59,7 +59,7 @@ Names resolve from the innermost scope outward. The scopes nest as follows: Prel
 | Prelude | The builtins and constructors of [§17.1](17-standard-library.md), and the type names and enum constants of [§16.1](16-static-semantics.md). No name declared anywhere in the file, including ports, parameters, `let` names, chains, sensors, priors, and actors, and no imported name may equal one of them. |
 | File | Imported names: components, sensors, and module declarations ([§19.1](19-modules.md)). `vehicle_spec` and `object_spec` names, `component` names, and `fn` names. |
 | Scenario | Actor names. In `terminate when` and `on` conditions only: `sim_time` (`Time`, [§11](11-execution.md)). |
-| Actor body | `sensors.<name>` and `priors.<name>`, each a single two-part name rather than a member access. The entry name `<name>` alone is what the Prelude, duplicate, and shadowing rules compare, and the actor's chain names. |
+| Actor body | `sensors.<name>` and `priors.<name>`, each a single two-part name rather than a member access. The entry name `<name>` alone is what the Prelude, duplicate, and shadowing rules compare. Declaring an actor, port, parameter, `let`, chain, or `fn` parameter named `sensors` or `priors` is a compile-time error, and the actor's chain names. |
 | `fn` body | The `fn`'s parameter names. |
 | Component body | Input port names and `param` names. Inside `bind_outputs`, also `fmu`, usable only as `fmu.out(...)`. Inside `bind_inputs` and `step`, also `own_state` (`KinematicState`, the actor's own committed state, [§9.1](09-abi.md)). Inside `step`, also its parameters, in a scope nested in the component body, and `let` names, in the step block nested in that. |
 
