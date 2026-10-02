@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.279
+
+* Fold-in review round 21. A `select` with literal-expression branches counts as a literal expression for `Time` typing. An existing lockfile not in the exact §19.2 form is a compile-time error.
+
 ## 0.278
 
 * Fold-in review round 20. Expected `Time` passes recursively into literal expressions, so nested sums of seconds literals type as `Time`, fixing a v0.277 regression. A group instance's output frames are validated in `actor_ids` order, each fully, and the first failure is reported. Per-actor trim reports follow `actor_ids` order.
