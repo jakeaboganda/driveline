@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.280
+
+* Fold-in review round 22. Every map and friction lookup at t > 0 uses the committed state before the window's updates, its yaw, and its map-cache road as hint. DynamicSingleTrack applies the §6.2 heading rule to slice grade and bank, taking the lane direction from `frenet_to_world`. Unary minus counts in literal expressions. A Mode B `Float64` parameter with unit `s` has type `Time` and takes only `Time`.
+
 ## 0.279
 
 * Fold-in review round 21. A `select` with literal-expression branches counts as a literal expression for `Time` typing. An existing lockfile not in the exact §19.2 form is a compile-time error.
