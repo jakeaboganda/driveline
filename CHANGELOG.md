@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.278
+
+* Fold-in review round 20. Expected `Time` passes recursively into literal expressions, so nested sums of seconds literals type as `Time`, fixing a v0.277 regression. A group instance's output frames are validated in `actor_ids` order, each fully, and the first failure is reported. Per-actor trim reports follow `actor_ids` order.
+
 ## 0.277
 
 * Fold-in review round 19. The gear frame is searched in the graph before the window's first splice, with nearest meaning fewest edges and ties to the last component in Phase 2 order. Literal-operand typing applies only to seconds literals where `Time` is expected, and other literals keep their own type. `RouteNodes(...)` calls may appear only as `priors` entries. The promotion yaw names which γ each step uses.
