@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.276
+
+* §14.2 says the spawn state at tick 0 is the last committed state before the first Phase 4, and that replacement instances created by a failed splice window belong to the current graph for teardown.
+
 ## 0.275
 
 * The §16.4 Actor body scope row is restored as a plain list that names sensor, prior, and chain names, fixing a garbled row from v0.272 and v0.274. The rules for bare entry names and the reserved `sensors` and `priors` names move to the scope paragraph.
