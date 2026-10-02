@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.281
+
+* Fold-in review round 23. Warm-start wheel corners, the heading test, and map and friction lookups use the committed state after the window's update. The §8 feasibility check keeps the pre-update state, since it runs during the solve. Every File-scope name is visible in the whole file, and the scenario name binds no name. A literal `select` branch takes the other branch's type when there is no expected type.
+
 ## 0.280
 
 * Fold-in review round 22. Every map and friction lookup at t > 0 uses the committed state before the window's updates, its yaw, and its map-cache road as hint. DynamicSingleTrack applies the §6.2 heading rule to slice grade and bank, taking the lane direction from `frenet_to_world`. Unary minus counts in literal expressions. A Mode B `Float64` parameter with unit `s` has type `Time` and takes only `Time`.

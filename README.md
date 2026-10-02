@@ -1,6 +1,6 @@
 ---
 title: Driveline specification
-spec_version: 0.280
+spec_version: 0.281
 abi_version: 0.20
 status: draft
 ---
