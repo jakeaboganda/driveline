@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.272
+
+* Fold-in review round 15. The warm-start gear state reads the last ActuatorControlFrame delivered before the window on an edge leading to physics, and falls back to DRIVE/REVERSE when there is none. `frenet_to_world` Z includes the superelevation term, ignores lateral shape, and is listed as an open item. Import existence uses the byte-exact entry rule. Sensor and prior entry names are compared bare. The Tier 0 KCF-only rule applies to vehicle physics. Lockfile entries are absolute whenever the lexical join is absolute.
+
 ## 0.271
 
 * The header comment for `dl_powertrain_state_t.gear_mode` lists 0, the value of a zeroed powertrain.

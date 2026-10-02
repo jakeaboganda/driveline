@@ -1,7 +1,7 @@
 ---
 title: Vehicle parameter tiers
 section: 3
-version: 0.268
+version: 0.272
 status: draft
 normative: true
 depends_on: [02-conventions.md, 04-perception.md, 06-lifecycle.md, 08-steady-state.md, 11-execution.md, 15-manifest.md, 17-standard-library.md, 19-modules.md]
@@ -25,7 +25,7 @@ Tiers 0–2 describe a two-axle vehicle with a steered front axle and four wheel
 ## 3.1 Compile-Time Tier Verification & Single Source of Truth
 1. **Compile-Time Tier Check:** Every physics and control component declares its minimum required `vehicle_spec` tier (`required_tier: 0 | 1 | 2`). Binding or splicing a component whose `required_tier` is not populated in the actor's `vehicle_spec` or `object_spec` is a **compile-time error**.
 2. **Control-to-Physics Tier Compatibility:**
-   * A Tier 0 physics model (`KinematicBicycle`) accepts **only** Tier A `KinematicControlFrame`. Wiring an `ActuatorControlFrame` into `KinematicBicycle` is rejected at compile time.
+   * A Tier 0 vehicle physics model (`KinematicBicycle`) accepts **only** Tier A `KinematicControlFrame`. Object physics components take `IntentFrame` ([§3.2](03-vehicle-parameters.md)). Wiring an `ActuatorControlFrame` into `KinematicBicycle` is rejected at compile time.
    * A Tier 1 physics model (`DynamicSingleTrack`) accepts `KinematicControlFrame` natively (using only Tier 0 + Tier 1 parameters), or accepts `ActuatorControlFrame` when preceded by an explicit drivetrain adapter. The standard adapter is `SimpleDrivetrain: ActuatorControlFrame -> KinematicControlFrame`. It requires Tier 2 powertrain parameters $T_{\text{drive,max}}, T_{\text{brake,max}}, R_{\text{eff}}, i_g, i_R, i_{\text{fd}}$, and it converts steering with $\delta = $ `steering_wheel_norm` $\cdot \, \delta_{\max}$.
 3. **No Divergent Geometry Overrides:** Physical geometry and mass parameters (`Tier 0`, `Tier 1`, `Tier 2`) belong exclusively to the actor's `vehicle_spec` or `object_spec` and **cannot** be overridden inline on individual controller or physics blocks. This guarantees that World collision detection, warm-start trim, and all pipeline stages share a single immutable source of truth.
 4. **Invariant Tolerance:** An invariant written $a == b$ in the tier table holds when $|a - b| \le 10^{-6} \cdot \max(|a|, |b|, 1)$, evaluated in IEEE 754 binary64. Exact equality is not required, because binary64 sums depend on evaluation order: $0.1 + 0.2 + 0.3 \ne 0.6$ while $0.3 + 0.2 + 0.1 = 0.6$. A `vehicle_spec` that breaks an invariant is a compile-time error.
