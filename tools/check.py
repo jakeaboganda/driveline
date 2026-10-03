@@ -7,7 +7,7 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-SPEC = ROOT / "spec"
+SPEC = ROOT / "docs" / "spec"
 HEADER = ROOT / "abi" / "driveline_abi.h"
 EXAMPLES = ROOT / "examples"
 
@@ -68,17 +68,17 @@ def check_docs():
         docs[path.name] = (meta, body)
         for key in ("title", "version", "status", "normative", "depends_on"):
             if key not in meta:
-                fail(f"spec/{path.name}: front-matter lacks {key}")
+                fail(f"docs/spec/{path.name}: front-matter lacks {key}")
         if "version" in meta and version_tuple(meta["version"]) > spec_version:
-            fail(f"spec/{path.name}: version {meta['version']} is newer than spec_version")
+            fail(f"docs/spec/{path.name}: version {meta['version']} is newer than spec_version")
         for dep in meta.get("depends_on", []):
             if not (SPEC / dep).exists():
-                fail(f"spec/{path.name}: depends_on {dep} does not exist")
+                fail(f"docs/spec/{path.name}: depends_on {dep} does not exist")
         h1 = re.findall(r"^# (.*)$", outside_fences(body), re.M)
         if len(h1) != 1:
-            fail(f"spec/{path.name}: expected one h1, found {len(h1)}")
+            fail(f"docs/spec/{path.name}: expected one h1, found {len(h1)}")
         if "section" in meta and h1 and not h1[0].startswith(f"{meta['section']}. "):
-            fail(f"spec/{path.name}: h1 does not start with section {meta['section']}")
+            fail(f"docs/spec/{path.name}: h1 does not start with section {meta['section']}")
 
     changed = [n for n, (m, _) in docs.items() if m.get("version") == readme_meta.get("spec_version")]
     notes.append(f"docs changed in {readme_meta.get('spec_version')}: {', '.join(changed) or 'none'}")
@@ -94,11 +94,11 @@ def check_docs():
 
     section_file = {m["section"]: n for n, (m, _) in docs.items() if "section" in m}
     for num, name in section_file.items():
-        if f"(spec/{name})" not in readme_body:
-            fail(f"README.md: document table lacks spec/{name}")
+        if f"(docs/spec/{name})" not in readme_body:
+            fail(f"README.md: document table lacks docs/spec/{name}")
 
-    for name, (meta, body) in [*docs.items(), ("../README.md", (readme_meta, readme_body)),
-                               ("../CHANGELOG.md", (changelog_meta, changelog))]:
+    for name, (meta, body) in [*docs.items(), ("../../README.md", (readme_meta, readme_body)),
+                               ("../../CHANGELOG.md", (changelog_meta, changelog))]:
         text = outside_fences(body)
         base = (SPEC / name).parent
         for target in re.findall(r"\]\(([^)#\s]+)(?:#[^)]*)?\)", text):
@@ -109,25 +109,25 @@ def check_docs():
         for ref, target in re.findall(r"\[§(\d+(?:\.\d+)*)\]\(([^)]+)\)", text):
             parts = ref.split(".")
             if section_file.get(parts[0]) != target:
-                fail(f"spec/{name}: §{ref} links to {target}, expected {section_file.get(parts[0])}")
+                fail(f"docs/spec/{name}: §{ref} links to {target}, expected {section_file.get(parts[0])}")
             parent = ".".join(parts[:-1])
             if ref not in headings and not (parent in headings and parts[-1] in items[parent]):
-                fail(f"spec/{name}: §{ref} is neither a heading nor a numbered item under §{parent}")
+                fail(f"docs/spec/{name}: §{ref} is neither a heading nor a numbered item under §{parent}")
         if re.search(r"\bv\d+\.\d+\b", text):
-            fail(f"spec/{name}: names a spec version in prose; versions live in front-matter")
+            fail(f"docs/spec/{name}: names a spec version in prose; versions live in front-matter")
         if re.search(r"\bSections? \d", text):
-            fail(f"spec/{name}: cites sections by bare number; use linked § references")
+            fail(f"docs/spec/{name}: cites sections by bare number; use linked § references")
         if re.search(r"\bAppendix [A-Z]\b", text):
-            fail(f"spec/{name}: refers to an appendix; the suite has none")
+            fail(f"docs/spec/{name}: refers to an appendix; the suite has none")
         deps = set(meta.get("depends_on", []))
         linked = {t for t in re.findall(r"\]\((\d\d-[\w-]+\.md)\)", text)
                   if t != name and docs[t][0].get("normative") == "true"}
         expected = linked if meta.get("normative") == "true" else set()
         if deps != expected:
-            fail(f"spec/{name}: depends_on differs from its links; run tools/sync_deps.py")
+            fail(f"docs/spec/{name}: depends_on differs from its links; run tools/sync_deps.py")
         bare = re.findall(r"(?<!\[)§\d+(?:\.\d+)*", text)
         if bare:
-            fail(f"spec/{name}: unlinked section references {sorted(set(bare))}")
+            fail(f"docs/spec/{name}: unlinked section references {sorted(set(bare))}")
     return readme_meta, docs
 
 
@@ -164,7 +164,7 @@ def check_abi(readme_meta):
     fmu = (SPEC / "07-fmu-packaging.md").read_text()
     for v in set(re.findall(r";version=(\d+\.\d+)", fmu)):
         if v != readme_meta.get("abi_version"):
-            fail(f"spec/07-fmu-packaging.md: MIME version {v} != abi_version")
+            fail(f"docs/spec/07-fmu-packaging.md: MIME version {v} != abi_version")
     base = ["gcc", "-std=c11", "-Wall", "-Wextra", "-Wpadded", "-Werror", "-fsyntax-only", "-x", "c"]
     r = subprocess.run([*base, str(HEADER)], capture_output=True, text=True)
     if r.returncode:
@@ -427,11 +427,11 @@ def check_test_vector(docs):
     body = docs["08-steady-state.md"][1]
     for value in (f"{ay:.3f}", f"{vlat:.4f}", f"{dks:.5f}", f"{dss:.5f}", f"{beta:.5f}"):
         if value not in body:
-            fail(f"test vector: {value} not found in spec/08-steady-state.md")
+            fail(f"test vector: {value} not found in docs/spec/08-steady-state.md")
     moment = lf * caf * (dss - math.atan((vlat + L * r) / v)) - lr * car * (-math.atan(vlat / v))
     if abs(moment) > 1e-6:
         fail(f"test vector: yaw moment {moment} is not zero")
-    notes.append("test vector: recomputed values match spec/08-steady-state.md")
+    notes.append("test vector: recomputed values match docs/spec/08-steady-state.md")
 
     iz = param("inertia_zz")
     vy = vlat + lr * r
@@ -462,7 +462,7 @@ def check_siphash(docs):
     vectors = re.findall(r"`scenario_seed = (\d+)`, `actor_id = (\d+)`, `sensor_port_index = (\d+)`, "
                          r"`k_tick = (\d+)` gives `(0x[0-9a-f]{16})`", body)
     if not vectors:
-        fail("siphash: no seed test vectors in spec/11-execution.md")
+        fail("siphash: no seed test vectors in docs/spec/11-execution.md")
     for scn, actor, port, tick, expected in vectors:
         got = siphash24(struct.pack("<QQ", int(scn), 0), struct.pack("<QIIQ", int(actor), int(port), 0, int(tick)))
         if got != int(expected, 16):

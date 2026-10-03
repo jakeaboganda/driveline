@@ -9,7 +9,7 @@ depends_on: [05-checkpoints.md, 06-lifecycle.md, 07-fmu-packaging.md, 09-abi.md,
 
 # 14. Status Codes and Error Handling
 
-`dl_status_t` in [`abi/driveline_abi.h`](../abi/driveline_abi.h) is the only list of status names. Components return these codes from `dl_*` calls, and the runtime uses the same names in its reports. A negative code is an error. A positive code is a warning.
+`dl_status_t` in [`abi/driveline_abi.h`](../../abi/driveline_abi.h) is the only list of status names. Components return these codes from `dl_*` calls, and the runtime uses the same names in its reports. A negative code is an error. A positive code is a warning.
 
 ## 14.1 Status Codes
 

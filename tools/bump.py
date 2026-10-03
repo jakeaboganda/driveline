@@ -1,7 +1,7 @@
 """Record one atomic spec change: bump spec_version, stamp changed docs, add a changelog entry.
 
-Usage: tools/bump.py [--abi] "Changelog line" [more lines ...] -- spec/a.md [spec/b.md ...]
---abi also bumps abi_version, the DL_ABI_VERSION macro, and the MIME versions in spec/07.
+Usage: tools/bump.py [--abi] "Changelog line" [more lines ...] -- docs/spec/a.md [docs/spec/b.md ...]
+--abi also bumps abi_version, the DL_ABI_VERSION macro, and the MIME versions in docs/spec/07.
 """
 import re
 import sys
@@ -56,7 +56,7 @@ def main(argv):
                    f"DL_ABI_VERSION_{major}_{minor} 0x{(major << 16 | minor << 8):08X}U", h)
         h = re.sub(r"DL_ABI_VERSION_\d+_\d+ \*/", f"DL_ABI_VERSION_{major}_{minor} */", h)
         header.write_text(h)
-        fmu = ROOT / "spec" / "07-fmu-packaging.md"
+        fmu = ROOT / "docs" / "spec" / "07-fmu-packaging.md"
         fmu.write_text(re.sub(r";version=\d+\.\d+", f";version={new_abi}", fmu.read_text()))
         set_front_matter(fmu, "version", new)
         lines = lines + [f"ABI version {new_abi}."]

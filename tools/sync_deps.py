@@ -2,7 +2,7 @@
 import re
 from pathlib import Path
 
-SPEC = Path(__file__).resolve().parent.parent / "spec"
+SPEC = Path(__file__).resolve().parent.parent / "docs" / "spec"
 
 
 def normative(path):
@@ -24,7 +24,7 @@ def sync():
         new = re.sub(r"^depends_on: .*$", "depends_on: [" + ", ".join(deps) + "]", text, count=1, flags=re.M)
         if new != text:
             path.write_text(new)
-            changed.append(str(path.relative_to(SPEC.parent)))
+            changed.append(str(path.relative_to(SPEC.parents[1])))
     return changed
 
 

@@ -27,7 +27,7 @@ A Mode A declaration, in the scenario or a module, must match its manifest. The 
 
 ## 15.2 Native Library Packaging
 
-* One shared library holds exactly one component. It exports every function prototyped in [`abi/driveline_abi.h`](../abi/driveline_abi.h) under that exact name, with C linkage.
+* One shared library holds exactly one component. It exports every function prototyped in [`abi/driveline_abi.h`](../../abi/driveline_abi.h) under that exact name, with C linkage.
 * The library file is `<Name>.so` on Linux, `<Name>.dylib` on macOS, or `<Name>.dll` on Windows, and its manifest is `<Name>.dcm.json` in the same directory.
 * `use a::b::{Name}` with a first segment other than `std` resolves to a module or to the manifest `a/b/<Name>.dcm.json` by the rule of [§19.1](19-modules.md).
 

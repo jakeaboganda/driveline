@@ -15,27 +15,27 @@ Driveline scenario files use the extensions `.dline` and `.dl`.
 
 | Section | Document | Normative |
 | :--- | :--- | :--- |
-| 0 | [Conformance and terminology](spec/00-conformance.md) | Yes |
-| 1 | [Scope, principles, and related work](spec/01-scope.md) | No |
-| 2 | [Units and coordinate conventions](spec/02-conventions.md) | Yes |
-| 3 | [Vehicle parameter tiers](spec/03-vehicle-parameters.md) | Yes |
-| 4 | [Priors, sensors, and SliceBuffer](spec/04-perception.md) | Yes |
-| 5 | [Checkpoint data contracts](spec/05-checkpoints.md) | Yes |
-| 6 | [Component lifecycle](spec/06-lifecycle.md) | Yes |
-| 7 | [FMU packaging](spec/07-fmu-packaging.md) | Yes |
-| 8 | [Steady-state cornering solution](spec/08-steady-state.md) | Yes |
-| 9 | [C-ABI](spec/09-abi.md) | Yes |
-| 10 | [Composition, arbitration, and splicing](spec/10-composition.md) | Yes |
-| 11 | [Execution model and determinism](spec/11-execution.md) | Yes |
-| 12 | [DSL grammar](spec/12-grammar.md) | Yes |
-| 13 | [Reference scenario](spec/13-reference-scenario.md) | Yes |
-| 14 | [Status codes and error handling](spec/14-diagnostics.md) | Yes |
-| 15 | [Component manifests and packaging](spec/15-manifest.md) | Yes |
-| 16 | [DSL static semantics](spec/16-static-semantics.md) | Yes |
-| 17 | [Standard library](spec/17-standard-library.md) | Yes |
-| 18 | [Run record](spec/18-run-record.md) | Yes |
-| 19 | [Modules, catalogs, and the lockfile](spec/19-modules.md) | Yes |
-| | [Open items](spec/open-items.md) | No |
+| 0 | [Conformance and terminology](docs/spec/00-conformance.md) | Yes |
+| 1 | [Scope, principles, and related work](docs/spec/01-scope.md) | No |
+| 2 | [Units and coordinate conventions](docs/spec/02-conventions.md) | Yes |
+| 3 | [Vehicle parameter tiers](docs/spec/03-vehicle-parameters.md) | Yes |
+| 4 | [Priors, sensors, and SliceBuffer](docs/spec/04-perception.md) | Yes |
+| 5 | [Checkpoint data contracts](docs/spec/05-checkpoints.md) | Yes |
+| 6 | [Component lifecycle](docs/spec/06-lifecycle.md) | Yes |
+| 7 | [FMU packaging](docs/spec/07-fmu-packaging.md) | Yes |
+| 8 | [Steady-state cornering solution](docs/spec/08-steady-state.md) | Yes |
+| 9 | [C-ABI](docs/spec/09-abi.md) | Yes |
+| 10 | [Composition, arbitration, and splicing](docs/spec/10-composition.md) | Yes |
+| 11 | [Execution model and determinism](docs/spec/11-execution.md) | Yes |
+| 12 | [DSL grammar](docs/spec/12-grammar.md) | Yes |
+| 13 | [Reference scenario](docs/spec/13-reference-scenario.md) | Yes |
+| 14 | [Status codes and error handling](docs/spec/14-diagnostics.md) | Yes |
+| 15 | [Component manifests and packaging](docs/spec/15-manifest.md) | Yes |
+| 16 | [DSL static semantics](docs/spec/16-static-semantics.md) | Yes |
+| 17 | [Standard library](docs/spec/17-standard-library.md) | Yes |
+| 18 | [Run record](docs/spec/18-run-record.md) | Yes |
+| 19 | [Modules, catalogs, and the lockfile](docs/spec/19-modules.md) | Yes |
+| | [Open items](docs/spec/open-items.md) | No |
 | | [Changelog](CHANGELOG.md) | No |
 
 The C header [`abi/driveline_abi.h`](abi/driveline_abi.h) and the scenario [`examples/kanagawa_pinch_test.dline`](examples/kanagawa_pinch_test.dline) are normative artifacts. The documents refer to them and do not copy them.
