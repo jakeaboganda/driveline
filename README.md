@@ -1,6 +1,6 @@
 ---
 title: Driveline specification
-spec_version: 0.282
+spec_version: 0.283
 abi_version: 0.20
 status: draft
 ---
@@ -72,3 +72,7 @@ python3 -m venv .venv
 To run the checks before every commit, link the hook: `ln -s ../../tools/pre-commit .git/hooks/pre-commit`.
 
 The 32-bit build needs `gcc -m32` support. If it is missing, the check reports the 32-bit step as skipped.
+
+## Formal model
+
+[`formal/`](formal/README.md) holds a Lean 4 model that proves claims of the specification. `tools/setup-lean.sh` installs Lean and builds it.

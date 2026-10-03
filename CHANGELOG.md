@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.283
+
+* The §6.1 diagram note names the omitted `dl_terminate` edges as well as the `dl_free_instance` ones, as the Lean lifecycle model found. The README points to the Lean model in `formal/`.
+
 ## 0.282
 
 * The `ttc_lon` formula and the radar primary-target test in §17.2 name `rel_x`, `rel_y`, and `rel_vx` instead of undefined $x$, $y$, and $v_x$.

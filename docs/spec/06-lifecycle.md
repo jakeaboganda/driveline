@@ -1,7 +1,7 @@
 ---
 title: Component lifecycle
 section: 6
-version: 0.281
+version: 0.283
 status: draft
 normative: true
 depends_on: [02-conventions.md, 05-checkpoints.md, 07-fmu-packaging.md, 08-steady-state.md, 09-abi.md, 10-composition.md, 11-execution.md, 14-diagnostics.md, 15-manifest.md, 17-standard-library.md]
@@ -48,7 +48,7 @@ The **Driveline Component Model (DCM)** is a C-ABI ([§9](09-abi.md)). Native co
                  └──────────────────────┘     dl_free_instance
 ```
 
-**Allowed Calls:** This table is the complete list of legal calls. The diagram above omits some `dl_free_instance` edges, and the table governs. Any other call returns `DL_STATUS_ERR_STATE` and leaves the state unchanged. `dl_free_instance` returns nothing, so the runtime never calls it outside the states the table allows. A call that returns an error also leaves the state unchanged.
+**Allowed Calls:** This table is the complete list of legal calls. The diagram above omits some `dl_terminate` and `dl_free_instance` edges, and the table governs. Any other call returns `DL_STATUS_ERR_STATE` and leaves the state unchanged. `dl_free_instance` returns nothing, so the runtime never calls it outside the states the table allows. A call that returns an error also leaves the state unchanged.
 
 | Function | Allowed In | Next State |
 | :--- | :--- | :--- |

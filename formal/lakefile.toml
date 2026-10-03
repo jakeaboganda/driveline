@@ -1,0 +1,5 @@
+name = "driveline"
+defaultTargets = ["Driveline"]
+
+[[lean_lib]]
+name = "Driveline"
