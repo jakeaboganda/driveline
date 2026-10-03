@@ -6,6 +6,10 @@ title: Changelog
 
 Section numbers refer to the v0.4 document layout.
 
+## 0.282
+
+* The `ttc_lon` formula and the radar primary-target test in §17.2 name `rel_x`, `rel_y`, and `rel_vx` instead of undefined $x$, $y$, and $v_x$.
+
 ## 0.281
 
 * Fold-in review round 23. Warm-start wheel corners, the heading test, and map and friction lookups use the committed state after the window's update. The §8 feasibility check keeps the pre-update state, since it runs during the solve. Every File-scope name is visible in the whole file, and the scenario name binds no name. A literal `select` branch takes the other branch's type when there is no expected type.
