@@ -161,13 +161,33 @@ noncomputable def unitFactor : Option UnitExpr → ℝ
 
 /-- 15:48 'A `default` is written in `unit`, with `Time` in seconds, `Bool` as 0 or 1, and an
 enum as its numeric value, and the compiler converts it like a call-site argument'.
-`none` is a conversion error. -/
+`none` is a conversion error. Like a literal argument, an `i64` default must fit `Int`
+(16:36) and a `Time` default must be whole nanoseconds in the `Int64` range (16:33, 15:48).
+An enum default is accepted when it is a non-negative integer: this is the model's choice,
+because the spec states no rule that the value name a member of the enum (spec gap). -/
 noncomputable def convDefault : PType → Option UnitExpr → ℚ → Option PVal
   | .f64, u, q => some (.f64 ((q : ℝ) * unitFactor u))
-  | .i64, _, q => if q.den = 1 then some (.i64 q.num) else none
-  | .time, _, q => if (q * 10 ^ 9).den = 1 then some (.time (q * 10 ^ 9).num) else none
+  | .i64, _, q => if q.den = 1 ∧ inI64 q.num then some (.i64 q.num) else none
+  | .time, _, q => (timeLitNs q).map .time
   | .bool, _, q => if q = 0 then some (.bool false) else if q = 1 then some (.bool true) else none
   | .enum _, _, q => if q.den = 1 ∧ 0 ≤ q.num then some (.enum q.num.toNat) else none
+
+theorem convDefault_hasType {t : PType} {u : Option UnitExpr} {q : ℚ} {v : PVal}
+    (h : convDefault t u q = some v) : v.HasType t := by
+  cases t with
+  | f64 => simp only [convDefault, Option.some.injEq] at h; subst h; trivial
+  | i64 =>
+    simp only [convDefault] at h
+    split_ifs at h <;> cases h; trivial
+  | time =>
+    simp only [convDefault, Option.map_eq_some_iff] at h
+    obtain ⟨_, _, rfl⟩ := h; trivial
+  | bool =>
+    simp only [convDefault] at h
+    split_ifs at h <;> cases h <;> trivial
+  | enum e =>
+    simp only [convDefault] at h
+    split_ifs at h <;> cases h; trivial
 
 /-! ## Manifests (§15.3) -/
 
@@ -416,6 +436,26 @@ theorem call_site_errors (ports : List String) (ps : List MParam) (args : List A
     · exact hne (Ty.qty.inj h)
     · cases h
 
+theorem decode_encode {t : PType} {v : PVal} (hv : v.HasType t) (n : String) :
+    decode t (encode n v) = v := by
+  cases v <;> cases t <;> simp_all [PVal.HasType, encode, decode]
+
+theorem encode_type {t : PType} {v : PVal} (hv : v.HasType t) (n : String) :
+    (encode n v).type = 0 ↔ t = .f64 := by
+  cases v <;> cases t <;> simp_all [PVal.HasType, encode]
+
+theorem lookup_mem {args : List (String × PVal)} {n : String} {v : PVal}
+    (h : args.lookup n = some v) : (n, v) ∈ args := by
+  induction args with
+  | nil => simp at h
+  | cons a as ih =>
+    obtain ⟨k, w⟩ := a
+    by_cases hk : n = k
+    · subst hk; simp [List.lookup] at h; simp [h]
+    · have : (n == k) = false := by simpa using hk
+      simp only [List.lookup, this] at h
+      exact List.mem_cons_of_mem _ (ih h)
+
 /-- P15-13. 15:54 'The runtime passes every parameter through `dl_set_parameters` in SI
 units, including those that take their default … An `f64` parameter becomes `type = 0`
 with the SI value. An `i64` parameter becomes `type = 1`. A `Time` parameter becomes
@@ -423,45 +463,56 @@ with the SI value. An `i64` parameter becomes `type = 1`. A `Time` parameter bec
 1, and an enum parameter becomes `type = 1` with the enum's numeric value.'
 The tag alone does not tell `i64`, `Time`, `Bool`, and enum apart; the receiver knows
 each parameter's declared type from its own manifest (15:48), and given that type every
-value round-trips. For a valid manifest (names of at most 55 bytes, 09:21) every
-parameter is passed, in manifest order, once each mandatory one has an argument;
-defaults arrive in SI units, a `Time` default in nanoseconds. -/
+value round-trips. For a valid manifest (names of at most 55 bytes, 09:21) and arguments
+of their parameters' types, every parameter is passed, in manifest order, once each
+mandatory one has an argument: each entry has `type = 0` exactly for `f64` and decodes to
+the value passed, the argument or the converted default. Defaults arrive in SI units, a
+`Time` default in nanoseconds, and an `i64` or `Time` default in the `Int64` range
+(16:33, 16:36). -/
 theorem params_round_trip (t : PType) (v : PVal) (hv : v.HasType t) (n : String)
     (f : String) (m : Manifest) (h : m.valid f) (args : List (String × PVal))
-    (hargs : ∀ p ∈ m.parameters, p.mandatory → (args.lookup p.name).isSome) :
+    (hargs : ∀ p ∈ m.parameters, p.mandatory → (args.lookup p.name).isSome)
+    (htys : ∀ p ∈ m.parameters, ∀ w, (p.name, w) ∈ args → w.HasType p.ty) :
     (decode t (encode n v) = v ∧ (encode n v).name = n ∧
       ((encode n v).type = 0 ↔ t = .f64)) ∧
     (∀ u q, convDefault .f64 u q = some (.f64 ((q : ℝ) * unitFactor u))) ∧
-    (∀ u q z, convDefault .time u q = some (.time z) ↔ (z : ℚ) = q * 10 ^ 9) ∧
+    (∀ u q z, convDefault .time u q = some (.time z) ↔ q * 10 ^ 9 = z ∧ inI64 z) ∧
+    (∀ u q z, convDefault .i64 u q = some (.i64 z) ↔ q = z ∧ inI64 z) ∧
     ∃ ds, passAll m.parameters args = some ds ∧
-      ds.map (·.name) = m.parameters.map (·.name) ∧ ∀ d ∈ ds, nameFits d.name := by
-  refine ⟨?_, fun _ _ => rfl, fun u q z => ?_, ?_⟩
-  · cases v <;> cases t <;> simp_all [PVal.HasType, encode, decode]
+      List.Forall₂ (fun p d => d.name = p.name ∧ nameFits d.name ∧
+        (d.type = 0 ↔ p.ty = .f64) ∧ paramVal args p = some (decode p.ty d) ∧
+        (args.lookup p.name = none → (p.ty = .i64 ∨ p.ty = .time) → inI64 d.i64))
+        m.parameters ds := by
+  refine ⟨⟨decode_encode hv n, ?_, ?_⟩, fun _ _ => rfl, fun u q z => ?_, fun u q z => ?_, ?_⟩
+  · cases v <;> rfl
+  · exact encode_type hv n
+  · simp only [convDefault, Option.map_eq_some_iff, PVal.time.injEq, exists_eq_right]
+    exact timeLitNs_spec q z
   · simp only [convDefault]
     split_ifs with hd
-    · constructor
-      · intro hz; cases hz
-        exact (Rat.coe_int_num_of_den_eq_one hd)
-      · intro hz
-        congr 2
-        rw [← hz]; simp
+    · simp only [Option.some.injEq, PVal.i64.injEq]
+      constructor
+      · rintro rfl; exact ⟨(Rat.coe_int_num_of_den_eq_one hd.1).symm, hd.2⟩
+      · rintro ⟨rfl, _⟩; simp
     · simp only [false_iff]
-      intro hz
-      rw [← hz] at hd
-      simp at hd
+      rintro ⟨rfl, hz⟩
+      exact hd ⟨by simp, by simpa using hz⟩
   · have hps := h.2.2.2.2.2.2.1
     clear h hv
-    generalize m.parameters = ps at hps hargs ⊢
+    generalize m.parameters = ps at hps hargs htys ⊢
     induction ps with
-    | nil => exact ⟨[], rfl, rfl, by simp⟩
+    | nil => exact ⟨[], rfl, .nil⟩
     | cons p ps ih =>
       have hp := hps p (by simp)
-      obtain ⟨ds, hds, hn, hf⟩ :=
+      obtain ⟨ds, hds, hall⟩ :=
         ih (fun q hq => hps q (by simp [hq])) (fun q hq => hargs q (by simp [hq]))
-      have : ∃ v, paramVal args p = some v := by
+          (fun q hq => htys q (by simp [hq]))
+      have : ∃ v, paramVal args p = some v ∧ v.HasType p.ty ∧
+          (args.lookup p.name = none → (p.ty = .i64 ∨ p.ty = .time) →
+            inI64 (encode p.name v).i64) := by
         unfold paramVal
         cases hl : args.lookup p.name with
-        | some v => exact ⟨v, rfl⟩
+        | some v => exact ⟨v, rfl, htys p (by simp) v (lookup_mem hl), by simp⟩
         | none =>
           cases hd : p.default with
           | none =>
@@ -470,16 +521,21 @@ theorem params_round_trip (t : PType) (v : PVal) (hv : v.HasType t) (n : String)
           | some q =>
             have := hp.2.2 q (by simp [hd])
             obtain ⟨v, hv⟩ := Option.isSome_iff_exists.1 this
-            exact ⟨v, by simp [hv]⟩
-      obtain ⟨v, hv⟩ := this
-      refine ⟨encode p.name v :: ds, ?_, ?_, ?_⟩
+            refine ⟨v, by simp [hv], convDefault_hasType hv, fun _ ht => ?_⟩
+            rcases ht with ht | ht <;> rw [ht] at hv
+            · simp only [convDefault] at hv
+              split_ifs at hv with hc
+              cases hv; exact hc.2
+            · simp only [convDefault, Option.map_eq_some_iff] at hv
+              obtain ⟨z, hz, rfl⟩ := hv
+              exact ((timeLitNs_spec q z).1 hz).2
+      obtain ⟨v, hv, hty, hr⟩ := this
+      refine ⟨encode p.name v :: ds, ?_, .cons ⟨?_, ?_, ?_, ?_, hr⟩ hall⟩
       · simp [passAll] at hds ⊢
         simp [hv, hds]
-      · simp [hn]; cases v <;> rfl
-      · intro d hd
-        simp only [List.mem_cons] at hd
-        rcases hd with rfl | hd
-        · cases v <;> exact hp.2.1
-        · exact hf d hd
+      · cases v <;> rfl
+      · cases v <;> exact hp.2.1
+      · exact encode_type hty _
+      · rw [decode_encode hty, hv]
 
 end Driveline.Manifest
