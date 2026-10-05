@@ -2,6 +2,8 @@ import Mathlib.Tactic
 import Driveline.SliceBuffer
 import Driveline.Schedule
 import Driveline.Manifest
+import Driveline.Diagnostics
+import Batteries.Data.Char.AsciiCasing
 
 /-!
 # C-ABI rules (spec §9, §7 byte encoding)
@@ -279,5 +281,448 @@ theorem pad_lt_iff {a b : Bytes} (ha : fits roadIdN a) (hb : fits roadIdN b) :
     (by have := ha.2; have := hb.2; omega)
 
 end Theorems
+
+/-! ## Ring index in `uint32_t` (driveline_abi.h:163) -/
+
+/-- The ring slot expression evaluated in `uint32_t`, as C does (driveline_abi.h:163). -/
+def slot32 (head cap k : UInt32) : UInt32 := (head + cap - k) % cap
+
+/-- `head + capacity` wraps modulo 2^32 when the capacity exceeds 2^31: with
+capacity 0xC0000000 and head 0xBFFFFFFF, entry 0 is not at `head`. -/
+theorem refute_slot32 : slot32 0xBFFFFFFF 0xC0000000 0 ≠ 0xBFFFFFFF := by
+  decide
+
+/-- P09-19: "Entry k (k = 0 newest) starts at
+entries + ((head + capacity - k) % capacity) * entry_size" (driveline_abi.h:162-163),
+computed in `uint32_t`. The header does not bound `capacity` (see `refute_slot32`), but
+"Every mounted sensor has a compile-time capacity N ∈ [1, 64]" and the component's
+buffer "has `capacity` = N_c" with N_c ≤ N_s (04-perception.md:19), so the `uint32_t`
+value is the exact slot. `head` is "Slot of the newest entry" (driveline_abi.h:166) and
+`k < count ≤ capacity` (driveline_abi.h:157). -/
+theorem slot32_eq {head cap k : UInt32} (hc : cap.toNat ≤ 64) (h : head < cap) (hk : k ≤ cap) :
+    (slot32 head cap k).toNat = slot head.toNat cap.toNat k.toNat := by
+  have h' : head.toNat < cap.toNat := h
+  have hk' : k.toNat ≤ cap.toNat := hk
+  have hsum : (head + cap).toNat = head.toNat + cap.toNat := by
+    rw [UInt32.toNat_add]
+    exact Nat.mod_eq_of_lt (by omega)
+  have hle : k ≤ head + cap := by
+    rw [UInt32.le_iff_toNat_le, hsum]
+    omega
+  rw [slot32, UInt32.toNat_mod, UInt32.toNat_sub_of_le _ _ hle, hsum, slot]
+
+/-! ## Output memory (09-abi.md:23) -/
+
+/-- Byte offset of output entry `i`. -/
+def outOffset (stride i : ℕ) : ℕ := i * stride
+
+/-- The byte ranges `[a, a + la)` and `[b, b + lb)` do not overlap. -/
+def RangesDisjoint (a la b lb : ℕ) : Prop := a + la ≤ b ∨ b + lb ≤ a
+
+/-- "`actor_count` entries, `output_stride` bytes apart … its entry size is `sizeof(T)`"
+(09-abi.md:23): with at least two actors and a nonempty struct, the entries do not overlap
+exactly when `output_stride ≥ sizeof(T)`. -/
+theorem outputs_disjoint_iff {n stride size : ℕ} (hn : 2 ≤ n) (hsz : 0 < size) :
+    (∀ i < n, ∀ j < n, i ≠ j →
+      RangesDisjoint (outOffset stride i) size (outOffset stride j) size) ↔ size ≤ stride := by
+  constructor
+  · intro h
+    rcases h 0 (by omega) 1 (by omega) (by omega) with h | h <;>
+      simp [outOffset] at h <;> omega
+  · intro hs i _ j _ hij
+    unfold RangesDisjoint outOffset
+    rcases Nat.lt_or_gt_of_ne hij with hl | hl
+    · left
+      calc i * stride + size ≤ i * stride + stride := by omega
+        _ = (i + 1) * stride := by ring
+        _ ≤ j * stride := Nat.mul_le_mul_right _ hl
+    · right
+      calc j * stride + size ≤ j * stride + stride := by omega
+        _ = (j + 1) * stride := by ring
+        _ ≤ i * stride := Nat.mul_le_mul_right _ hl
+
+/-- P09-06 REFUTE: "The runtime allocates `outputs` … with `actor_count` entries,
+`output_stride` bytes apart" (09-abi.md:23). No rule requires
+`output_stride ≥ sizeof(T)` (driveline_abi.h:301 declares it a bare `uint32_t`), and with
+stride 0 two 8-byte entries overlap. -/
+theorem refute_outputs_disjoint : ¬ RangesDisjoint (outOffset 0 0) 8 (outOffset 0 1) 8 := by
+  simp [RangesDisjoint, outOffset]
+
+/-! ## Header fields and step times (09-abi.md:24-26) -/
+
+inductive OutKind | kinematicState | other
+
+/-- The `timestamp_ns` the runtime writes (09-abi.md:24). -/
+def stampTime : OutKind → ℕ → ℕ → ℕ
+  | .kinematicState, t, dtBase => t + dtBase
+  | .other, t, _ => t
+
+structure Frame (β : Type) where
+  actorId : ℕ
+  timestampNs : ℕ
+  body : β
+
+/-- The runtime overwrites `actor_id` and `timestamp_ns` (09-abi.md:24). -/
+def finalize {β : Type} (k : OutKind) (id t dtBase : ℕ) (f : Frame β) : Frame β :=
+  { f with actorId := id, timestampNs := stampTime k t dtBase }
+
+/-- P09-17: "the runtime writes `actor_id` and `timestamp_ns` into every output frame.
+The component's values for these two fields are ignored" (09-abi.md:24). -/
+theorem finalize_ignores {β : Type} (k : OutKind) (id t dtBase : ℕ) (f g : Frame β)
+    (h : f.body = g.body) : finalize k id t dtBase f = finalize k id t dtBase g := by
+  cases f; cases g; cases h; rfl
+
+theorem finalize_actor {β : Type} (k : OutKind) (id t dtBase : ℕ) (f : Frame β) :
+    (finalize k id t dtBase f).actorId = id := rfl
+
+/-- "`timestamp_ns` is the tick time t of the step" (09-abi.md:24). -/
+theorem stamp_other {β : Type} (id t dtBase : ℕ) (f : Frame β) :
+    (finalize .other id t dtBase f).timestampNs = t := rfl
+
+/-- "except for `KinematicState`, where it is t + Δt_base" (09-abi.md:24). -/
+theorem stamp_kinematic {β : Type} (id t dtBase : ℕ) (f : Frame β) :
+    (finalize .kinematicState id t dtBase f).timestampNs = t + dtBase := rfl
+
+/-- P09-07: "`timestamp_ns` is the tick time t of the step, except for `KinematicState`,
+where it is t + Δt_base … Physics always runs at the base rate, so this is also
+t + `dt_step_ns`" (09-abi.md:24). `h` is "Physics always runs at the base rate". -/
+theorem physics_stamp {d dt : ℕ+} (t : ℕ) (h : d = 1) :
+    stampTime .kinematicState t dt = t + stepDt d dt := by
+  subst h
+  simp [stampTime, stepDt]
+
+/-- P09-08: "`dt_step_ns` is k_div · Δt_base_ns" (09-abi.md:25), which is
+`Schedule.stepDt`; at the base rate it is Δt_base. -/
+theorem stepDt_eq (d dt : ℕ+) : stepDt d dt = (d : ℕ) * dt := rfl
+
+theorem stepDt_one (dt : ℕ+) : stepDt 1 dt = dt := by simp [stepDt]
+
+/-- P09-09: "`own_states[i]` is the committed `KinematicState` of actor `actor_ids[i]` at
+tick time t, as Phase 4 of the previous tick left it" (09-abi.md:26): the previous tick,
+at t − Δt_base, stamped it t (09-abi.md:24). Tick 0 is excluded by `h`; there it is
+`chassis_state` from cold init. -/
+theorem own_state_stamp {t dtBase : ℕ} (h : dtBase ≤ t) :
+    stampTime .kinematicState (t - dtBase) dtBase = t := by
+  simp [stampTime]
+  omega
+
+/-! ## Lane sections (09-abi.md:31) -/
+
+section Sections
+
+variable {α : Type} [LinearOrder α]
+
+/-- Section `j` covers `[s_j, s_{j+1})`; the last one covers `[s_{m-1}, len]`. -/
+def covers (starts : List α) (len : α) (j : ℕ) (s : α) : Prop :=
+  ∃ h : j < starts.length, starts[j] ≤ s ∧
+    if h' : j + 1 < starts.length then s < starts[j + 1] else s ≤ len
+
+theorem covers_exists : ∀ (starts : List α) (len lo s : α), starts.head? = some lo →
+    starts.Pairwise (· ≤ ·) → lo ≤ s → s ≤ len → ∃ j, covers starts len j s
+  | [], _, _, _, h0, _, _, _ => by simp at h0
+  | [a], len, lo, s, h0, _, hs0, hs1 => by
+    simp at h0
+    subst h0
+    exact ⟨0, by simp, by simpa using hs0, by simpa using hs1⟩
+  | a :: b :: r, len, lo, s, h0, hs, hs0, hs1 => by
+    simp at h0
+    subst h0
+    by_cases hb : s < b
+    · exact ⟨0, by simp, by simpa using hs0, by simpa using hb⟩
+    · obtain ⟨j, hj, h1, h2⟩ :=
+        covers_exists (b :: r) len b s rfl hs.of_cons (not_lt.mp hb) hs1
+      refine ⟨j + 1, by simpa using hj, by simpa using h1, ?_⟩
+      simpa using h2
+
+/-- P09-10: "A lane section covers [s_start, s_next), and the last one also covers the
+road's end, so each s of a road lies in exactly one lane section" (09-abi.md:31). The
+first section starts the road (`h0`) and the sections are in order (`hs`). -/
+theorem lane_section_partition (starts : List α) (len lo s : α)
+    (h0 : starts.head? = some lo) (hs : starts.Pairwise (· ≤ ·))
+    (hs0 : lo ≤ s) (hs1 : s ≤ len) : ∃! j, covers starts len j s := by
+  obtain ⟨j, hj⟩ := covers_exists starts len lo s h0 hs hs0 hs1
+  have key : ∀ i i', covers starts len i s → covers starts len i' s → ¬ i < i' := by
+    rintro i i' ⟨hi, -, hi2⟩ ⟨hi', hi'1, -⟩ hlt
+    have hn : i + 1 < starts.length := by omega
+    rw [dif_pos hn] at hi2
+    have hmono : starts[i + 1] ≤ starts[i'] := by
+      rcases Nat.lt_or_ge (i + 1) i' with h | h
+      · exact List.pairwise_iff_getElem.mp hs _ _ hn hi' h
+      · have : i + 1 = i' := by omega
+        subst this
+        exact le_rfl
+    exact absurd (lt_of_lt_of_le hi2 (hmono.trans hi'1)) (lt_irrefl _)
+  refine ⟨j, hj, fun i hi => ?_⟩
+  rcases lt_trichotomy i j with h | h | h
+  · exact absurd h (key i j hi hj)
+  · exact h
+  · exact absurd h (key j i hj hi)
+
+end Sections
+
+/-! ## world_to_frenet choice (09-abi.md:33) -/
+
+section Choice
+
+variable {α : Type} [LinearOrder α]
+
+structure Cand (α : Type) where
+  roadId : Bytes
+  laneId : ℤ
+  s : α
+  d : α
+  /-- `|psi − driving heading|` wrapped to `[0, π]` -/
+  headingDiff : α
+
+/-- Hint match first (`false < true`), then heading difference, then `road_id` by
+unsigned bytes, then `lane_id` as a signed integer (09-abi.md:33). -/
+def key (hint : Bytes) (c : Cand α) : Bool ×ₗ α ×ₗ Bytes ×ₗ ℤ :=
+  toLex (c.roadId != hint, toLex (c.headingDiff, toLex (c.roadId, c.laneId)))
+
+def IsChoice (hint : Bytes) (cs : List (Cand α)) (c : Cand α) : Prop :=
+  c ∈ cs ∧ ∀ c' ∈ cs, key hint c ≤ key hint c'
+
+theorem exists_min_key (hint : Bytes) : ∀ (cs : List (Cand α)), cs ≠ [] →
+    ∃ c, IsChoice hint cs c
+  | [], h => absurd rfl h
+  | [a], _ => ⟨a, by simp, by simp⟩
+  | a :: b :: r, _ => by
+    obtain ⟨c, hc, hmin⟩ := exists_min_key hint (b :: r) (by simp)
+    rcases le_total (key hint a) (key hint c) with h | h
+    · refine ⟨a, by simp, ?_⟩
+      intro c' hc'
+      rcases List.mem_cons.mp hc' with rfl | hc'
+      · exact le_rfl
+      · exact h.trans (hmin c' hc')
+    · refine ⟨c, List.mem_cons_of_mem _ hc, ?_⟩
+      intro c' hc'
+      rcases List.mem_cons.mp hc' with rfl | hc'
+      · exact h
+      · exact hmin c' hc'
+
+/-- P09-11: "If several lanes contain the point … the callback prefers `hint_road_id`,
+then the lane whose driving heading … is closest to `psi` …, then the smallest
+`(road_id, lane_id)`, with `road_id` compared by bytes and `lane_id` as a signed integer"
+(09-abi.md:33): on a nonempty candidate list whose lanes are distinct, exactly one lane is
+chosen. -/
+theorem choice_unique (hint : Bytes) (cs : List (Cand α)) (hne : cs ≠ [])
+    (hid : (cs.map fun c => (c.roadId, c.laneId)).Nodup) : ∃! c, IsChoice hint cs c := by
+  obtain ⟨c, hc⟩ := exists_min_key hint cs hne
+  refine ⟨c, hc, fun c' hc' => ?_⟩
+  have hk : key hint c' = key hint c := le_antisymm (hc'.2 c hc.1) (hc.2 c' hc'.1)
+  simp only [key, toLex_inj, Prod.mk.injEq] at hk
+  exact List.inj_on_of_nodup_map hid hc'.1 hc.1 (by rw [hk.2.2.1, hk.2.2.2])
+
+/-- "So `world_to_frenet` succeeds for every finite (X, Y)" (09-abi.md:33) needs a lane
+to choose from: on an empty map there is none. -/
+theorem no_choice_empty (hint : Bytes) : ¬ ∃ c : Cand α, IsChoice hint [] c := by
+  simp [IsChoice]
+
+end Choice
+
+/-- The order has no `s`, and one lane can contain (X, Y) at two values of `s` (a helical
+ramp): both are choices, so the returned `s` is not determined (09-abi.md:33). -/
+theorem refute_unique_s : ∃ (cs : List (Cand ℤ)) (a b : Cand ℤ),
+    IsChoice [] cs a ∧ IsChoice [] cs b ∧ a.s ≠ b.s := by
+  refine ⟨[⟨[1], -1, 10, 0, 0⟩, ⟨[1], -1, 50, 0, 0⟩], ⟨[1], -1, 10, 0, 0⟩,
+    ⟨[1], -1, 50, 0, 0⟩, ⟨by simp, ?_⟩, ⟨by simp, ?_⟩, by decide⟩ <;>
+    · intro c hc
+      simp only [List.mem_cons, List.not_mem_nil, or_false] at hc
+      rcases hc with rfl | rfl <;> exact le_rfl
+
+/-! ## sample_lane_path (09-abi.md:35) -/
+
+/-- Curvature of the offset curve at offset `d` from a centerline of curvature `κ`. -/
+noncomputable def offsetCurv (κ d : ℝ) : ℝ := κ / (1 - κ * d)
+
+/-- P09-12: "the curvature is κ / (1 − κ d) for centerline curvature κ and offset d, both
+relative to increasing s, negated when sampling toward decreasing s" (09-abi.md:35):
+reversing the direction negates κ and d, and the formula negates. -/
+theorem offsetCurv_reverse (κ d : ℝ) : offsetCurv (-κ) (-d) = -offsetCurv κ d := by
+  simp [offsetCurv, neg_div]
+
+/-- "`d_offset` changes sign, so the points stay on the same side of the path"
+(09-abi.md:35): reversing the direction negates the normal. -/
+theorem offset_side (p n : ℝ × ℝ) (d : ℝ) : p + d • n = p + (-d) • (-n) := by
+  simp
+
+/-! ## Successors (09-abi.md:36) -/
+
+abbrev LaneRef := Bytes × ℤ
+
+/-- Successors sorted by `(road_id, lane_id)`, the first `maxN` written, and the total. -/
+def topo (succ : List LaneRef) (maxN : ℕ) : List LaneRef × ℕ :=
+  let sorted := succ.mergeSort (fun a b => decide (toLex a ≤ toLex b))
+  (sorted.take maxN, sorted.length)
+
+theorem topo_total (succ : List LaneRef) (m : ℕ) : (topo succ m).2 = succ.length := by
+  simp [topo]
+
+/-- P09-13: "The callback writes at most `max_successors` of them and sets
+`out_num_successors` to the total" (09-abi.md:36). -/
+theorem topo_written_length (succ : List LaneRef) (m : ℕ) :
+    (topo succ m).1.length = min m succ.length := by
+  simp [topo]
+
+theorem topo_truncated_iff (succ : List LaneRef) (m : ℕ) :
+    (topo succ m).1.length < (topo succ m).2 ↔ m < succ.length := by
+  rw [topo_written_length, topo_total]
+  omega
+
+/-- "Successors are … sorted by `(road_id, lane_id)`" (09-abi.md:36). -/
+theorem topo_sorted (succ : List LaneRef) (m : ℕ) :
+    (topo succ m).1.Pairwise (fun a b => toLex a ≤ toLex b) := by
+  have hs := List.pairwise_mergeSort (le := fun a b : LaneRef => decide (toLex a ≤ toLex b))
+    (fun a b c hab hbc => by simp only [decide_eq_true_eq] at *; exact hab.trans hbc)
+    (fun a b => by simpa using le_total (toLex a) (toLex b)) succ
+  exact (hs.sublist (List.take_sublist _ _)).imp (by simp)
+
+/-! ## Lane 0 (02-conventions.md:22) -/
+
+/-- The lane-argument check of a map callback: lane 0 fails with
+`DL_STATUS_ERR_INVALID_ARG`, any other lane passes this check. -/
+def laneArgCheck (l : ℤ) : Option Diagnostics.Code :=
+  if l = 0 then some .errInvalidArg else none
+
+/-- P02-12: "0 is the road reference line, which has no centerline, so lane 0 in a
+callback argument is `DL_STATUS_ERR_INVALID_ARG`" (02-conventions.md:22). -/
+theorem lane_zero_invalid :
+    laneArgCheck 0 = some .errInvalidArg ∧ Diagnostics.Code.errInvalidArg.toInt = -1 ∧
+      ∀ l : ℤ, l ≠ 0 → laneArgCheck l = none := by
+  refine ⟨by simp [laneArgCheck], rfl, fun l hl => by simp [laneArgCheck, hl]⟩
+
+/-! ## Mode A variable names (07-fmu-packaging.md:21) -/
+
+def reserved : List String := ["output", "own_state", "dl_init_context"]
+
+def portNameOk (n : String) : Bool := !reserved.contains n
+
+/-- The FMI variables of a Mode A FMU: the input ports, then `output`, `own_state` and
+`dl_init_context`. -/
+def fmiVars (ports : List String) : List String := ports ++ reserved
+
+/-- P07-05: "a port named `output`, `own_state`, or `dl_init_context` is a compile-time
+error" (07-fmu-packaging.md:21). -/
+theorem reserved_rejected : ∀ n ∈ reserved, portNameOk n = false := by decide
+
+/-- What the rule buys: every FMI variable name is distinct (07-fmu-packaging.md:21). -/
+theorem fmiVars_nodup {ports : List String} (hn : ports.Nodup)
+    (hok : ∀ p ∈ ports, portNameOk p = true) : (fmiVars ports).Nodup := by
+  refine List.nodup_append.mpr ⟨hn, by decide, fun a ha b hb hab => ?_⟩
+  subst hab
+  have := hok a ha
+  simp [portNameOk] at this
+  exact this hb
+
+/-! ## MIME subtype names (07-fmu-packaging.md:25) -/
+
+/-- An inner character: a hyphen before a capital, which is lowered. -/
+def kebabChar (x : Char) : List Char := if x.isUpper then ['-', x.toLower] else [x]
+
+/-- "the type names written in lowercase with a hyphen before each inner capital"
+(07-fmu-packaging.md:25). -/
+def kebab : List Char → List Char
+  | [] => []
+  | c :: cs => c.toLower :: cs.flatMap kebabChar
+
+def builtinTypes : List String :=
+  ["IntentFrame", "KinematicControlFrame", "ActuatorControlFrame", "KinematicState",
+   "VisualSlice", "RadarSlice", "CameraSlice", "SurfaceSlice", "RouteNodes"]
+
+/-- An ASCII CamelCase identifier: a capital, then letters and digits. -/
+def CamelCase (s : List Char) : Prop :=
+  ∃ c cs, s = c :: cs ∧ c.isUpper = true ∧ ∀ x ∈ s, x.isAlphanum = true
+
+/-- P07-06: "`IntentFrame` is `intent-frame`, `KinematicControlFrame` is
+`kinematic-control-frame`, and `RadarSlice` is `radar-slice`" (07-fmu-packaging.md:25). -/
+theorem kebab_examples : kebab "IntentFrame".toList = "intent-frame".toList ∧
+    kebab "KinematicControlFrame".toList = "kinematic-control-frame".toList ∧
+    kebab "RadarSlice".toList = "radar-slice".toList := by
+  decide
+
+/-- `own_state` has MIME type `application/x-driveline.kinematic-state` (07-fmu-packaging.md:23). -/
+theorem kebab_kinematicState : kebab "KinematicState".toList = "kinematic-state".toList := by
+  decide
+
+theorem builtin_mime_distinct : (builtinTypes.map fun n => kebab n.toList).Nodup := by
+  decide
+
+/-- The rule alone is not injective: `aB` and `AB` both give `a-b`. -/
+theorem kebab_case_collision : kebab "aB".toList = kebab "AB".toList := by
+  decide
+
+theorem toUpper_of_isUpper {x : Char} (h : x.isUpper = true) : x.toUpper = x :=
+  Char.toUpper_eq_of_not_isLower (Char.not_isLower_of_isUpper h)
+
+theorem flatMap_kebabChar_inj : ∀ {a b : List Char}, (∀ x ∈ a, x.isAlphanum = true) →
+    (∀ x ∈ b, x.isAlphanum = true) → a.flatMap kebabChar = b.flatMap kebabChar → a = b
+  | [], [], _, _, _ => rfl
+  | [], y :: b, _, _, h => by
+    simp [kebabChar] at h
+    split at h <;> simp at h
+  | x :: a, [], _, _, h => by
+    simp [kebabChar] at h
+    split at h <;> simp at h
+  | x :: a, y :: b, ha, hb, h => by
+    have hxa := ha x (by simp)
+    have hya := hb y (by simp)
+    have hdash : ('-').isAlphanum = false := by decide
+    have ih := @flatMap_kebabChar_inj a b (fun z hz => ha z (by simp [hz]))
+      (fun z hz => hb z (by simp [hz]))
+    simp only [List.flatMap_cons, kebabChar] at h
+    by_cases hx : x.isUpper = true <;> by_cases hy : y.isUpper = true <;>
+      simp only [hx, hy, ite_true, Bool.false_eq_true, ite_false, List.cons_append,
+        List.nil_append, List.cons.injEq] at h
+    · obtain ⟨-, hl, ht⟩ := h
+      have : x = y := by
+        rw [← toUpper_of_isUpper hx, ← toUpper_of_isUpper hy, ← Char.toUpper_toLower_eq_toUpper,
+          hl, Char.toUpper_toLower_eq_toUpper]
+      rw [this, ih ht]
+    · exact absurd (h.1 ▸ hya) (by simp [hdash])
+    · exact absurd (h.1 ▸ hxa) (by simp [hdash])
+    · rw [h.1, ih h.2]
+
+/-- "lowercase with a hyphen before each inner capital" (07-fmu-packaging.md:25) gives
+distinct MIME subtypes to distinct ASCII CamelCase type names. -/
+theorem kebab_injective {a b : List Char} (ha : CamelCase a) (hb : CamelCase b)
+    (h : kebab a = kebab b) : a = b := by
+  obtain ⟨c, cs, rfl, hc, hca⟩ := ha
+  obtain ⟨d, ds, rfl, hd, hda⟩ := hb
+  simp only [kebab, List.cons.injEq] at h
+  have hcd : c = d := by
+    rw [← toUpper_of_isUpper hc, ← toUpper_of_isUpper hd, ← Char.toUpper_toLower_eq_toUpper,
+      h.1, Char.toUpper_toLower_eq_toUpper]
+  rw [hcd, flatMap_kebabChar_inj (fun x hx => hca x (by simp [hx]))
+    (fun x hx => hda x (by simp [hx])) h.2]
+
+/-! ## Units (07-fmu-packaging.md:35) -/
+
+inductive BaseUnit | kg | m | s | A | K | mol | cd | rad
+  deriving DecidableEq
+
+/-- A declared FMI unit: conversion `factor · x + offset` to base units, and base-unit
+exponents. -/
+structure FmiUnit where
+  factor : ℚ
+  offset : ℚ
+  exps : BaseUnit → ℤ
+
+def toBase (u : FmiUnit) (x : ℚ) : ℚ := u.factor * x + u.offset
+
+/-- "factor 1 and offset 0 and whose base-unit exponents match the dimension of the value
+bound to it, ignoring any `rad` exponent" (07-fmu-packaging.md:35). -/
+def unitOk (u : FmiUnit) (dim : BaseUnit → ℤ) : Prop :=
+  u.factor = 1 ∧ u.offset = 0 ∧ ∀ b, b ≠ .rad → u.exps b = dim b
+
+/-- P07-07: "conversion to base units has factor 1 and offset 0 … Any other unit is a
+compile-time error, so the runtime never converts units" (07-fmu-packaging.md:35). -/
+theorem unitOk_toBase {u : FmiUnit} {dim : BaseUnit → ℤ} (h : unitOk u dim) (x : ℚ) :
+    toBase u x = x := by
+  simp [toBase, h.1, h.2.1]
+
+/-- "ignoring any `rad` exponent because angles are dimensionless" (07-fmu-packaging.md:35). -/
+theorem unitOk_rad {u : FmiUnit} {dim : BaseUnit → ℤ} (h : unitOk u dim) (k : ℤ) :
+    unitOk { u with exps := Function.update u.exps .rad k } dim :=
+  ⟨h.1, h.2.1, fun b hb => by simp [Function.update_of_ne hb, h.2.2 b hb]⟩
 
 end Driveline.Abi
