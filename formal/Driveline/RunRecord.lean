@@ -44,32 +44,46 @@ def numChar (c : Char) : Prop := c ∈ "0123456789+-.e".toList
 
 instance : DecidablePred numChar := fun c => inferInstanceAs (Decidable (c ∈ _))
 
-/-- The binary64 writer of 18:16: "the shortest decimal that converts back to
-the same value, in the form that ECMAScript `Number::toString` produces, with
-`-0` written as `0`". That form uses only digits, `+`, `-`, `.` and `e`. The
-writer itself belongs to a float WP. -/
+/-- The binary64 writer of 18:16, "in the form that ECMAScript `Number::toString`
+produces". That form uses only digits, `+`, `-`, `.` and `e`. The digits it
+chooses are binary64 formatting (P18-40, `OUT: external`). -/
 structure Renderer (F : Type) where
   render : F → List Char
   alphabet : ∀ x, ∀ c ∈ render x, numChar c
 
-/-- A member value. `raw` is the header's `files` (§19.2). -/
+/-- A lockfile entry `{ "path": string, "sha256": string }`, members in that
+order, in the encoding of §18.1 (19-modules.md:25). -/
+def fileEntry (e : List Char × List Char) : List Char :=
+  '{' :: (jstr "path".toList ++ ':' :: (jstr e.1 ++ ',' ::
+    (jstr "sha256".toList ++ ':' :: (jstr e.2 ++ ['}']))))
+
+/-- The entries separated by `,`. -/
+def fileEntries : List (List Char × List Char) → List Char
+  | [] => []
+  | [e] => fileEntry e
+  | e :: e' :: es => fileEntry e ++ ',' :: fileEntries (e' :: es)
+
+/-- The array `files` of (`path`, `sha256`) entries (19-modules.md:25). -/
+def jfiles (fs : List (List Char × List Char)) : List Char := '[' :: fileEntries fs ++ [']']
+
+/-- A member value. `files` is the header's `files` (§19.2). -/
 inductive Val (F : Type)
   | nat (n : Nat)
   | str (s : List Char)
   | num (x : F)
-  | raw (j : List Char)
+  | files (fs : List (List Char × List Char))
 
 def Val.render {F : Type} (R : Renderer F) : Val F → List Char
   | .nat n => jnat n
   | .str s => jstr s
   | .num x => R.render x
-  | .raw j => j
+  | .files fs => jfiles fs
 
 def Val.shape {F : Type} : Val F → Nat
   | .nat _ => 0
   | .str _ => 1
   | .num _ => 2
-  | .raw _ => 3
+  | .files _ => 3
 
 def member {F : Type} (R : Renderer F) (m : String × Val F) : List Char :=
   jstr m.1.toList ++ ':' :: m.2.render R
@@ -169,7 +183,7 @@ theorem tok_cancel (A : Char → Prop) :
 theorem digitChar_toNat {d : Nat} (h : d < 10) : (digitChar d).toNat - 48 = d := by
   interval_cases d <;> rfl
 
-theorem digitChar_numChar {d : Nat} (h : d < 10) : numChar (digitChar d) ∧
+theorem digitChar_numChar {d : Nat} (h : d < 10) : numChar (digitChar d) ∧ (digitChar d).isDigit ∧
     (digitChar d = '0' → d = 0) := by
   interval_cases d <;> decide
 
@@ -193,6 +207,60 @@ theorem jnat_numChar (n : Nat) : ∀ c ∈ jnat n, numChar c := by
     rintro c ⟨d, hd, rfl⟩
     exact (digitChar_numChar (Nat.digits_lt_base (by norm_num) hd)).1
 
+theorem jnat_isDigit (n : Nat) : ∀ c ∈ jnat n, c.isDigit = true := by
+  unfold jnat
+  split_ifs
+  · simp only [List.mem_singleton, forall_eq]; decide
+  · simp only [List.mem_map, List.mem_reverse]
+    rintro c ⟨d, hd, rfl⟩
+    exact (digitChar_numChar (Nat.digits_lt_base (by norm_num) hd)).2.1
+
+theorem fileEntry_cancel {a b : List Char × List Char} {x y : List Char}
+    (h : fileEntry a ++ x = fileEntry b ++ y) : a = b ∧ x = y := by
+  simp only [fileEntry, List.cons_append, List.append_assoc, List.cons.injEq, true_and] at h
+  obtain ⟨-, h⟩ := jstr_cancel h
+  simp only [List.cons.injEq, true_and] at h
+  obtain ⟨h1, h⟩ := jstr_cancel h
+  simp only [List.cons.injEq, true_and] at h
+  obtain ⟨-, h⟩ := jstr_cancel h
+  simp only [List.cons.injEq, true_and] at h
+  obtain ⟨h2, h⟩ := jstr_cancel h
+  simp only [List.cons_append, List.nil_append, List.cons.injEq, true_and] at h
+  exact ⟨Prod.ext h1 h2, h⟩
+
+theorem fileEntries_head (e : List Char × List Char) (es : List (List Char × List Char)) :
+    ∃ t, fileEntries (e :: es) = '{' :: t := by
+  cases es <;> simp only [fileEntries, fileEntry, List.cons_append] <;> exact ⟨_, rfl⟩
+
+theorem fileEntries_cancel : ∀ {a b : List (List Char × List Char)} {x y : List Char},
+    fileEntries a ++ ']' :: x = fileEntries b ++ ']' :: y → a = b ∧ x = y
+  | [], [], _, _, h => by simpa [fileEntries] using h
+  | [], e :: es, _, _, h => by
+    obtain ⟨t, ht⟩ := fileEntries_head e es
+    simp [fileEntries, ht] at h
+  | e :: es, [], _, _, h => by
+    obtain ⟨t, ht⟩ := fileEntries_head e es
+    simp [fileEntries, ht] at h
+  | [e], [f], _, _, h => by
+    obtain ⟨rfl, h⟩ := fileEntry_cancel h
+    simpa using h
+  | [e], f :: f' :: fs, _, _, h => by
+    simp only [fileEntries, List.append_assoc, List.cons_append] at h
+    simpa using (fileEntry_cancel h).2
+  | e :: e' :: es, [f], _, _, h => by
+    simp only [fileEntries, List.append_assoc, List.cons_append] at h
+    simpa using (fileEntry_cancel h).2
+  | e :: e' :: es, f :: f' :: fs, _, _, h => by
+    simp only [fileEntries, List.append_assoc, List.cons_append] at h
+    obtain ⟨rfl, h'⟩ := fileEntry_cancel h
+    obtain ⟨h1, h2⟩ := fileEntries_cancel (List.cons.inj h').2
+    exact ⟨by rw [h1], h2⟩
+
+theorem jfiles_inj {a b : List (List Char × List Char)} : jfiles a = jfiles b ↔ a = b := by
+  refine ⟨fun h => ?_, fun h => h ▸ rfl⟩
+  simp only [jfiles, List.cons_append, List.cons.injEq, true_and] at h
+  exact (fileEntries_cancel (x := []) (y := []) h).1
+
 theorem comma_not_numChar : ¬ numChar ',' := by decide
 
 /-- A value followed by `,` determines its text and the rest. -/
@@ -207,7 +275,7 @@ theorem val_cancel {F : Type} (R : Renderer F) {v w : Val F} {r s : List Char}
     simpa using h'
   · exact tok_cancel numChar (R.alphabet _) (R.alphabet _) comma_not_numChar h
 
-/-- Two member lists with the same keys and value shapes, `raw` only last,
+/-- Two member lists with the same keys and value shapes, `files` only last,
 that encode alike have the same value texts. -/
 theorem members_cancel {F : Type} (R : Renderer F) :
     ∀ (ms₁ ms₂ : List (String × Val F)), ms₁.map (·.1) = ms₂.map (·.1) →
@@ -247,7 +315,7 @@ structure Header where
   sha256 : List Char
   seed : Nat
   timestepNs : Nat
-  files : List Char
+  files : List (List Char × List Char)
 
 inductive RSev | warning | error
   deriving DecidableEq
@@ -286,7 +354,7 @@ def Line.members {F : Type} : Line F → List (String × Val F)
   | .header h =>
     [("record", .str "header".toList), ("spec_version", .str h.specVersion),
       ("abi_version", .str h.abiVersion), ("scenario_sha256", .str h.sha256),
-      ("seed", .nat h.seed), ("timestep_ns", .nat h.timestepNs), ("files", .raw h.files)]
+      ("seed", .nat h.seed), ("timestep_ns", .nat h.timestepNs), ("files", .files h.files)]
   | .report r =>
     [("record", .str "report".toList), ("tick", .nat r.tick), ("sim_time_ns", .nat r.simTimeNs),
       ("severity", .str r.severity.name), ("code", .str r.code.name.toList),
@@ -346,13 +414,8 @@ theorem encode_texts {F : Type} (R : Renderer F) {a b : Line F} (hk : a.kind = b
       (by simp [Line.members, List.dropLast, Val.shape])
       (by simpa [encode, encodeObj] using h)
 
-/-- P18-01. "The record is UTF-8 text in JSON Lines form. Each line is one JSON
-object followed by `\n`, with no other whitespace. Members appear in the order
-that §18.2 lists them, and every listed member is present." with the string
-escapes and "with `-0` written as `0`" (18-run-record.md:16). Two lines have the
-same encoding exactly when they agree with their binary64 values replaced by
-their written text: the encoding loses only what the binary64 writer
-identifies, such as `-0` and `0`. -/
+/-- Two lines have the same encoding exactly when they agree with their binary64
+values replaced by their written text. -/
 theorem encode_eq_iff {F : Type} (R : Renderer F) (l₁ l₂ : Line F) :
     encode R l₁ = encode R l₂ ↔ l₁.map R.render = l₂.map R.render := by
   constructor
@@ -361,7 +424,7 @@ theorem encode_eq_iff {F : Type} (R : Renderer F) (l₁ l₂ : Line F) :
     have := encode_texts R hk h
     cases l₁ <;> cases l₂ <;> simp only [Line.kind] at hk <;> (try exact absurd hk (by decide)) <;>
       simp only [Line.members, List.map_cons, List.map_nil, Val.render, List.cons.injEq,
-        jstr_inj, jnat_inj, and_true, true_and] at this <;> simp only [Line.map]
+        jstr_inj, jnat_inj, jfiles_inj, and_true, true_and] at this <;> simp only [Line.map]
     · rename_i a b
       cases a; cases b; simp_all
     · rename_i a b
@@ -386,12 +449,12 @@ theorem encode_eq_iff {F : Type} (R : Renderer F) (l₁ l₂ : Line F) :
          simp [encode, encodeObj, Line.members, members, member, Val.render, h5, h6, h7, h8])
 
 /-- P18-02. "An integer is written in decimal with no leading zeros."
-(18-run-record.md:16). The text is decimal digits, it starts with `0` only for
-0, and it determines the integer. -/
+(18-run-record.md:16). Every character of the text is a decimal digit, it
+starts with `0` only for 0, and it determines the integer. -/
 theorem jnat_canonical (n m : Nat) :
-    (∀ c ∈ jnat n, numChar c) ∧ ((jnat n).head? = some '0' → n = 0) ∧
+    (∀ c ∈ jnat n, c.isDigit = true) ∧ ((jnat n).head? = some '0' → n = 0) ∧
       (jnat n = jnat m → n = m) := by
-  refine ⟨jnat_numChar n, fun h => ?_, jnat_inj.1⟩
+  refine ⟨jnat_isDigit n, fun h => ?_, jnat_inj.1⟩
   unfold jnat at h
   split_ifs at h with hn
   · exact hn
@@ -400,7 +463,7 @@ theorem jnat_canonical (n m : Nat) :
     simp only [Option.map_some, Option.some.injEq] at h
     have hl := Nat.getLast_digit_ne_zero 10 hn
     exact absurd ((digitChar_numChar (Nat.digits_lt_base (by norm_num)
-      (List.getLast_mem hne))).2 h) hl
+      (List.getLast_mem hne))).2.2 h) hl
 
 /-- P14-13. "Each report has the fields `tick`, `sim_time_ns`, `severity`
 (`warning` or `error`), `code` (a `dl_status_t` name), `instance` ..., and
@@ -912,5 +975,178 @@ theorem end_cold_init {F : Type} (dt : ℕ+) (b : Bool) :
       (endLine dt (.failed (.exec 0) false) : Line F) = .stop false 0 0 := by
   refine ⟨rfl, ?_⟩
   simp [endLine, lastCommitted, isSuccess, Schedule.tickTime]
+
+end Driveline.RunRecord
+
+namespace Driveline.RunRecord
+
+/-! ### Framing of a line -/
+
+/-- A piece of an encoded line: literal text, or a string written by `jstr`. -/
+inductive Tok
+  | lit (s : List Char)
+  | str (s : List Char)
+
+def Tok.text : Tok → List Char
+  | .lit s => s
+  | .str s => jstr s
+
+/-- A literal piece holds no whitespace. -/
+def Tok.Bare : Tok → Prop
+  | .lit s => ∀ c ∈ s, c.isWhitespace = false
+  | .str _ => True
+
+def fileToks (e : List Char × List Char) : List Tok :=
+  [.lit ['{'], .str "path".toList, .lit [':'], .str e.1, .lit [','], .str "sha256".toList,
+    .lit [':'], .str e.2, .lit ['}']]
+
+def filesToks : List (List Char × List Char) → List Tok
+  | [] => []
+  | [e] => fileToks e
+  | e :: e' :: es => fileToks e ++ .lit [','] :: filesToks (e' :: es)
+
+def Val.toks {F : Type} (R : Renderer F) : Val F → List Tok
+  | .nat n => [.lit (jnat n)]
+  | .str s => [.str s]
+  | .num x => [.lit (R.render x)]
+  | .files fs => .lit ['['] :: filesToks fs ++ [.lit [']']]
+
+def memberToks {F : Type} (R : Renderer F) (m : String × Val F) : List Tok :=
+  .str m.1.toList :: .lit [':'] :: m.2.toks R
+
+def membersToks {F : Type} (R : Renderer F) : List (String × Val F) → List Tok
+  | [] => []
+  | [m] => memberToks R m
+  | m :: m' :: ms => memberToks R m ++ .lit [','] :: membersToks R (m' :: ms)
+
+/-- The pieces of a line before its final `\n`. -/
+def Line.toks {F : Type} (R : Renderer F) (l : Line F) : List Tok :=
+  .lit ['{'] :: membersToks R l.members ++ [.lit ['}']]
+
+theorem fileToks_text (e : List Char × List Char) :
+    (fileToks e).flatMap Tok.text = fileEntry e := by
+  simp [fileToks, fileEntry, Tok.text]
+
+theorem filesToks_text : ∀ fs, (filesToks fs).flatMap Tok.text = fileEntries fs
+  | [] => rfl
+  | [e] => fileToks_text e
+  | e :: e' :: es => by
+    simp [filesToks, fileEntries, fileToks_text, filesToks_text (e' :: es), Tok.text]
+
+theorem Val.toks_text {F : Type} (R : Renderer F) (v : Val F) :
+    (v.toks R).flatMap Tok.text = v.render R := by
+  cases v <;> simp [Val.toks, Val.render, Tok.text, jfiles, filesToks_text]
+
+theorem membersToks_text {F : Type} (R : Renderer F) :
+    ∀ ms, (membersToks R ms).flatMap Tok.text = members R ms
+  | [] => rfl
+  | [m] => by simp [membersToks, members, memberToks, member, Tok.text, Val.toks_text]
+  | m :: m' :: ms => by
+    simp [membersToks, members, memberToks, member, Tok.text, Val.toks_text,
+      membersToks_text R (m' :: ms)]
+
+theorem numChar_not_ws : ∀ c, numChar c → c.isWhitespace = false := by
+  intro c h
+  simp only [numChar] at h
+  revert c
+  decide
+
+theorem fileToks_bare (e : List Char × List Char) : ∀ t ∈ fileToks e, t.Bare := by
+  simp [fileToks, Tok.Bare]
+
+theorem filesToks_bare : ∀ fs, ∀ t ∈ filesToks fs, t.Bare
+  | [] => by simp [filesToks]
+  | [e] => fileToks_bare e
+  | e :: e' :: es => by
+    intro t ht
+    simp only [filesToks, List.mem_append, List.mem_cons] at ht
+    rcases ht with ht | rfl | ht
+    · exact fileToks_bare e t ht
+    · simp [Tok.Bare]
+    · exact filesToks_bare (e' :: es) t ht
+
+theorem Val.toks_bare {F : Type} (R : Renderer F) (v : Val F) : ∀ t ∈ v.toks R, t.Bare := by
+  cases v <;> simp only [Val.toks, List.mem_cons, List.mem_append, List.not_mem_nil, or_false]
+  · rintro t rfl; exact fun c hc => numChar_not_ws c (jnat_numChar _ c hc)
+  · rintro t rfl; trivial
+  · rintro t rfl; exact fun c hc => numChar_not_ws c (R.alphabet _ c hc)
+  · rintro t ((rfl | ht) | rfl)
+    · simp [Tok.Bare]
+    · exact filesToks_bare _ t ht
+    · simp [Tok.Bare]
+
+theorem membersToks_bare {F : Type} (R : Renderer F) :
+    ∀ ms, ∀ t ∈ membersToks R ms, t.Bare
+  | [] => by simp [membersToks]
+  | [m] => by
+    intro t ht
+    simp only [membersToks, memberToks, List.mem_cons] at ht
+    rcases ht with rfl | rfl | ht
+    · trivial
+    · simp [Tok.Bare]
+    · exact Val.toks_bare R _ t ht
+  | m :: m' :: ms => by
+    intro t ht
+    simp only [membersToks, memberToks, List.mem_append, List.mem_cons] at ht
+    rcases ht with (rfl | rfl | ht) | rfl | ht
+    · trivial
+    · simp [Tok.Bare]
+    · exact Val.toks_bare R _ t ht
+    · simp [Tok.Bare]
+    · exact membersToks_bare R (m' :: ms) t ht
+
+theorem hex_ne_nl : ∀ n < 16, hex n ≠ '\n' := by decide
+
+theorem nl_not_mem_escChar (c : Char) : '\n' ∉ escChar c := by
+  unfold escChar
+  split_ifs with h1 h2 h3
+  · decide
+  · decide
+  · simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
+    exact ⟨by decide, by decide, by decide, by decide, (hex_ne_nl _ (by omega)).symm,
+      (hex_ne_nl _ (by omega)).symm⟩
+  · simp only [List.mem_singleton]
+    rintro rfl
+    exact h3 (by decide)
+
+theorem nl_not_mem_jstr (s : List Char) : '\n' ∉ jstr s := by
+  intro h
+  simp only [jstr, escape, List.cons_append, List.mem_cons, List.mem_append, List.mem_flatMap,
+    List.mem_singleton, List.not_mem_nil, or_false] at h
+  rcases h with h | ⟨c, _, h⟩ | h
+  · exact absurd h (by decide)
+  · exact nl_not_mem_escChar c h
+  · exact absurd h (by decide)
+
+theorem nl_not_mem_text (t : Tok) (h : t.Bare) : '\n' ∉ t.text := by
+  cases t with
+  | lit s => intro hm; have := h _ hm; revert this; decide
+  | str s => exact nl_not_mem_jstr s
+
+/-- P18-01. "The record is UTF-8 text in JSON Lines form. Each line is one JSON
+object followed by `\n`, with no other whitespace. Members appear in the order
+that §18.2 lists them, and every listed member is present. A string escapes `"`
+as `\"`, `\` as `\\`, and each character from U+0000 to U+001F as `\u00`
+followed by two lowercase hexadecimal digits. Every other character is written
+as itself." (18-run-record.md:16). Two lines have the same encoding exactly
+when they agree with their binary64 values replaced by their written text. A
+line is a sequence of pieces followed by `\n`, where a whitespace character
+lies only inside a `jstr` string, and `\n` occurs only as the last character.
+The member order is the order of `Line.members`. -/
+theorem encode_spec {F : Type} (R : Renderer F) :
+    (∀ l₁ l₂ : Line F, encode R l₁ = encode R l₂ ↔ l₁.map R.render = l₂.map R.render) ∧
+      ∀ l : Line F, encode R l = (l.toks R).flatMap Tok.text ++ ['\n'] ∧
+        (∀ t ∈ l.toks R, t.Bare) ∧ '\n' ∉ (l.toks R).flatMap Tok.text := by
+  have hb : ∀ l : Line F, ∀ t ∈ l.toks R, t.Bare := by
+    intro l t ht
+    simp only [Line.toks, List.mem_cons, List.mem_append, List.not_mem_nil, or_false] at ht
+    rcases ht with (rfl | ht) | rfl
+    · simp [Tok.Bare]
+    · exact membersToks_bare R _ t ht
+    · simp [Tok.Bare]
+  refine ⟨encode_eq_iff R, fun l => ⟨?_, hb l, ?_⟩⟩
+  · simp [encode, encodeObj, Line.toks, Tok.text, membersToks_text]
+  · simp only [List.mem_flatMap, not_exists, not_and]
+    exact fun t ht => nl_not_mem_text t (hb l t ht)
 
 end Driveline.RunRecord

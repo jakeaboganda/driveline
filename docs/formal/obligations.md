@@ -188,7 +188,7 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | P14-11 | 14:34 | "cold init carries tick 0 … splice window carries the tick after … tick k, Phase 4 included" | MODEL | Driveline.Diagnostics | `reportTick` by context; `simTime = reportTick*dt` | PROVED: Driveline.Diagnostics.report_tick |
 | P14-12 | 14:34 | "teardown report carries the same tick … as the error … or … the tick whose Phase 4 ended it" | MODEL | Driveline.Diagnostics | teardown tick = tick of the terminating event | PROVED: Driveline.RunRecord.teardown_report_tick |
 | P14-13 | 14:34 | report field order "tick, sim_time_ns, severity, co…" | MODEL | Driveline.RunRecord | field list fixed (shared with 18:21) | PROVED: Driveline.RunRecord.report_members |
-| P18-01 | 18:16 | "JSON Lines … no other whitespace … member order … escapes" | MODEL | Driveline.RunRecord | `encode` injective; `decode ∘ encode = id` | PROVED: Driveline.RunRecord.encode_eq_iff |
+| P18-01 | 18:16 | "JSON Lines … no other whitespace … member order … escapes" | MODEL | Driveline.RunRecord | `encode` injective; `decode ∘ encode = id` | PROVED: Driveline.RunRecord.encode_spec |
 | P18-02 | 18:16 | "integer … decimal with no leading zeros" | INT | Driveline.RunRecord | canonical `Nat.repr` (sign rule not stated) | PROVED: Driveline.RunRecord.jnat_canonical |
 | P18-03 | 18:20,23 | "Header: first line … End: last line" | MODEL | Driveline.RunRecord | `head = header ∧ last = end`; exactly one of each | PROVED: Driveline.RunRecord.record_ends |
 | P18-04 | 18:22 | "actor_a and actor_b … ascending" | DECIDE | Driveline.RunRecord | `a < b` | PROVED: Driveline.RunRecord.pair_ascending |
@@ -198,6 +198,7 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | P18-08 | 18:25 | "committed state after Phase 4 of tick k has tick k+1" | INT | Driveline.RunRecord | `collisionTick = reportTick + 1` within one Phase 4 | PROVED: Driveline.RunRecord.phase4_collision_tick |
 | P18-09 | 18:25 | "ticks need not increase from line to line" | MODEL | Driveline.RunRecord | counterexample witness; prove only `tick(l₂) ≥ tick(l₁) - 1` for consecutive body lines | PROVED: Driveline.RunRecord.ticks_need_not_increase |
 | P18-10 | 18:25 | "Lines … in the order that sequential execution … produces" | MODEL | Driveline.RunRecord | `body = trace seqExec` | PROVED: Driveline.RunRecord.lines_sequential |
+| P18-40 | 18:16 | "the shortest decimal that converts back to the same value ... with `-0` written as `0`" | EXTERNAL | — | binary64 formatting | OUT: external |
 
 ### WP06 Manifest, types, units (§15, §16)
 
