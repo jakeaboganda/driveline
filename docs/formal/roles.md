@@ -16,6 +16,7 @@ Read-only. Write the WP's statement spec as your answer; the orchestrator saves 
 2. The data model as Lean code.
 3. For every ledger row of the WP: the verified spec line, and one Lean theorem statement with a doc comment that starts with the row ID and quotes the spec. A claim that is false as written gets `REFUTE` and the statement of its counterexample. A row that cannot be proved in Lean gets `OUT` with the reason, a duplicate gets `DUP`, and a row that needs another WP's model gets `DEFER` with that WP.
 4. Never add a hypothesis that the spec does not state. A claim that needs one is a spec gap: say so with the spec line.
+5. Before you write `REFUTE`, search `docs/spec/` for rules elsewhere that make the counterexample unreachable: value ranges in §16, feasibility at cold init in §8, runtime duties in §9.1, the map cache in §11. In WP01 to WP07, eight of thirteen proposed refutations failed this test. Quote the search you ran.
 
 ## Implementer
 
