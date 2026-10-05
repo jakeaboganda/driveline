@@ -80,3 +80,16 @@ Spec gaps found (queued for the spec-fix pass):
 * **P15-13** `15-manifest.md:48`. An enum parameter's `default` is "its numeric value", and no rule says the number must name a member of the enum. One compiler can reject `9` for `GearMode` while another passes it to `dl_set_parameters`.
 * **P15-11** `15-manifest.md:49`. A `modes` entry for a mode field that the component's inputs do not have, or a misspelled key, is neither required to be rejected nor allowed. An ignored misspelling also silently means "accepts every mode" for the real field.
 * **P03-41** `03-vehicle-parameters.md:31`. With no upper bound on tier values, an invariant whose sum overflows to infinity passes the binary64 tolerance (`inf ≤ inf`). Recorded `OUT: external`; the spec may want a finiteness or magnitude rule.
+
+## WP07 C-ABI rules (§9)
+
+Module `Abi`: version encoding, `char[N]` strings as zero-padded bytes, `fmi3Binary` payload sizes and little-endian words, the ring view in `uint32_t`, output memory layout, header stamping, lane-section partition, the `world_to_frenet` tie-break, successor truncation, MIME subtype names. 21 rows proved, 2 refuted.
+
+Review rejected one refutation. P09-06 had shown overlapping outputs with `output_stride = 0`. §9.1 has the runtime write `actor_id` into every output frame after `dl_do_step` writes every entry, so a stride below `sizeof(T)` makes the runtime's own duties unsatisfiable. The row is proved: entries are disjoint for every write order exactly when the stride is at least `sizeof(T)`.
+
+Spec defects found (queued for the spec-fix pass):
+
+* **P09-02, P09-03** `09-abi.md:20`. `(major << 16) | (minor << 8)` collides once `minor` reaches 256: version 0.256 encodes as 1.0. Nothing bounds `minor`, and `tools/bump.py` increments it without limit. The §15.3 manifest check compares the strings and rejects; `dl_instantiate` and the init-context check compare the integers and accept (`Driveline.Abi.refute_compatible`).
+* **P09-21** `09-abi.md:33`. A lane can contain a point at two values of `s` (a loop or a helical ramp). The tie-break key has no `s` component, so `world_to_frenet` may return either `(s, d)` (`Driveline.Abi.refute_unique_s`).
+* **P09-23** `09-abi.md:35`. `sample_lane_path` defines no result when `κ·d ≥ 1`, where the offset curvature has a pole. §6.2 makes the same case an error at spawn.
+* **P09-06** (note) `09-abi.md:23` should state `output_stride ≥ sizeof(T)`, and a multiple of 8 so `double` fields stay aligned.
