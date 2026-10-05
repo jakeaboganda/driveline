@@ -4,6 +4,7 @@ The Lean 4 model in [`formal/`](../../formal/README.md) proves claims of the spe
 
 * [`obligations.md`](obligations.md) is the ledger: every checkable claim of the spec, its class, and its status.
 * [`specs/`](specs/) holds one statement spec per work package: the Lean definitions and theorem statements agreed before implementation.
+* [`roles.md`](roles.md) holds the instructions each agent role follows.
 * [`log.md`](log.md) records each work package as it lands: what was proved, what the review changed, and which spec defects it found.
 
 ## Process
