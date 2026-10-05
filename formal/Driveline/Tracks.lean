@@ -7,7 +7,8 @@ import Driveline.SliceBuffer
 
 Routes (`docs/spec/04-perception.md:16`), the four slice payloads and `TargetTrack`
 (04:45-52, `abi/driveline_abi.h:97-151`), their interpolation classes and dependency
-conditions (04:36-41, 04:56-58), and the track list rules (04:54).
+conditions (04:36-41, 04:56-58), the track list rules (04:54), and `at` on each slice
+buffer (`at_radar` and its siblings).
 
 Float64 fields are real numbers, so the `+INFINITY` values of `ttc_lon` and `lead_ttc`
 (04:48-49) and the non-finite rules (04:30, 04:40) are not modeled. `num_tracks` is the
@@ -180,69 +181,6 @@ def WFCamera (c : CameraSlice) : Prop :=
   c.obstacle_confidence ∈ Set.Icc 0 1 ∧ c.lane_line_confidence ∈ Set.Icc 0 1
 def WFSurface (s : SurfaceSlice) : Prop := ∀ μ ∈ [s.mu_fl, s.mu_fr, s.mu_rl, s.mu_rr], μ ∈ Set.Icc 0 2
 
-/-! ## Field class tables (abi:109-151, 04:56-57) -/
-
-inductive TrackField | target_actor_id | rel_x | rel_y | rel_z | rel_vx | rel_vy | rel_yaw | range
-  | bearing | ttc_lon | road_id | lane_id | object_class | confidence
-  deriving DecidableEq
-
-def TrackField.ty : TrackField → Ty
-  | .target_actor_id | .lane_id | .object_class => .int
-  | .road_id => .str
-  | _ => .f64
-
-def TrackField.cls : TrackField → Cls
-  | .target_actor_id | .lane_id | .object_class | .road_id => .hold
-  | .rel_yaw | .bearing => .angle
-  | _ => .linear
-
-inductive VisualField | ego_road_id | ego_lane_id | left_lane_free | right_lane_free | ego_s
-  | ego_d | lead_ttc | num_tracks
-  deriving DecidableEq
-
-def VisualField.ty : VisualField → Ty
-  | .ego_road_id => .str
-  | .ego_lane_id | .left_lane_free | .right_lane_free | .num_tracks => .int
-  | _ => .f64
-
-def VisualField.cls : VisualField → Cls
-  | .ego_road_id | .ego_lane_id | .left_lane_free | .right_lane_free | .num_tracks => .hold
-  | _ => .linear
-
-inductive RadarField | has_primary_target | num_tracks | primary_target_id | primary_range
-  | primary_azimuth | primary_rcs
-  deriving DecidableEq
-
-def RadarField.ty : RadarField → Ty
-  | .has_primary_target | .num_tracks | .primary_target_id => .int
-  | _ => .f64
-
-def RadarField.cls : RadarField → Cls
-  | .has_primary_target | .num_tracks | .primary_target_id => .hold
-  | .primary_azimuth => .angle
-  | _ => .linear
-
-inductive CameraField | obstacle_confidence | lane_line_confidence | d_lane_center_est
-  | heading_error_est | num_tracks
-  deriving DecidableEq
-
-def CameraField.ty : CameraField → Ty
-  | .num_tracks => .int
-  | _ => .f64
-
-def CameraField.cls : CameraField → Cls
-  | .num_tracks => .hold
-  | .heading_error_est => .angle
-  | _ => .linear
-
-inductive SurfaceField | mu_fl | mu_fr | mu_rl | mu_rr | mu_mean | road_grade | road_bank
-  | elevation_z
-  deriving DecidableEq
-
-def SurfaceField.ty : SurfaceField → Ty := fun _ => .f64
-
-def SurfaceField.cls : SurfaceField → Cls := fun _ => .linear
-
 /-! ## Helper lemmas -/
 
 theorem trackLe_iff (a b : Track) :
@@ -323,47 +261,6 @@ theorem encodeRoute_wf {l : List LaneRef} {r : Route} (h : encodeRoute l = some 
 
 /-! ## Interpolation classes (04:38-39, 04:56-58) -/
 
-/-- P04-20: “Every integer, enum, flag, and `char[]` field is `HOLD`” (04:38, 04:56). -/
-theorem track_hold : ∀ f : TrackField, f.ty ≠ .f64 → f.cls = .hold := by
-  intro f; cases f <;> decide
-
-/-- P04-20: “Every integer, enum, flag, and `char[]` field is `HOLD`” (04:38, 04:56). -/
-theorem visual_hold : ∀ f : VisualField, f.ty ≠ .f64 → f.cls = .hold := by
-  intro f; cases f <;> decide
-
-/-- P04-20: “Every integer, enum, flag, and `char[]` field is `HOLD`” (04:38, 04:56). -/
-theorem radar_hold : ∀ f : RadarField, f.ty ≠ .f64 → f.cls = .hold := by
-  intro f; cases f <;> decide
-
-/-- P04-20: “Every integer, enum, flag, and `char[]` field is `HOLD`” (04:38, 04:56). -/
-theorem camera_hold : ∀ f : CameraField, f.ty ≠ .f64 → f.cls = .hold := by
-  intro f; cases f <;> decide
-
-/-- P04-20: “Every integer, enum, flag, and `char[]` field is `HOLD`” (04:38, 04:56). -/
-theorem surface_hold : ∀ f : SurfaceField, f.ty ≠ .f64 → f.cls = .hold := by
-  intro f; cases f <;> decide
-
-/-- P04-20: “Every `float64` field is `LINEAR` unless listed here. … `ANGLE`: `rel_yaw`,
-`bearing`, `primary_azimuth`, `heading_error_est`” (04-perception.md:56-57). -/
-theorem track_angle : ∀ f : TrackField, f.cls = .angle ↔ f = .rel_yaw ∨ f = .bearing := by
-  intro f; cases f <;> decide
-
-/-- P04-20: “`ANGLE`: … `primary_azimuth`” (04-perception.md:57). -/
-theorem radar_angle : ∀ f : RadarField, f.cls = .angle ↔ f = .primary_azimuth := by
-  intro f; cases f <;> decide
-
-/-- P04-20: “`ANGLE`: … `heading_error_est`” (04-perception.md:57). -/
-theorem camera_angle : ∀ f : CameraField, f.cls = .angle ↔ f = .heading_error_est := by
-  intro f; cases f <;> decide
-
-/-- P04-20: no `VisualSlice` field is `ANGLE` (04-perception.md:57). -/
-theorem visual_angle : ∀ f : VisualField, f.cls ≠ .angle := by
-  intro f; cases f <;> decide
-
-/-- P04-20: no `SurfaceSlice` field is `ANGLE` (04-perception.md:57). -/
-theorem surface_angle : ∀ f : SurfaceField, f.cls ≠ .angle := by
-  intro f; cases f <;> decide
-
 /-- P04-20: “`HOLD`: Value from s[k+1]” (04-perception.md:38), for the HOLD fields of a
 track. -/
 theorem interpTrack_hold (w : ℝ) (o n : Track) :
@@ -387,6 +284,23 @@ theorem interpRadar_hold (w : ℝ) (o n : RadarSlice) :
     (interpRadar w o n).has_primary_target = o.has_primary_target ∧
       (interpRadar w o n).primary_target_id = o.primary_target_id :=
   ⟨rfl, rfl⟩
+
+/-- P04-20: “`HOLD`: Value from s[k+1]. Every integer, enum, flag, and `char[]` field is
+`HOLD`” (04-perception.md:38, 04:56), for every non-float64 field of `TargetTrack`,
+`VisualSlice`, and `RadarSlice` other than `num_tracks` (`CameraSlice` and `SurfaceSlice`
+have no other such field; `num_tracks` is in `radar_num_tracks_hold`,
+`camera_num_tracks_hold`, and `num_tracks_hold`). -/
+theorem interp_hold (w : ℝ) :
+    (∀ o n : Track, (interpTrack w o n).id = o.id ∧ (interpTrack w o n).road_id = o.road_id ∧
+      (interpTrack w o n).lane_id = o.lane_id ∧
+      (interpTrack w o n).object_class = o.object_class) ∧
+    (∀ o n : VisualSlice, (interpVisual w o n).ego_road_id = o.ego_road_id ∧
+      (interpVisual w o n).ego_lane_id = o.ego_lane_id ∧
+      (interpVisual w o n).left_lane_free = o.left_lane_free ∧
+      (interpVisual w o n).right_lane_free = o.right_lane_free) ∧
+    (∀ o n : RadarSlice, (interpRadar w o n).has_primary_target = o.has_primary_target ∧
+      (interpRadar w o n).primary_target_id = o.primary_target_id) :=
+  ⟨interpTrack_hold w, interpVisual_hold w, interpRadar_hold w⟩
 
 /-- P04-21: “A field with a dependency … is interpolated only when its dependency condition
 holds between s[k+1] and s[k]. Otherwise that field takes its value from s[k+1]” (04:39);
@@ -420,6 +334,26 @@ interpolated (04:39). -/
 theorem visual_dep_holds {o n : VisualSlice} (h : o.ego_road_id = n.ego_road_id) :
     (interpVisual w o n).ego_s = lerp w o.ego_s n.ego_s := by
   simp [interpVisual, visualDepS, interpReal, h]
+
+/-- P04-21: “`ego_d` depends on `ego_road_id` and `ego_lane_id`. … The dependency
+condition of a field holds between two samples if each of its dependency fields is equal in
+both” (04-perception.md:58); then the field is interpolated (04:39). -/
+theorem visual_dep_holds_d {o n : VisualSlice} (hr : o.ego_road_id = n.ego_road_id)
+    (hl : o.ego_lane_id = n.ego_lane_id) :
+    (interpVisual w o n).ego_d = lerp w o.ego_d n.ego_d := by
+  simp [interpVisual, visualDepD, visualDepS, interpReal, hr, hl]
+
+/-- P04-21: “`primary_range`, `primary_azimuth`, and `primary_rcs` depend on
+`primary_target_id`. … For the `primary_*` fields, `primary_target_id` must also be
+nonzero.” (04-perception.md:58); then each field follows its class (04:36-37, 04:39). -/
+theorem radar_dep_holds {o n : RadarSlice} (h : o.primary_target_id = n.primary_target_id)
+    (h0 : o.primary_target_id ≠ 0) :
+    (interpRadar w o n).primary_range = lerp w o.primary_range n.primary_range ∧
+      (interpRadar w o n).primary_azimuth =
+        angleInterp w o.primary_azimuth n.primary_azimuth ∧
+      (interpRadar w o n).primary_rcs = lerp w o.primary_rcs n.primary_rcs := by
+  have hd : radarDep o n = true := by simp [radarDep, h, h ▸ h0]
+  simp [interpRadar, interpReal, hd]
 
 /-- P04-22: “`has_primary_target` is 1 exactly when `primary_target_id` is nonzero. When
 `primary_target_id` is 0, `primary_range`, `primary_azimuth`, and `primary_rcs` are 0.”
@@ -460,6 +394,32 @@ theorem mergeTracks_matched {o n : List Track} {a c : Track} (ho : o.length ≤ 
   have hm : matchTrack w n a = interpTrack w a c := by simp [matchTrack, hf]
   rw [mergeTracks, (finalize_perm (by simpa using ho)).mem_iff, ← hm]
   exact List.mem_map_of_mem ha
+
+/-- P04-23: “Tracks present in only one sample are taken from s[k+1]” (04-perception.md:41):
+a track of s[k+1] whose id is absent from s[k] is in the result unchanged. -/
+theorem mergeTracks_unmatched {o n : List Track} {a : Track} (ho : o.length ≤ 32)
+    (ha : a ∈ o) (hn : ∀ c ∈ n, c.id ≠ a.id) : a ∈ mergeTracks w o n := by
+  have hf : n.find? (·.id == a.id) = none := by
+    rw [List.find?_eq_none]
+    intro c hc
+    simpa using hn c hc
+  have hm : matchTrack w n a = a := by simp [matchTrack, hf]
+  rw [mergeTracks, (finalize_perm (by simpa using ho)).mem_iff, ← hm]
+  exact List.mem_map_of_mem ha
+
+/-- P04-23: “`num_tracks` is its length” (04-perception.md:41) agrees with `num_tracks` as
+HOLD (04:38), for a `RadarSlice`. -/
+theorem radar_num_tracks_hold {o n : RadarSlice} (ho : o.tracks.length ≤ 32) :
+    (interpRadar w o n).tracks.length = o.tracks.length := by
+  have := (finalize_perm (l := o.tracks.map (matchTrack w n.tracks)) (by simpa using ho)).length_eq
+  simpa [interpRadar, mergeTracks] using this
+
+/-- P04-23: “`num_tracks` is its length” (04-perception.md:41) agrees with `num_tracks` as
+HOLD (04:38), for a `CameraSlice`. -/
+theorem camera_num_tracks_hold {o n : CameraSlice} (ho : o.tracks.length ≤ 32) :
+    (interpCamera w o n).tracks.length = o.tracks.length := by
+  have := (finalize_perm (l := o.tracks.map (matchTrack w n.tracks)) (by simpa using ho)).length_eq
+  simpa [interpCamera, mergeTracks] using this
 
 /-- P04-23: “`num_tracks` is its length” (04-perception.md:41) agrees with `num_tracks` as
 HOLD (04:38). -/
@@ -562,6 +522,49 @@ theorem interpSurface_wf {o n : SurfaceSlice} (hw : w ∈ Set.Ico (0 : ℝ) 1) (
   simp only [interpSurface, interpReal, if_true]
   exact ⟨lerp_mem_Icc hw ho.1 hn.1, lerp_mem_Icc hw ho.2.1 hn.2.1,
     lerp_mem_Icc hw ho.2.2.1 hn.2.2.1, lerp_mem_Icc hw ho.2.2.2 hn.2.2.2⟩
+
+/-! ## `at` on slice buffers (04:33-41) -/
+
+/-- P04-14..P04-17: `buffer.at(t_query, Interpolate)` on a `RadarSlice` buffer, in the
+interior bracket s[k+1].t ≤ t_query < s[k].t, returns `interpRadar α s[k+1] s[k]`
+(04-perception.md:35-41). -/
+theorem at_radar {b : Buffer RadarSlice} {q : ℤ} (hb : SliceBuffer.Valid b)
+    {s0 sl : Entry RadarSlice} (h0 : b.head? = some s0) (hl : b.getLast? = some sl)
+    (hlo : (sl.t : ℤ) < q) (hhi : q < s0.t) {k : ℕ} {n o : Entry RadarSlice}
+    (hn : b[k]? = some n) (ho : b[k + 1]? = some o) (hko : (o.t : ℤ) ≤ q) (hkn : q < n.t) :
+    atQ (fun o n w => interpRadar w o n) .interpolate b q =
+      some ⟨q.toNat, interpRadar (alpha q o n) o.data n.data⟩ :=
+  at_interp_eq _ hb h0 hl hlo hhi hn ho hko hkn
+
+/-- P04-14..P04-17: `at` in `Interpolate` mode on a `VisualSlice` buffer
+(04-perception.md:35-41). -/
+theorem at_visual {b : Buffer VisualSlice} {q : ℤ} (hb : SliceBuffer.Valid b)
+    {s0 sl : Entry VisualSlice} (h0 : b.head? = some s0) (hl : b.getLast? = some sl)
+    (hlo : (sl.t : ℤ) < q) (hhi : q < s0.t) {k : ℕ} {n o : Entry VisualSlice}
+    (hn : b[k]? = some n) (ho : b[k + 1]? = some o) (hko : (o.t : ℤ) ≤ q) (hkn : q < n.t) :
+    atQ (fun o n w => interpVisual w o n) .interpolate b q =
+      some ⟨q.toNat, interpVisual (alpha q o n) o.data n.data⟩ :=
+  at_interp_eq _ hb h0 hl hlo hhi hn ho hko hkn
+
+/-- P04-14..P04-17: `at` in `Interpolate` mode on a `CameraSlice` buffer
+(04-perception.md:35-41). -/
+theorem at_camera {b : Buffer CameraSlice} {q : ℤ} (hb : SliceBuffer.Valid b)
+    {s0 sl : Entry CameraSlice} (h0 : b.head? = some s0) (hl : b.getLast? = some sl)
+    (hlo : (sl.t : ℤ) < q) (hhi : q < s0.t) {k : ℕ} {n o : Entry CameraSlice}
+    (hn : b[k]? = some n) (ho : b[k + 1]? = some o) (hko : (o.t : ℤ) ≤ q) (hkn : q < n.t) :
+    atQ (fun o n w => interpCamera w o n) .interpolate b q =
+      some ⟨q.toNat, interpCamera (alpha q o n) o.data n.data⟩ :=
+  at_interp_eq _ hb h0 hl hlo hhi hn ho hko hkn
+
+/-- P04-14..P04-17: `at` in `Interpolate` mode on a `SurfaceSlice` buffer
+(04-perception.md:35-36). -/
+theorem at_surface {b : Buffer SurfaceSlice} {q : ℤ} (hb : SliceBuffer.Valid b)
+    {s0 sl : Entry SurfaceSlice} (h0 : b.head? = some s0) (hl : b.getLast? = some sl)
+    (hlo : (sl.t : ℤ) < q) (hhi : q < s0.t) {k : ℕ} {n o : Entry SurfaceSlice}
+    (hn : b[k]? = some n) (ho : b[k + 1]? = some o) (hko : (o.t : ℤ) ≤ q) (hkn : q < n.t) :
+    atQ (fun o n w => interpSurface w o n) .interpolate b q =
+      some ⟨q.toNat, interpSurface (alpha q o n) o.data n.data⟩ :=
+  at_interp_eq _ hb h0 hl hlo hhi hn ho hko hkn
 
 end Theorems
 

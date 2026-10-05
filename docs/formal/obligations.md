@@ -110,9 +110,6 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | ID | Spec | Quote | Class | Lean module | Statement | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | P02-11 | 02:21 | 'road_id (char[64]): Null-terminated' | MODEL | Driveline.Tracks | road id byte length <= 63 | TODO |
-| P02-12 | 02:22 | 'lane 0 in a callback argument is DL_STATUS_ERR_INVALID_ARG' | DECIDE | Driveline.Tracks | validLane l <-> l != 0; callback l=0 returns -1 | TODO |
-| P02-13 | 02:25 | 'The text after the last colon is the signed lane index' | MODEL | Driveline.Tracks | parse (render r l) = some (r,l) even if r contains ':' (split on last colon) | TODO |
-| P02-14 | 02:26 | 'RHT, negative lanes drive toward increasing s ... LHT, positive lanes' | DECIDE | Driveline.Tracks | sigma rule lane = if (rule=RHT) = (lane<0) then 1 else -1, for lane != 0; sigma in {1,-1} | TODO |
 | P04-01 | 04:16 | 'up to 64 lanes ... nodes beyond count zero-filled' | INT | Driveline.Tracks | route WF: count <= 64, and nodes[i] = 0 for i >= count | PROVED: Driveline.Tracks.encodeRoute_wf |
 | P04-02 | 04:19 | 'capacity N in [1, 64]' | INT | Driveline.SliceBuffer | 1 <= N <= 64 | DUP: PH-03 |
 | P04-03 | 04:19 | 'N_s >= N_c ... holding the newest min(count_s, N_c) samples' | INT | Driveline.SliceBuffer | view b Nc = b.take Nc; view.count = min count_s Nc <= Nc | PROVED: Driveline.SliceBuffer.view_spec |
@@ -128,14 +125,19 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | P04-15 | 04:34 | 'Floor: newest s[k] where s[k].t <= t_query' | INT | Driveline.SliceBuffer | after clamping, such a k exists and is unique (first index under strict decrease) | PROVED: Driveline.SliceBuffer.at_floor_spec |
 | P04-16 | 04:35 | 'bracket s[k+1].t <= t_query < s[k].t ... alpha in [0, 1)' | REAL | Driveline.SliceBuffer | the bracket exists and is unique; 0 <= alpha < 1 | PROVED: Driveline.SliceBuffer.bracket_unique |
 | P04-17 | 04:36 | '(1 - alpha) v_{k+1} + alpha v_k' | REAL | Driveline.SliceBuffer | LINEAR result lies in [min, max] of the two samples; this keeps confidence in [0,1] and mu in [0,2] | PROVED: Driveline.SliceBuffer.lerp_mem |
-| P04-20 | 04:38,56 | 'Every integer, enum, flag, and char[] field is HOLD' | MODEL | Driveline.Tracks | classOf field = HOLD for all non-float64 fields | PROVED: Driveline.Tracks.track_hold |
+| P04-20 | 04:38,56 | 'Every integer, enum, flag, and char[] field is HOLD' | MODEL | Driveline.Tracks | interp*_hold: every HOLD field equals s[k+1]; num_tracks = s[k+1] length (radar_num_tracks_hold, camera_num_tracks_hold, num_tracks_hold) | PROVED: Driveline.Tracks.interp_hold |
 | P04-21 | 04:39,58 | 'interpolated only when its dependency condition holds' | MODEL | Driveline.Tracks | dep fails -> field = s[k+1].field | PROVED: Driveline.Tracks.visual_dep_fail |
 | P04-22 | 04:58 | 'has_primary_target is 1 exactly when primary_target_id is nonzero' | DECIDE | Driveline.Tracks | WF radar slice: has = 1 <-> id != 0; Interp keeps this (both fields HOLD from s[k+1]) | PROVED: Driveline.Tracks.interpRadar_wf |
 | P04-23 | 04:41 | 'Matched ... by target_actor_id ... dropped if absent from s[k+1]' | MODEL | Driveline.Tracks | ids of result = ids of s[k+1]; result length <= 32 without needing truncation | PROVED: Driveline.Tracks.mergeTracks_ids |
 | P04-24 | 04:54 | 'each target_actor_id appears at most once' | MODEL | Driveline.Tracks | Nodup ids; kept by merge and by sort+take | PROVED: Driveline.Tracks.finalize_nodup |
 | P04-25 | 04:54 | 'sorted by ascending range, ties ... ascending target_actor_id' | MODEL | Driveline.Tracks | Sorted lexLt (range,id); a strict total order given unique ids and non-NaN ranges | PROVED: Driveline.Tracks.finalize_sorted |
 | P04-26 | 04:54 | 'keeps the first 32 ... entries beyond num_tracks are zero-filled' | INT | Driveline.Tracks | num_tracks <= 32; tracks[i] = 0 for i >= num_tracks; result = (sort l).take 32 | PROVED: Driveline.Tracks.finalize_first32 |
-| P04-27 | 04:48-52 | 'confidence in [0,1]'; 'mu in [0, 2]'; 'ttc_lon +INFINITY when not closing' | MODEL | Driveline.Tracks | range predicates on slice fields; ttc is ENNReal-like (EXTERNAL for the inf encoding) | PROVED: Driveline.Tracks.interpTrack_wf |
+| P04-27 | 04:48-52 | 'confidence in [0,1]'; 'mu in [0, 2]'; 'ttc_lon +INFINITY when not closing' | MODEL | Driveline.Tracks | confidence/obstacle/lane_line in [0,1], mu in [0,2], kept by interpolation | PROVED: Driveline.Tracks.interpTrack_wf |
+| P04-41 | 04:40 | 'If a LINEAR or ANGLE field is not finite in either sample, the field takes its value from s[k+1]' | MODEL | Driveline.SliceBuffer | non-finite LINEAR/ANGLE sample -> field = s[k+1] (needs the F64 model) | TODO |
+| P04-42 | 04:29 | '{0.0, false} if count < 2' | INT | Driveline.SliceBuffer | count < 2 -> rate_of = {0, false} | PROVED: Driveline.SliceBuffer.rate_of_count_lt |
+| P04-43 | 04:30 | 'valid is also false if the dependency condition of f fails between s[0] and s[m]' | MODEL | Driveline.SliceBuffer | dep s0 sm = false -> rate_of = {0, false} | PROVED: Driveline.SliceBuffer.rate_of_dep_fail |
+| P04-44 | 04:30 | 'Whenever valid is false, value is 0.0' | MODEL | Driveline.SliceBuffer | valid = false -> value = 0 | PROVED: Driveline.SliceBuffer.rate_of_invalid_value |
+| P04-45 | 04:29-30 | '(s[0].f - s[m].f)/(s[0].t - s[m].t) ... integer difference taken first ... ANGLE ... wrapped' | REAL | Driveline.SliceBuffer | valid -> value = (wrap if ANGLE)(f s0 - f sm) / (denom_ns/1e9) | PROVED: Driveline.SliceBuffer.rate_of_value |
 | PH-03 | abi:162-163 | 'entries + ((head + capacity - k) % capacity) * entry_size' | INT | Driveline.SliceBuffer | head < cap, k < cap -> index < cap, injective in k, k=0 gives head; no UInt32 overflow since cap <= 64 | PROVED: Driveline.SliceBuffer.slot_injOn |
 
 ### WP04 Tick schedule and FMU time (§11, §7)
@@ -257,6 +259,7 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | P09-11 | 09:33 | 'world_to_frenet succeeds for every finite (X, Y)' | DECIDE | Driveline.Abi | lexicographic tie-break is a linear order; totality needs a nonempty map | TODO |
 | P09-12 | 09:35 | 'curvature is κ/(1 − κ d) ... negated when sampling toward decreasing s' | REAL | Driveline.Abi | same lemma as P06-01; d_offset sign flip keeps the side | TODO |
 | P09-13 | 09:36 | 'writes at most max_successors ... out_num_successors to the total' | INT | Driveline.Abi | written = min(max, total) | TODO |
+| P02-12 | 02:22 | 'lane 0 in a callback argument is DL_STATUS_ERR_INVALID_ARG' | DECIDE | Driveline.Tracks | validLane l <-> l != 0; callback l=0 returns -1 | TODO |
 
 ### WP08 Splice, init contexts, tier change, discrete parts (§6.2, §10.4)
 
@@ -312,8 +315,10 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | P02-08 | 02:18 | 'It equals the body frame when roll and pitch are 0' | REAL | Driveline.Angles | eulerZYX psi 0 0 = Rz psi | TODO |
 | P02-15 | 02:27 | 'theta_road = sigma arctan(dz/ds)' / 'positive when the road rises in the driving direction' | REAL | Driveline.Angles | sign theta_road = sign (sigma * dz/ds); abs theta_road < pi/2 | TODO |
 | P02-16 | 02:27 | 'An actor that drives against its lane ... still gets these lane-relative signs' | REAL | Driveline.Angles | theta_road depends only on (lane, s), not on the actor's heading/velocity | TODO |
-| P04-11 | 04:30 | 'ANGLE field, the difference ... is wrapped to (-pi, pi]' | REAL | Driveline.Angles | wrap x in Ioc (-pi) pi; wrap x - x in 2*pi*Z; wrap idempotent | TODO |
-| P04-18 | 04:37 | 'A difference of exactly pi therefore turns positive' | REAL | Driveline.Angles | wrap (-pi) = pi; wrap pi = pi | TODO |
+| P04-11 | 04:30 | 'ANGLE field, the difference ... is wrapped to (-pi, pi]' | REAL | Driveline.Angles | wrap x in Ioc (-pi) pi; wrap x - x in 2*pi*Z; wrap idempotent | PROVED: Driveline.Angles.wrap_spec |
+| P04-18 | 04:37 | 'A difference of exactly pi therefore turns positive' | REAL | Driveline.Angles | wrap (-pi) = pi; wrap pi = pi | PROVED: Driveline.Angles.wrap_exact_pi |
+| P02-13 | 02:25 | 'The text after the last colon is the signed lane index' | MODEL | Driveline.Tracks | parse (render r l) = some (r,l) even if r contains ':' (split on last colon) | TODO |
+| P02-14 | 02:26 | 'RHT, negative lanes drive toward increasing s ... LHT, positive lanes' | DECIDE | Driveline.Tracks | sigma rule lane = if (rule=RHT) = (lane<0) then 1 else -1, for lane != 0; sigma in {1,-1} | TODO |
 | P04-19 | 04:37 | 'v_{k+1} + alpha Delta, wrapped' | REAL | Driveline.Angles | result in (-pi, pi]; alpha = 0 gives wrap v_{k+1} (follows a shortest-arc path) | TODO |
 | P05-23 | 05:76 | 'before t_0 it is the first point ... after the last point it is the last point, held' | MODEL | Driveline.Kinematics | target interp traj t: t <= t0 gives p0; t >= tn gives pn; n = 1 gives a constant | TODO |
 | P05-25 | 05:78 | 'remaining stopping distance is stop_at_odometer - own.odometer_m' | REAL | Driveline.Kinematics | if odometer is monotone, remaining is antitone | TODO |
@@ -455,6 +460,7 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | P03-29 | 03:36 | uri path normalization | EXTERNAL | — | filesystem / §19.2 path semantics | OUT: external |
 | P04-12 | 04:30 | 'not finite ... {0.0, false}' | EXTERNAL | — | binary64 non-finite values; modelled as Option real | OUT: external |
 | P04-28 | 04:44 | OSI mapping | EXTERNAL | — | ASAM OSI field semantics; open-items | OUT: external |
+| P04-40 | 04:48 | 'ttc_lon +INFINITY encoding' | EXTERNAL | — | binary64 infinity; float64 fields are modeled as reals | OUT: external |
 | P05-13 | 05:38 | 'checks them ... in the order that §14.2 gives' | EXTERNAL | Driveline.Validity | firstFailure returns the earliest failing rule | OUT: external |
 | P05-16 | 05:40 | 'trajectory times and the stop target are absolute' | PROSE | — | - | OUT: prose |
 | P05-19 | 05:69 | 'target_road_id names a road of the map ... num_waypoints is from 2 to 64' | EXTERNAL | Driveline.Validity | map oracle; range check | OUT: external |

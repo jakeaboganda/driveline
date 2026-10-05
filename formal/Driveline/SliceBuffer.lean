@@ -100,8 +100,6 @@ def atQ (mix : α → α → ℝ → α) (m : Mode) (b : Buffer α) (q : ℤ) : 
 /-! ## Interpolation classes (04:36-39) -/
 
 inductive Cls | linear | angle | hold deriving DecidableEq
-/-- `int` covers every integer, enum, and flag field. -/
-inductive Ty | f64 | int | str deriving DecidableEq
 
 def lerp (w vo vn : ℝ) : ℝ := (1 - w) * vo + w * vn
 def angleInterp (w vo vn : ℝ) : ℝ := Angles.wrap (vo + w * Angles.wrap (vn - vo))
@@ -311,6 +309,49 @@ theorem rate_of_valid_denom_pos (f : α → ℝ) (isAngle : Bool) (dep : α → 
     · simp
   exact (rate_of_denom_pos hb h2 hk).2
 
+/-- P04-42: “{0.0, false} if count < 2” (04-perception.md:29). -/
+theorem rate_of_count_lt (f : α → ℝ) (isAngle : Bool) (dep : α → α → Bool) (k : ℕ)
+    (h : b.length < 2) : rateOf f isAngle dep b k = ⟨0, false⟩ := by
+  unfold rateOf
+  split <;> simp [h]
+
+/-- P04-43: “`valid` is also false if the dependency condition of f (§4.3) fails between
+s[0] and s[m] (only these two samples are compared)”; “Whenever `valid` is false, `value`
+is 0.0” (04-perception.md:30). -/
+theorem rate_of_dep_fail (f : α → ℝ) (isAngle : Bool) (dep : α → α → Bool) (k : ℕ)
+    {s0 sm : Entry α} (h0 : b[0]? = some s0) (hm : b[rateM b k]? = some sm)
+    (hd : dep s0.data sm.data = false) : rateOf f isAngle dep b k = ⟨0, false⟩ := by
+  simp [rateOf, h0, hm, hd]
+
+/-- P04-44: “Whenever `valid` is false, `value` is 0.0” (04-perception.md:30). -/
+theorem rate_of_invalid_value (f : α → ℝ) (isAngle : Bool) (dep : α → α → Bool) (k : ℕ)
+    (h : (rateOf f isAngle dep b k).valid = false) : (rateOf f isAngle dep b k).value = 0 := by
+  revert h
+  unfold rateOf
+  split
+  · split <;> simp
+  · simp
+
+/-- P04-45: “{(s[0].f − s[m].f)/(s[0].t − s[m].t), true} otherwise”; “The denominator is
+(s[0].t_ns − s[m].t_ns)/10^9”; “For an `ANGLE` field, the difference s[0].f − s[m].f is
+wrapped to (−π, π]” (04-perception.md:29-30). -/
+theorem rate_of_value (f : α → ℝ) (isAngle : Bool) (dep : α → α → Bool) (k : ℕ)
+    (h : (rateOf f isAngle dep b k).valid = true) :
+    ∃ s0 sm : Entry α, b[0]? = some s0 ∧ b[rateM b k]? = some sm ∧
+      (rateOf f isAngle dep b k).value =
+        (if isAngle then Angles.wrap (f s0.data - f sm.data) else f s0.data - f sm.data) /
+          (((s0.t - sm.t : ℕ) : ℝ) / 10 ^ 9) := by
+  revert h
+  unfold rateOf
+  split
+  · next s0 sm h0 hm =>
+    split
+    · simp
+    · intro _
+      refine ⟨s0, sm, h0, hm, ?_⟩
+      simp [rateDenom, tAt, h0, hm]
+  · simp
+
 /-- P04-10: “The denominator is (s[0].t_ns − s[m].t_ns)/10^9, with the integer difference
 taken first” (04-perception.md:30). The uint64 subtraction does not wrap. -/
 theorem rate_denom_exact (hb : Valid b) (k : ℕ) :
@@ -406,7 +447,9 @@ theorem at_interp_bracket (hb : Valid b) {s0 sl : Entry α} (h0 : b.head? = some
   simp only [List.getElem?_eq_getElem hk, List.getElem?_eq_getElem (show k < b.length by omega)]
 
 /-- P04-14: “The returned entry's `t` is t_query clamped to [s[count-1].t, s[0].t] in
-`Interpolate` mode, and the chosen sample's time otherwise” (04-perception.md:33). -/
+`Interpolate` mode, and the chosen sample's time otherwise” (04-perception.md:33).
+`at_interp_eq` and `Tracks.at_radar` (and siblings) connect `at` to the slice interpolation
+functions. -/
 theorem at_interp_t (hb : Valid b) {s0 sl : Entry α} (h0 : b.head? = some s0)
     (hl : b.getLast? = some sl) (q : ℤ) :
     ∃ e, atQ mix .interpolate b q = some e ∧ (e.t : ℤ) = max (sl.t : ℤ) (min q s0.t) := by
@@ -443,7 +486,9 @@ theorem at_floor_mem (hb : Valid b) (q : ℤ) : ∃ e ∈ b, atQ mix .floor b q 
 
 /-- P04-15: “`Floor` Mode: Returns the newest sample s[k] where s[k].t ≤ t_query”
 (04-perception.md:34). Once a sample is at or before the query, the clamps return that
-sample too. -/
+sample too.
+`at_interp_eq` and `Tracks.at_radar` (and siblings) connect `at` to the slice interpolation
+functions. -/
 theorem at_floor_spec (hb : Valid b) {sl : Entry α} (hl : b.getLast? = some sl)
     (hq : (sl.t : ℤ) ≤ q) :
     ∃ (k : ℕ) (e : Entry α), b[k]? = some e ∧ (e.t : ℤ) ≤ q ∧ (∀ j < k, ∀ e' : Entry α, b[j]? = some e' → q < e'.t) ∧
@@ -470,7 +515,9 @@ theorem at_floor_spec (hb : Valid b) {sl : Entry α} (hl : b.getLast? = some sl)
     simp [List.getElem?_eq_getElem hk]
 
 /-- P04-16: “For bracket s[k+1].t ≤ t_query < s[k].t” (04-perception.md:35): in the
-interior the bracket exists and is unique. -/
+interior the bracket exists and is unique.
+`at_interp_eq` and `Tracks.at_radar` (and siblings) connect `at` to the slice interpolation
+functions. -/
 theorem bracket_unique (hb : Valid b) {s0 sl : Entry α} (h0 : b.head? = some s0)
     (hl : b.getLast? = some sl) (hlo : (sl.t : ℤ) < q) (hhi : q < s0.t) :
     ∃! k, ∃ n o, b[k]? = some n ∧ b[k + 1]? = some o ∧ (o.t : ℤ) ≤ q ∧ q < n.t := by
@@ -487,6 +534,24 @@ theorem bracket_unique (hb : Valid b) {s0 sl : Entry α} (h0 : b.head? = some s0
   · have := hb.t_le (i := k + 1) (j := j) (by omega) hjl
     omega
 
+/-- P04-14..P04-17 glue: in the interior, `at` in `Interpolate` mode on the bracket
+s[k+1].t ≤ t_query < s[k].t returns `mix s[k+1] s[k] α` at time t_query
+(04-perception.md:33-35). -/
+theorem at_interp_eq (hb : Valid b) {s0 sl : Entry α} (h0 : b.head? = some s0)
+    (hl : b.getLast? = some sl) (hlo : (sl.t : ℤ) < q) (hhi : q < s0.t)
+    {k : ℕ} {n o : Entry α} (hn : b[k]? = some n) (ho : b[k + 1]? = some o)
+    (hko : (o.t : ℤ) ≤ q) (hkn : q < n.t) :
+    atQ mix .interpolate b q = some ⟨q.toNat, mix o.data n.data (alpha q o n)⟩ := by
+  obtain ⟨k', n', o', hn', ho', h1, h2, he⟩ := at_interp_bracket (q := q) mix hb h0 hl hlo hhi
+  have hk : k = k' := (bracket_unique hb h0 hl hlo hhi).unique ⟨n, o, hn, ho, hko, hkn⟩
+    ⟨n', o', hn', ho', h1, h2⟩
+  subst hk
+  rw [hn] at hn'
+  rw [ho] at ho'
+  cases hn'
+  cases ho'
+  exact he
+
 /-- P04-16: “α = (t_query − s[k+1].t)/(s[k].t − s[k+1].t) ∈ [0, 1)” (04-perception.md:35). -/
 theorem alpha_mem (o n : Entry α) (h1 : (o.t : ℤ) ≤ q) (h2 : q < n.t) :
     alpha q o n ∈ Set.Ico 0 1 := by
@@ -498,7 +563,9 @@ theorem alpha_mem (o n : Entry α) (h1 : (o.t : ℤ) ≤ q) (h2 : q < n.t) :
 /-! ## LINEAR interpolation (04:36) -/
 
 /-- P04-17: “`LINEAR`: (1 − α) v_{k+1} + α v_k” (04-perception.md:36). The result stays
-between the samples. -/
+between the samples.
+`at_interp_eq` and `Tracks.at_radar` (and siblings) connect `at` to the slice interpolation
+functions. -/
 theorem lerp_mem {w : ℝ} (hw : w ∈ Set.Ico (0 : ℝ) 1) (vo vn : ℝ) :
     lerp w vo vn ∈ Set.Icc (min vo vn) (max vo vn) := by
   obtain ⟨hw0, hw1⟩ := hw
