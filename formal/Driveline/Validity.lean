@@ -12,9 +12,9 @@ rule (05:98), the `ActuatorControlFrame` rule (05:114), and the
 by construction: a mode field has an enum type, and `ModeEnum.ofNat?` decodes
 only the listed numbers (P05-03).
 
-05:70 says `v_ref`, `time_gap_ref` and `distance_gap_min` are 'not negative'.
-This model reads that literally as `¬ x < 0`, which accepts NaN. `gap_rule`
-records the gap.
+The output check of §14.2 runs the finiteness step before these rules, so
+'not negative' (05:70), written `¬ x < 0`, is `0 ≤ x` on every frame that
+passes the check (`gap_rule`).
 -/
 
 namespace Driveline
@@ -76,8 +76,7 @@ def laneRule (map : RoadMap) (f : IntentFrame) : Prop :=
 def polylineRule (f : IntentFrame) : Prop :=
   f.lat = .polylinePath → pathOK f.numWaypoints f.pathPoints
 
-/-- 05:70. 'Where they apply' is where the modes use the field; 'not
-negative' is read literally. -/
+/-- 05:70. 'Where they apply' is where the modes use the field. -/
 def gapRule (f : IntentFrame) : Prop :=
   (f.lon = .gapProfile → f.gapTargetActorId ≠ 0) ∧
     (f.uses .vRef = true → ¬ f.vRef < 0) ∧
@@ -253,6 +252,178 @@ def KinematicState.valid (s : KinematicState) : Prop :=
 odometer_m ≤ 0`. -/
 def stopNow (s : F64) (odo : ℝ) : Prop := s ≤ .fin odo
 
+theorem not_stopNow_posInf (odo : ℝ) : ¬ stopNow .posInf odo := by
+  rintro (h | ⟨h, _⟩)
+  · exact h
+  · cases h
+
+/-! ## Output validation (spec §14.2)
+
+The output check of `docs/spec/14-diagnostics.md` item 4, in its order: (1)
+mode values, `NONE`, used counts and used `char[64]` fields, failing with
+`DL_STATUS_ERR_INVALID_ARG`; (2) finiteness of every used field, where a field
+that its mode makes a bound (05:36) may be `+INFINITY`, failing with
+`DL_STATUS_ERR_NUMERIC`; (3) the §5 validity rules, failing with
+`DL_STATUS_ERR_INVALID_ARG`. A mode field always holds a listed value or `NONE`
+here, because it has an enum type (P05-03). -/
+
+/-- The outcome of the output check of one frame. -/
+inductive CheckResult | ok | invalidArg | numeric
+  deriving DecidableEq
+
+namespace F64
+
+def Finite : F64 → Prop
+  | fin _ => True
+  | _ => False
+
+theorem not_finite_posInf : ¬ posInf.Finite := id
+
+theorem Finite.exists {x : F64} (h : x.Finite) : ∃ r : ℝ, x = fin r := by
+  cases x with
+  | fin r => exact ⟨r, rfl⟩
+  | _ => exact (h : False).elim
+
+/-- On a finite value, 'not negative' is `0 ≤ r`. -/
+theorem Finite.nonneg {x : F64} (h : x.Finite) (hn : ¬ x < 0) : ∃ r : ℝ, x = fin r ∧ 0 ≤ r := by
+  obtain ⟨r, rfl⟩ := h.exists
+  rw [zero_def, fin_lt_fin] at hn
+  exact ⟨r, rfl, not_lt.1 hn⟩
+
+end F64
+
+def Waypoint.Finite (w : Waypoint) : Prop :=
+  w.x.Finite ∧ w.y.Finite ∧ w.psiRef.Finite ∧ w.kappaRef.Finite
+
+def TrajPoint.Finite (p : TrajPoint) : Prop :=
+  p.x.Finite ∧ p.y.Finite ∧ p.psi.Finite ∧ p.v.Finite ∧ p.a.Finite ∧ p.kappa.Finite
+
+/-- A `char[64]` field holds a NUL within its 64 bytes with valid UTF-8 before
+it. A `String` is valid UTF-8, so the text must have no NUL and fit in 63
+bytes. -/
+def charOK (s : String) : Prop := s.utf8ByteSize < 64 ∧ '\x00' ∉ s.toList
+
+namespace IntentFrame
+
+/-- Step 1, `NONE` only where 05:34 allows it: no stated group is `NONE`. -/
+def noneOK (d : Decl) (f : IntentFrame) : Prop :=
+  d = .override ∨ ∀ g, stated d g = true → f.modeNat g ≠ 0
+
+/-- Step 1. -/
+def wellFormed (d : Decl) (f : IntentFrame) : Prop :=
+  f.noneOK d ∧ (f.uses .numWaypoints = true → f.numWaypoints ≤ 64) ∧
+    (f.uses .numTrajPoints = true → f.numTrajPoints ≤ 64) ∧
+    (f.uses .targetRoadId = true → charOK f.targetRoadId)
+
+/-- Step 2. `stop_at_odometer` is a bound under every mode that uses it. -/
+def finiteOK (f : IntentFrame) : Prop :=
+  (f.uses .aRef = true → f.aRef.Finite) ∧ (f.uses .vRef = true → f.vRef.Finite) ∧
+    (f.uses .stopAtOdometer = true → f.stopAtOdometer.Finite ∨ f.stopAtOdometer = .posInf) ∧
+    (f.uses .timeGapRef = true → f.timeGapRef.Finite) ∧
+    (f.uses .distanceGapMin = true → f.distanceGapMin.Finite) ∧
+    (f.uses .dRef = true → f.dRef.Finite) ∧
+    (f.uses .pathPoints = true →
+      ∀ i : Fin 64, i.val < f.numWaypoints → (f.pathPoints i).Finite) ∧
+    (f.uses .trajectory = true →
+      ∀ i : Fin 64, i.val < f.numTrajPoints → (f.trajectory i).Finite)
+
+open Classical in
+/-- The output check of one `IntentFrame` of declared type `d`. -/
+noncomputable def outputCheck (map : RoadMap) (d : Decl) (f : IntentFrame) : CheckResult :=
+  if ¬ f.wellFormed d then .invalidArg
+  else if ¬ f.finiteOK then .numeric
+  else if f.valid map d then .ok else .invalidArg
+
+theorem outputCheck_ok {map : RoadMap} {d : Decl} {f : IntentFrame} :
+    f.outputCheck map d = .ok ↔ f.wellFormed d ∧ f.finiteOK ∧ f.valid map d := by
+  unfold outputCheck
+  split_ifs <;> simp_all
+
+theorem outputCheck_numeric {map : RoadMap} {d : Decl} {f : IntentFrame} (hw : f.wellFormed d)
+    (hf : ¬ f.finiteOK) : f.outputCheck map d = .numeric := by
+  unfold outputCheck
+  simp_all
+
+end IntentFrame
+
+namespace KinematicControlFrame
+
+/-- Step 1, `NONE` only where 05:34 allows it. -/
+def noneOK (d : Decl) (f : KinematicControlFrame) : Prop :=
+  d = .override ∨ ∀ g, stated d g = true → f.modeNat g ≠ 0
+
+/-- Step 1. The frame has no counts and no `char` fields. -/
+def wellFormed (d : Decl) (f : KinematicControlFrame) : Prop := f.noneOK d
+
+/-- Step 2. `jerk_lon_cmd` under `ACCEL` and `steer_rate_cmd` under `ANGLE`
+are bounds (05:36). -/
+def finiteOK (f : KinematicControlFrame) : Prop :=
+  (f.uses .aLonCmd = true → f.aLonCmd.Finite) ∧
+    (f.uses .jerkLonCmd = true →
+      f.jerkLonCmd.Finite ∨ (f.accel = .accel ∧ f.jerkLonCmd = .posInf)) ∧
+    (f.uses .steerAngleCmd = true → f.steerAngleCmd.Finite) ∧
+    (f.uses .steerRateCmd = true →
+      f.steerRateCmd.Finite ∨ (f.steer = .angle ∧ f.steerRateCmd = .posInf))
+
+open Classical in
+/-- The output check of one `KinematicControlFrame` of declared type `d`. -/
+noncomputable def outputCheck (d : Decl) (f : KinematicControlFrame) : CheckResult :=
+  if ¬ f.wellFormed d then .invalidArg
+  else if ¬ f.finiteOK then .numeric
+  else if f.valid d then .ok else .invalidArg
+
+theorem outputCheck_ok {d : Decl} {f : KinematicControlFrame} :
+    f.outputCheck d = .ok ↔ f.wellFormed d ∧ f.finiteOK ∧ f.valid d := by
+  unfold outputCheck
+  split_ifs <;> simp_all
+
+theorem outputCheck_numeric {d : Decl} {f : KinematicControlFrame} (hw : f.wellFormed d)
+    (hf : ¬ f.finiteOK) : f.outputCheck d = .numeric := by
+  unfold outputCheck
+  simp_all
+
+theorem outputCheck_invalid {d : Decl} {f : KinematicControlFrame} (hw : f.wellFormed d)
+    (hf : f.finiteOK) (hv : ¬ f.valid d) : f.outputCheck d = .invalidArg := by
+  unfold outputCheck
+  simp_all
+
+end KinematicControlFrame
+
+namespace ActuatorControlFrame
+
+/-- Step 1, `NONE` only where 05:34 allows it. -/
+def noneOK (d : Decl) (f : ActuatorControlFrame) : Prop :=
+  d = .override ∨ ∀ g, f.modeNat g ≠ 0
+
+/-- Step 1. The frame has no counts and no `char` fields. -/
+def wellFormed (d : Decl) (f : ActuatorControlFrame) : Prop := f.noneOK d
+
+/-- Step 2. No field of this frame is a bound. -/
+def finiteOK (f : ActuatorControlFrame) : Prop :=
+  (f.uses .throttle = true → f.throttle.Finite) ∧ (f.uses .brake = true → f.brake.Finite) ∧
+    (f.uses .steeringWheelNorm = true → f.steeringWheelNorm.Finite) ∧
+    (f.uses .steeringTorqueNm = true → f.steeringTorqueNm.Finite)
+
+open Classical in
+/-- The output check of one `ActuatorControlFrame` of declared type `d`. -/
+noncomputable def outputCheck (numGears : Nat) (d : Decl) (f : ActuatorControlFrame) :
+    CheckResult :=
+  if ¬ f.wellFormed d then .invalidArg
+  else if ¬ f.finiteOK then .numeric
+  else if f.valid numGears d then .ok else .invalidArg
+
+theorem outputCheck_ok {n : Nat} {d : Decl} {f : ActuatorControlFrame} :
+    f.outputCheck n d = .ok ↔ f.wellFormed d ∧ f.finiteOK ∧ f.valid n d := by
+  unfold outputCheck
+  split_ifs <;> simp_all
+
+theorem outputCheck_numeric {n : Nat} {d : Decl} {f : ActuatorControlFrame}
+    (hw : f.wellFormed d) (hf : ¬ f.finiteOK) : f.outputCheck n d = .numeric := by
+  unfold outputCheck
+  simp_all
+
+end ActuatorControlFrame
+
 end Driveline
 
 namespace Driveline.Validity
@@ -346,20 +517,48 @@ theorem port_conversion :
     · exact ((IntentFrame.pOR_lon _).mp
         ((IntentFrame.zero_valid_iff _ _ _).mp h).1).2.1 rfl
 
-/-- P05-12. 'The value `+INFINITY` means no bound'
-(docs/spec/05-checkpoints.md:36). `+∞` passes every bound rule, and with 'a value
-at or below zero means stop now' (05:78) a `+∞` stop target never stops. -/
+/-- P05-12. '`jerk_lon_cmd` under `ACCEL`, `steer_rate_cmd` under `ANGLE`, and
+`stop_at_odometer` bound other fields. The value `+INFINITY` means no bound'
+(docs/spec/05-checkpoints.md:36), with the output check of
+docs/spec/14-diagnostics.md item 4. `+∞` in one of the three bound fields under
+its bound mode keeps a frame that passes the check passing. Any other used
+`IntentFrame` field that is not finite, and a NaN or `-∞` stop target, fail with
+`DL_STATUS_ERR_NUMERIC`. With 'a value at or below zero means stop now' (05:78),
+a `+∞` stop target never stops. -/
 theorem infinity_no_bound :
-    (∀ (d : Decl) (f : KinematicControlFrame), f.valid d →
-      ({ f with jerkLonCmd := .posInf, steerRateCmd := .posInf } : KinematicControlFrame).valid d) ∧
-    (∀ (map : RoadMap) (d : Decl) (f : IntentFrame), f.valid map d →
-      ({ f with stopAtOdometer := .posInf } : IntentFrame).valid map d) ∧
+    (∀ (map : RoadMap) (d : Decl) (f : IntentFrame), f.outputCheck map d = .ok →
+      ({ f with stopAtOdometer := .posInf } : IntentFrame).outputCheck map d = .ok) ∧
+    (∀ (d : Decl) (f : KinematicControlFrame), f.outputCheck d = .ok → f.accel = .accel →
+      ({ f with jerkLonCmd := .posInf } : KinematicControlFrame).outputCheck d = .ok) ∧
+    (∀ (d : Decl) (f : KinematicControlFrame), f.outputCheck d = .ok → f.steer = .angle →
+      ({ f with steerRateCmd := .posInf } : KinematicControlFrame).outputCheck d = .ok) ∧
+    (∀ (map : RoadMap) (d : Decl) (f : IntentFrame) (x : F64), ¬ x.Finite → f.wellFormed d →
+      (f.uses .aRef = true ∧ f.aRef = x ∨ f.uses .vRef = true ∧ f.vRef = x ∨
+        f.uses .timeGapRef = true ∧ f.timeGapRef = x ∨
+        f.uses .distanceGapMin = true ∧ f.distanceGapMin = x ∨ f.uses .dRef = true ∧ f.dRef = x ∨
+        f.uses .stopAtOdometer = true ∧ f.stopAtOdometer = x ∧ x ≠ .posInf) →
+      f.outputCheck map d = .numeric) ∧
     (∀ odo : ℝ, ¬ stopNow .posInf odo) := by
-  refine ⟨fun _ _ ⟨hp, _, _⟩ => ⟨hp, fun _ => F64.zero_lt_posInf, fun _ => F64.zero_lt_posInf⟩,
-    fun _ _ _ h => h, fun _ => ?_⟩
-  rintro (h | ⟨h, _⟩)
-  · exact h
-  · cases h
+  refine ⟨fun map d f h => ?_, fun d f h ha => ?_, fun d f h hs => ?_,
+    fun map d f x hx hw h => IntentFrame.outputCheck_numeric hw fun hf => ?_, not_stopNow_posInf⟩
+  · obtain ⟨hw, ⟨h1, h2, -, h4, h5, h6, h7, h8⟩, hv⟩ := IntentFrame.outputCheck_ok.1 h
+    exact IntentFrame.outputCheck_ok.2 ⟨hw, ⟨h1, h2, fun _ => Or.inr rfl, h4, h5, h6, h7, h8⟩, hv⟩
+  · obtain ⟨hw, ⟨h1, -, h3, h4⟩, hp, -, hv⟩ := KinematicControlFrame.outputCheck_ok.1 h
+    exact KinematicControlFrame.outputCheck_ok.2
+      ⟨hw, ⟨h1, fun _ => Or.inr ⟨ha, rfl⟩, h3, h4⟩, hp, fun _ => F64.zero_lt_posInf, hv⟩
+  · obtain ⟨hw, ⟨h1, h2, h3, -⟩, hp, hv, -⟩ := KinematicControlFrame.outputCheck_ok.1 h
+    exact KinematicControlFrame.outputCheck_ok.2
+      ⟨hw, ⟨h1, h2, h3, fun _ => Or.inr ⟨hs, rfl⟩⟩, hp, hv, fun _ => F64.zero_lt_posInf⟩
+  · obtain ⟨h1, h2, h3, h4, h5, h6, -, -⟩ := hf
+    rcases h with ⟨hu, he⟩ | ⟨hu, he⟩ | ⟨hu, he⟩ | ⟨hu, he⟩ | ⟨hu, he⟩ | ⟨hu, he, hne⟩
+    · exact hx (he ▸ h1 hu)
+    · exact hx (he ▸ h2 hu)
+    · exact hx (he ▸ h4 hu)
+    · exact hx (he ▸ h5 hu)
+    · exact hx (he ▸ h6 hu)
+    · rcases h3 hu with h | h
+      · exact hx (he ▸ h)
+      · exact hne (he ▸ h)
 
 /-- P05-14. 'After the check, the runtime sets every field that the frame's
 modes do not use, and every array entry past its count, to zero, so the bytes
@@ -434,23 +633,25 @@ theorem stt_trajectory_rule :
 
 /-- P05-20. 'With `GAP_PROFILE`, `gap_target_actor_id` is not 0. Where they
 apply, `v_ref`, `time_gap_ref`, and `distance_gap_min` are not negative'
-(docs/spec/05-checkpoints.md:70). 'Not negative' (`¬ x < 0`) and 'at least 0'
-(`0 ≤ x`) differ on NaN. The model follows the text, so a NaN `v_ref` passes:
-the last conjunct is the witness for the spec gap. -/
+(docs/spec/05-checkpoints.md:70), on every frame that passes the output check of
+docs/spec/14-diagnostics.md item 4. The finiteness step runs first, so each of
+these fields is a real at least 0. -/
 theorem gap_rule :
-    (∀ (map : RoadMap) (d : Decl) (f : IntentFrame), f.valid map d →
-      f.lon = .gapProfile → f.gapTargetActorId ≠ 0) ∧
-    (∀ (map : RoadMap) (d : Decl) (f : IntentFrame), f.valid map d →
-      f.uses .vRef = true → ¬ f.vRef < 0) ∧
-    (¬ F64.nan < 0 ∧ ¬ (0 : F64) ≤ F64.nan) ∧
-    (∀ map : RoadMap, ∃ f : IntentFrame,
-      f.valid map .lon ∧ f.lon = .gapProfile ∧ f.vRef = .nan) := by
-  refine ⟨fun _ _ _ hv => hv.2.2.2.2.1, fun _ _ _ hv => hv.2.2.2.2.2.1,
-    ⟨F64.not_nan_lt _, F64.not_le_nan _⟩, fun map => ⟨{ IntentFrame.blank ⟨0, 0⟩ with
-      lon := .gapProfile, gapTargetActorId := 1, vRef := .nan }, ?_, rfl, rfl⟩⟩
-  refine ⟨(IntentFrame.pOR_lon _).mpr ⟨nofun, nofun, rfl, rfl⟩, ⟨⟨nofun, nofun⟩, nofun⟩,
-    nofun, nofun, fun _ => by decide, fun _ => F64.not_nan_lt _,
-    fun _ => F64.not_zero_lt_zero, fun _ => F64.not_zero_lt_zero⟩
+    (∀ (map : RoadMap) (d : Decl) (f : IntentFrame), f.outputCheck map d = .ok →
+      f.lon = .gapProfile → f.gapTargetActorId ≠ 0 ∧
+        (∃ v : ℝ, f.vRef = .fin v ∧ 0 ≤ v) ∧ (∃ t : ℝ, f.timeGapRef = .fin t ∧ 0 ≤ t) ∧
+        (∃ g : ℝ, f.distanceGapMin = .fin g ∧ 0 ≤ g)) ∧
+    (∀ (map : RoadMap) (d : Decl) (f : IntentFrame), f.outputCheck map d = .ok →
+      f.uses .vRef = true → ∃ v : ℝ, f.vRef = .fin v ∧ 0 ≤ v) := by
+  refine ⟨fun map d f h hg => ?_, fun map d f h hu => ?_⟩
+  · obtain ⟨-, ⟨-, h2, -, h4, h5, -⟩, ⟨-, -, -, -, ⟨g1, g2, g3, g4⟩⟩⟩ :=
+      IntentFrame.outputCheck_ok.1 h
+    have hv : f.uses .vRef = true := IntentFrame.uses_of_lon (by rw [hg]; rfl)
+    have ht : f.uses .timeGapRef = true := IntentFrame.uses_of_lon (by rw [hg]; rfl)
+    have hd : f.uses .distanceGapMin = true := IntentFrame.uses_of_lon (by rw [hg]; rfl)
+    exact ⟨g1 hg, (h2 hv).nonneg (g2 hv), (h4 ht).nonneg (g3 ht), (h5 hd).nonneg (g4 hd)⟩
+  · obtain ⟨-, ⟨-, h2, -⟩, ⟨-, -, -, -, ⟨-, g2, -⟩⟩⟩ := IntentFrame.outputCheck_ok.1 h
+    exact (h2 hu).nonneg (g2 hu)
 
 /-- P05-27. 'A component that receives a mode it does not implement returns
 `DL_STATUS_ERR_UNSUPPORTED_MODE` ... `NONE` is never checked', and 'a field that
@@ -464,46 +665,84 @@ theorem unsupported_mode_check {α : Type} [ModeEnum α] [DecidableEq α] :
 
 /-- P05-29. 'A `KinematicControlFrame` is valid if and only if the Partial and
 Override rule holds, each mode field holds one of its listed values, and the
-bounds under `ACCEL` and `ANGLE` are above zero' (docs/spec/05-checkpoints.md:98).
-NaN bounds are rejected and `+∞` is accepted. -/
+bounds under `ACCEL` and `ANGLE` are above zero' (docs/spec/05-checkpoints.md:98),
+with the output check of docs/spec/14-diagnostics.md item 4. A passing frame has
+its bounds above zero, and a finite bound at or below zero fails with
+`DL_STATUS_ERR_INVALID_ARG`. A used field that is not finite fails with
+`DL_STATUS_ERR_NUMERIC`, except `+∞` in a bound field under its bound mode
+(`infinity_no_bound`): NaN anywhere, and `+∞` in `jerk_lon_cmd` under `JERK` or
+`steer_rate_cmd` under `RATE`, are numeric errors. -/
 theorem kinematic_bounds_above_zero :
-    (∀ (d : Decl) (f : KinematicControlFrame), f.accel = .accel → f.jerkLonCmd = .nan →
-      ¬ f.valid d) ∧
-    (∀ (d : Decl) (f : KinematicControlFrame), f.steer = .angle → f.steerRateCmd = .nan →
-      ¬ f.valid d) ∧
-    (0 : F64) < .posInf ∧
-    (∀ (d : Decl) (f : KinematicControlFrame), f.accel = .accel →
-      f.partialOverrideRule d → (f.steer = .angle → (0 : F64) < f.steerRateCmd) →
-      (f.valid d ↔ (0 : F64) < f.jerkLonCmd)) :=
-  ⟨fun _ _ ha hn ⟨_, h, _⟩ => F64.not_lt_nan 0 (hn ▸ h ha),
-    fun _ _ hs hn ⟨_, _, h⟩ => F64.not_lt_nan 0 (hn ▸ h hs), F64.zero_lt_posInf,
-    fun _ _ ha hp hs => ⟨fun h => h.2.1 ha, fun h => ⟨hp, fun _ => h, hs⟩⟩⟩
+    (∀ (d : Decl) (f : KinematicControlFrame), f.outputCheck d = .ok →
+      (f.accel = .accel → (0 : F64) < f.jerkLonCmd) ∧
+        (f.steer = .angle → (0 : F64) < f.steerRateCmd)) ∧
+    (∀ (d : Decl) (f : KinematicControlFrame) (x : ℝ), f.wellFormed d → f.finiteOK →
+      (f.accel = .accel ∧ f.jerkLonCmd = .fin x ∨ f.steer = .angle ∧ f.steerRateCmd = .fin x) →
+      x ≤ 0 → f.outputCheck d = .invalidArg) ∧
+    (∀ (d : Decl) (f : KinematicControlFrame) (x : F64), ¬ x.Finite → f.wellFormed d →
+      (f.uses .aLonCmd = true ∧ f.aLonCmd = x ∨ f.accel = .jerk ∧ f.jerkLonCmd = x ∨
+        f.uses .steerAngleCmd = true ∧ f.steerAngleCmd = x ∨
+        f.steer = .rate ∧ f.steerRateCmd = x ∨
+        f.uses .jerkLonCmd = true ∧ f.jerkLonCmd = x ∧ x ≠ .posInf ∨
+        f.uses .steerRateCmd = true ∧ f.steerRateCmd = x ∧ x ≠ .posInf) →
+      f.outputCheck d = .numeric) := by
+  refine ⟨fun d f h => (KinematicControlFrame.outputCheck_ok.1 h).2.2.2, fun d f x hw hf h hx =>
+    KinematicControlFrame.outputCheck_invalid hw hf fun hv => ?_,
+    fun d f x hx hw h => KinematicControlFrame.outputCheck_numeric hw fun hf => ?_⟩
+  · have key : ¬ (0 : F64) < .fin x := by
+      rw [F64.zero_def, F64.fin_lt_fin]; exact not_lt.2 hx
+    rcases h with ⟨ha, he⟩ | ⟨hs, he⟩
+    · exact key (he ▸ hv.2.1 ha)
+    · exact key (he ▸ hv.2.2 hs)
+  · obtain ⟨h1, h2, h3, h4⟩ := hf
+    rcases h with ⟨hu, he⟩ | ⟨ha, he⟩ | ⟨hu, he⟩ | ⟨hs, he⟩ | ⟨hu, he, hne⟩ | ⟨hu, he, hne⟩
+    · exact hx (he ▸ h1 hu)
+    · rcases h2 (by simp [KinematicControlFrame.uses, ha, AccelMode.uses]) with h | ⟨h, -⟩
+      · exact hx (he ▸ h)
+      · rw [ha] at h; cases h
+    · exact hx (he ▸ h3 hu)
+    · rcases h4 (by simp [KinematicControlFrame.uses, hs, SteerMode.uses]) with h | ⟨h, -⟩
+      · exact hx (he ▸ h)
+      · rw [hs] at h; cases h
+    · rcases h2 hu with h | ⟨-, h⟩
+      · exact hx (he ▸ h)
+      · exact hne (he ▸ h)
+    · rcases h4 hu with h | ⟨-, h⟩
+      · exact hx (he ▸ h)
+      · exact hne (he ▸ h)
 
 /-- P05-30. 'An `ActuatorControlFrame` is valid if and only if the Override
 rule holds, each mode field holds one of its listed values, `throttle` and
 `brake` lie in `[0, 1]` under `PEDALS`, `steering_wheel_norm` lies in `[-1, 1]`
 under `ANGLE`, and under `DRIVE` `manual_gear_index` is from 0 to `num_gears`
-(so 0 without Tier 2)' (docs/spec/05-checkpoints.md:114). That `num_gears` is 0
-without Tier 2 is a §3 fact. -/
+(so 0 without Tier 2)' (docs/spec/05-checkpoints.md:114), with the output check
+of docs/spec/14-diagnostics.md item 4. A passing frame satisfies the ranges, and
+a used field that is not finite (NaN or an infinity) fails with
+`DL_STATUS_ERR_NUMERIC`, since no field of this frame is a bound. That
+`num_gears` is 0 without Tier 2 is a §3 fact. -/
 theorem actuator_ranges :
-    (∀ (n : Nat) (d : Decl) (f : ActuatorControlFrame), f.valid n d → f.gear = .drive →
-      0 ≤ f.manualGearIndex.toInt ∧ f.manualGearIndex.toInt ≤ n) ∧
-    (∀ (d : Decl) (f : ActuatorControlFrame), f.valid 0 d → f.gear = .drive →
+    (∀ (n : Nat) (d : Decl) (f : ActuatorControlFrame), f.outputCheck n d = .ok →
+      (f.pedal = .pedals → f.throttle.inIcc 0 1 ∧ f.brake.inIcc 0 1) ∧
+        (f.wheel = .angle → f.steeringWheelNorm.inIcc (-1) 1) ∧
+        (f.gear = .drive → 0 ≤ f.manualGearIndex.toInt ∧ f.manualGearIndex.toInt ≤ n)) ∧
+    (∀ (d : Decl) (f : ActuatorControlFrame), f.outputCheck 0 d = .ok → f.gear = .drive →
       f.manualGearIndex = 0) ∧
-    (∀ (n : Nat) (d : Decl) (f : ActuatorControlFrame), f.pedal = .pedals →
-      (f.throttle = .nan ∨ f.brake = .nan) → ¬ f.valid n d) ∧
-    (∀ (n : Nat) (d : Decl) (f : ActuatorControlFrame), f.wheel = .angle →
-      f.steeringWheelNorm = .nan → ¬ f.valid n d) := by
-  refine ⟨fun _ _ _ hv hg => hv.2.2.2 hg, fun _ f hv hg => ?_,
-    fun _ _ _ hp hn hv => ?_, fun _ _ _ hw hn hv => ?_⟩
-  · obtain ⟨h0, h1⟩ := hv.2.2.2 hg
+    (∀ (n : Nat) (d : Decl) (f : ActuatorControlFrame) (x : F64), ¬ x.Finite →
+      f.wellFormed d →
+      (f.uses .throttle = true ∧ f.throttle = x ∨ f.uses .brake = true ∧ f.brake = x ∨
+        f.uses .steeringWheelNorm = true ∧ f.steeringWheelNorm = x ∨
+        f.uses .steeringTorqueNm = true ∧ f.steeringTorqueNm = x) →
+      f.outputCheck n d = .numeric) := by
+  refine ⟨fun _ _ _ h => (ActuatorControlFrame.outputCheck_ok.1 h).2.2.2, fun _ f h hg => ?_,
+    fun n d f x hx hw h => ActuatorControlFrame.outputCheck_numeric hw fun hf => ?_⟩
+  · obtain ⟨h0, h1⟩ := (ActuatorControlFrame.outputCheck_ok.1 h).2.2.2.2.2 hg
     exact Int8.toInt_inj.mp (by simp only [Int8.toInt_zero]; push_cast at h1; omega)
-  · obtain ⟨ht, hb⟩ := hv.2.1 hp
-    rcases hn with hn | hn
-    · rw [hn] at ht; exact F64.not_inIcc_nan _ _ ht
-    · rw [hn] at hb; exact F64.not_inIcc_nan _ _ hb
-  · have h := hv.2.2.1 hw
-    rw [hn] at h; exact F64.not_inIcc_nan _ _ h
+  · obtain ⟨h1, h2, h3, h4⟩ := hf
+    rcases h with ⟨hu, he⟩ | ⟨hu, he⟩ | ⟨hu, he⟩ | ⟨hu, he⟩
+    · exact hx (he ▸ h1 hu)
+    · exact hx (he ▸ h2 hu)
+    · exact hx (he ▸ h3 hu)
+    · exact hx (he ▸ h4 hu)
 
 /-- P05-31. 'A `KinematicState` is valid if and only if `yaw` and `roll` lie in
 `(-π, π]` and `pitch` lies in `(-π/2, π/2)`' (docs/spec/05-checkpoints.md:119).

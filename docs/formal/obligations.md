@@ -66,7 +66,7 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | P10-08 | 10:25 | 'Two valid partial frames always merge into a valid full frame' | DECIDE | Driveline.Merge | forall m a b, validLon m a -> validLat m b -> validFull m (merge a b); zero (merge a b) = merge (zero a) (zero b) | PROVED: Driveline.Merge.merge_valid |
 | P10-09 | 10:25 | merged timestamp rules | MODEL | Driveline.Merge | - | PROVED: Driveline.Merge.merge_timestamps |
 | P10-11 | 10:27 | 'a full frame of type T is also a valid override' | DECIDE | Driveline.Validity | same as P05-10 | DUP: P05-10 |
-| P10-12 | 10:27 | Arbiter coupled-motion rule | MODEL | Driveline.Arbiter | arbiterOK p s base out; theorem: valid p, valid s and valid base give valid out | REFUTED: Driveline.Arbiter.arbiter_baseline_can_fail |
+| P10-12 | 10:27 | Arbiter coupled-motion rule | MODEL | Driveline.Arbiter | arbiterOK p s base out; theorem: valid p, valid s and the committed baseline give valid out | PROVED: Driveline.Arbiter.arbiter_output_valid |
 | P10-13 | 10:27 | baseline 'v_ref = max(own.v_lon, 0)' and 'd_ref = own.frenet_d' | MODEL | Driveline.Arbiter | - | PROVED: Driveline.Arbiter.committed_baseline |
 
 ### WP02 Vehicle and object spec encoding (§3)

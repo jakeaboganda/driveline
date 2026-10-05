@@ -8,11 +8,10 @@ is in `SPATIOTEMPORAL_TRAJECTORY`, the two motion groups come together from one
 source, and in the split case the unstated group comes from the committed
 baseline frame (06:94, built by the Pass 1 step 5 rules of 06:72).
 
-The spec says 'The runtime checks only the §5 validity of the output', but the
-baseline's `LANE_OFFSET` names the actor's committed lane, which need not be a
-lane of the map. `Driveline.Arbiter.arbiter_baseline_can_fail` is the
-counterexample; `IntentFrame.arbiterRule_valid` proves validity when the
-baseline is valid.
+The spec says 'The runtime checks only the §5 validity of the output'. The
+baseline's `LANE_OFFSET` names the actor's committed lane, which `OwnView`
+carries as a lane of the map, so the output of the rule is valid
+(`Driveline.Arbiter.arbiter_output_valid`).
 
 The spec fixes neither the source of `turn_signal` nor the non-STT case.
 `arbiterRule` takes both group-wise, and `arbiterOK` constrains only the motion
@@ -22,16 +21,29 @@ baseline's 'next tick' stamp are deferred to the §6.2 work package.
 
 namespace Driveline
 
-/-- The `own_state` fields read by 10:27 and 06:94. -/
-structure OwnView where
+/-- The `own_state` fields read by 10:27 and 06:94, with two invariants of
+the committed state.
+
+`onMap`: the committed `(road_id, lane_id)` is a lane of `map`. Phase 4 updates
+the map cache with `world_to_frenet` at the committed position
+(docs/spec/11-execution.md item 2, Phase 4), `world_to_frenet` returns a lane of
+the map for every finite point (docs/spec/09-abi.md 9.2), and the committed
+state update leaves the map cache unchanged (docs/spec/06-lifecycle.md).
+
+`vLon_finite`: physics fills `v_lon`, and the output check rejects a
+`KinematicState` whose filled fields are not all finite
+(docs/spec/14-diagnostics.md item 4). -/
+structure OwnView (map : RoadMap) where
   actorId : UInt64
   vLon : F64
   roadId : String
   laneId : Int32
   frenetD : F64
+  onMap : map.road roadId ∧ map.lane roadId laneId.toInt
+  vLon_finite : vLon.Finite
 
-/-- `max(v_lon, 0)` (06:94, 10:27). The spec leaves NaN open; this uses IEEE
-`fmax`, which gives 0 for NaN. -/
+/-- `max(v_lon, 0)` (06:94, 10:27). `v_lon` is finite (`OwnView.vLon_finite`),
+so only the first case applies to a baseline. -/
 def F64.max0 : F64 → F64
   | .fin x => .fin (max x 0)
   | .posInf => .posInf
@@ -51,7 +63,7 @@ namespace IntentFrame
 
 /-- The `IntentFrame` part of the committed baseline frame: 06:94 applied to the
 Pass 1 step 5 rules (06:72). -/
-def committedBaseline (o : OwnView) (t : UInt64) : IntentFrame :=
+def committedBaseline {map : RoadMap} (o : OwnView map) (t : UInt64) : IntentFrame :=
   { IntentFrame.blank ⟨o.actorId, t⟩ with
     lon := .velocityTarget, vRef := o.vLon.max0, stopAtOdometer := .posInf,
     lat := .laneOffset, targetRoadId := o.roadId, targetLaneId := o.laneId, dRef := o.frenetD,
@@ -232,9 +244,7 @@ theorem groupwise_signal (map : RoadMap) (p s : IntentFrame) (hp : p.valid map .
   · assumption
   · exact ((pOR_full p).1 hp.1).2.2
 
-/-- The ledger statement of P10-12: 'valid p, valid s and valid base give valid
-out', with `¬ base.usesSTT`, which the committed baseline satisfies by
-construction (`committedBaseline_not_stt`). -/
+/-- Validity of the canonical output for a valid baseline that is not in STT. -/
 theorem arbiterRule_valid (map : RoadMap) (h : Header) (base p s : IntentFrame)
     (hp : p.valid map .full) (hs : s.valid map .override) (hb : base.valid map .full)
     (hbs : ¬ base.usesSTT) : (arbiterRule h base p s).valid map .full := by
@@ -267,38 +277,24 @@ theorem arbiterOK_valid (map : RoadMap) (base p s out : IntentFrame) (hp : p.val
   have := hu fld hf'
   cases fld <;> exact this
 
-theorem committedBaseline_spec (o : OwnView) (t : UInt64) :
+theorem committedBaseline_spec {map : RoadMap} (o : OwnView map) (t : UInt64) :
     let b := committedBaseline o t
-    b.lon = .velocityTarget ∧ b.vRef = o.vLon.max0 ∧ b.stopAtOdometer = .posInf ∧
-      b.lat = .laneOffset ∧ b.targetRoadId = o.roadId ∧ b.targetLaneId = o.laneId ∧
-      b.dRef = o.frenetD ∧ b.signal = .off ∧ b.header = ⟨o.actorId, t⟩ :=
-  ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
+    b.lon = .velocityTarget ∧ b.lat = .laneOffset ∧ b.signal = .off ∧
+      b.header = ⟨o.actorId, t⟩ ∧ (∃ v : ℝ, o.vLon = .fin v ∧ b.vRef = .fin (max v 0)) ∧
+      (∀ odo : ℝ, ¬ stopNow b.stopAtOdometer odo) ∧ b.targetRoadId = o.roadId ∧
+      b.targetLaneId = o.laneId ∧ b.dRef = o.frenetD := by
+  obtain ⟨v, hv⟩ := o.vLon_finite.exists
+  exact ⟨rfl, rfl, rfl, rfl, ⟨v, hv, by simp only [committedBaseline, hv, F64.max0]⟩,
+    not_stopNow_posInf, rfl, rfl, rfl⟩
 
-/-- The baseline is valid exactly when the actor's committed lane is a lane of
-the map. -/
-theorem committedBaseline_valid_iff (map : RoadMap) (o : OwnView) (t : UInt64) :
-    (committedBaseline o t).valid map .full ↔
-      map.road o.roadId ∧ map.lane o.roadId o.laneId.toInt :=
-  ⟨fun hv => hv.2.2.1 rfl, fun hm =>
-    ⟨(pOR_full _).2 ⟨nofun, nofun, nofun⟩, ⟨iff_of_false nofun nofun, nofun⟩, fun _ => hm,
-      nofun, ⟨nofun, fun _ => (F64.max0_nonneg _).1, nofun, nofun⟩⟩⟩
+theorem committedBaseline_valid {map : RoadMap} (o : OwnView map) (t : UInt64) :
+    (committedBaseline o t).valid map .full :=
+  ⟨(pOR_full _).2 ⟨nofun, nofun, nofun⟩, ⟨iff_of_false nofun nofun, nofun⟩, fun _ => o.onMap,
+    nofun, ⟨nofun, fun _ => (F64.max0_nonneg _).1, nofun, nofun⟩⟩
 
-theorem committedBaseline_not_stt (o : OwnView) (t : UInt64) :
+theorem committedBaseline_not_stt {map : RoadMap} (o : OwnView map) (t : UInt64) :
     ¬ (committedBaseline o t).usesSTT := by
   rintro (h | h) <;> cases h
-
-/-- Off-map counterexample: lane 0 is never valid (`RoadMap.lane_ne_zero`). -/
-theorem committedBaseline_lane0 (map : RoadMap) (o : OwnView) (t : UInt64) (h : o.laneId = 0) :
-    ¬ (committedBaseline o t).valid map .full := fun hv =>
-  map.lane_ne_zero _ _ ((committedBaseline_valid_iff map o t).1 hv).2 (by rw [h]; rfl)
-
-/-- On a mapped lane, the arbiter's canonical output is valid. -/
-theorem arbiterRule_valid_onMap (map : RoadMap) (h : Header) (o : OwnView) (t : UInt64)
-    (p s : IntentFrame) (hp : p.valid map .full) (hs : s.valid map .override)
-    (hm : map.road o.roadId ∧ map.lane o.roadId o.laneId.toInt) :
-    (arbiterRule h (committedBaseline o t) p s).valid map .full :=
-  arbiterRule_valid map h _ p s hp hs ((committedBaseline_valid_iff map o t).2 hm)
-    (committedBaseline_not_stt o t)
 
 end IntentFrame
 
@@ -308,51 +304,37 @@ namespace Driveline.Arbiter
 
 open IntentFrame
 
-/-- P10-12, REFUTED. 'For `IntentFrame`, an Arbiter must take the two motion
-groups together from one source whenever either source is in
+/-- P10-12. 'For `IntentFrame`, an Arbiter must take the two motion groups
+together from one source whenever either source is in
 `SPATIOTEMPORAL_TRAJECTORY`: ... and otherwise the secondary's stated group
 together with the other group taken from the committed baseline frame ... The
 runtime checks only the §5 validity of the output'
-(docs/spec/10-composition.md:27). With a valid primary and a valid override,
-the rule's output can fail 05:69: the primary is in STT, the secondary states
-only `VELOCITY_TARGET`, and the actor's committed lane (here lane 0) is not a
-lane of the map, so the baseline's `LANE_OFFSET` is invalid. Under a valid
-baseline the output is valid: `Driveline.IntentFrame.arbiterRule_valid`, with
-`Driveline.IntentFrame.arbiterRule_ok` showing the canonical arbiter follows
-the rule and `Driveline.IntentFrame.arbiterOK_valid` covering every output that
-follows it. -/
-theorem arbiter_baseline_can_fail :
-    ∃ (map : RoadMap) (o : OwnView) (t : UInt64) (h : Header) (p s : IntentFrame),
-      p.valid map .full ∧ s.valid map .override ∧
-        ¬ (arbiterRule h (committedBaseline o t) p s).valid map .full := by
-  refine ⟨⟨fun _ => False, fun _ _ => False, fun _ _ h => h.elim⟩, ⟨0, 0, "", 0, 0⟩, 0, ⟨0, 0⟩,
-    { blank ⟨0, 0⟩ with lon := .stt, lat := .stt, signal := .off, numTrajPoints := 1 },
-    { blank ⟨0, 0⟩ with lon := .velocityTarget, vRef := 0, stopAtOdometer := .posInf },
-    ⟨(pOR_full _).2 ⟨nofun, nofun, nofun⟩, ⟨iff_of_true rfl rfl, fun _ => ?_⟩, nofun, nofun,
-      ⟨nofun, nofun, nofun, nofun⟩⟩,
-    ⟨Or.inl rfl, ⟨iff_of_false nofun nofun, nofun⟩, nofun, nofun,
-      ⟨nofun, fun _ => F64.not_zero_lt_zero, nofun, nofun⟩⟩,
-    fun hv => (hv.2.2.1 rfl).1⟩
-  refine ⟨le_refl 1, by decide, fun i hi => ?_, fun i j hij hj => ?_⟩
-  · exact ⟨le_refl 0, F64.zero_le_zero, F64.inIoc_zero_pi⟩
-  · have hj' : j.val < 1 := hj
-    exact absurd hij (by rw [Fin.lt_def]; omega)
+(docs/spec/10-composition.md:27). With a valid primary, a valid override and the
+committed baseline of the actor's own state, the canonical arbiter's output is
+valid. `Driveline.IntentFrame.arbiterRule_ok` shows that the canonical arbiter
+follows the rule, and `Driveline.IntentFrame.arbiterOK_valid` covers every
+output that follows it in the STT case. -/
+theorem arbiter_output_valid :
+    ∀ (map : RoadMap) (h : Header) (o : OwnView map) (t : UInt64) (p s : IntentFrame),
+      p.valid map .full → s.valid map .override →
+        (arbiterRule h (committedBaseline o t) p s).valid map .full :=
+  fun map h o t p s hp hs => arbiterRule_valid map h _ p s hp hs (committedBaseline_valid o t)
+    (committedBaseline_not_stt o t)
 
 /-- P10-13. '`VELOCITY_TARGET` with `v_ref` $= \max($`own.v_lon`$, 0)$, or
 `LANE_OFFSET` on the actor's lane with `d_ref` $=$ `own.frenet_d`'
 (docs/spec/10-composition.md:27), with 'stop_at_odometer = +INFINITY ... and
 turn_signal = OFF' (docs/spec/06-lifecycle.md:72) and 'the committed road_id
 and lane_id in place of the spawn lane' (docs/spec/06-lifecycle.md:94). The
-baseline is valid exactly when the committed lane is a lane of the map. -/
+baseline's stop target never stops the actor (05:78), and the baseline is valid. -/
 theorem committed_baseline :
-    (∀ (o : OwnView) (t : UInt64),
+    (∀ (map : RoadMap) (o : OwnView map) (t : UInt64),
       let b := committedBaseline o t
-      b.lon = .velocityTarget ∧ b.vRef = o.vLon.max0 ∧ b.stopAtOdometer = .posInf ∧
-        b.lat = .laneOffset ∧ b.targetRoadId = o.roadId ∧ b.targetLaneId = o.laneId ∧
-        b.dRef = o.frenetD ∧ b.signal = .off ∧ b.header = ⟨o.actorId, t⟩) ∧
-    (∀ (map : RoadMap) (o : OwnView) (t : UInt64),
-      (committedBaseline o t).valid map .full ↔
-        map.road o.roadId ∧ map.lane o.roadId o.laneId.toInt) :=
-  ⟨committedBaseline_spec, committedBaseline_valid_iff⟩
+      b.lon = .velocityTarget ∧ b.lat = .laneOffset ∧ b.signal = .off ∧
+        b.header = ⟨o.actorId, t⟩ ∧ (∃ v : ℝ, o.vLon = .fin v ∧ b.vRef = .fin (max v 0)) ∧
+        (∀ odo : ℝ, ¬ stopNow b.stopAtOdometer odo) ∧ b.targetRoadId = o.roadId ∧
+        b.targetLaneId = o.laneId ∧ b.dRef = o.frenetD) ∧
+    (∀ (map : RoadMap) (o : OwnView map) (t : UInt64), (committedBaseline o t).valid map .full) :=
+  ⟨fun _ => committedBaseline_spec, fun _ => committedBaseline_valid⟩
 
 end Driveline.Arbiter
