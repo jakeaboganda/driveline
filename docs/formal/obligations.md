@@ -113,30 +113,30 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | P02-12 | 02:22 | 'lane 0 in a callback argument is DL_STATUS_ERR_INVALID_ARG' | DECIDE | Driveline.Tracks | validLane l <-> l != 0; callback l=0 returns -1 | TODO |
 | P02-13 | 02:25 | 'The text after the last colon is the signed lane index' | MODEL | Driveline.Tracks | parse (render r l) = some (r,l) even if r contains ':' (split on last colon) | TODO |
 | P02-14 | 02:26 | 'RHT, negative lanes drive toward increasing s ... LHT, positive lanes' | DECIDE | Driveline.Tracks | sigma rule lane = if (rule=RHT) = (lane<0) then 1 else -1, for lane != 0; sigma in {1,-1} | TODO |
-| P04-01 | 04:16 | 'up to 64 lanes ... nodes beyond count zero-filled' | INT | Driveline.Tracks | route WF: count <= 64, and nodes[i] = 0 for i >= count | TODO |
-| P04-02 | 04:19 | 'capacity N in [1, 64]' | INT | Driveline.SliceBuffer | 1 <= N <= 64 | TODO |
-| P04-03 | 04:19 | 'N_s >= N_c ... holding the newest min(count_s, N_c) samples' | INT | Driveline.SliceBuffer | view b Nc = b.take Nc; view.count = min count_s Nc <= Nc | TODO |
-| P04-04 | 04:21 | 'Timestamps ... strictly decrease from s[0] to s[count-1]' | MODEL | Driveline.SliceBuffer | Sorted (>) ts; push keeps it when t_new > s[0].t; view preserves it | TODO |
-| P04-05 | 04:24,27 | 'Guaranteed valid from t = 0'; 'count ... from 1 to N_c' | INT | Driveline.SliceBuffer | after cold init: 1 <= count <= Nc | TODO |
-| P04-06 | 04:26 | 'k is a compile-time constant and k >= N_c, compilation fails' | DECIDE | Driveline.SliceBuffer | accept const index k <-> k < Nc | TODO |
-| P04-07 | 04:27 | 'buffer[k] returns ... buffer[count - 1]' | INT | Driveline.SliceBuffer | get k = s[min k (count-1)]; index in bounds since count >= 1 | TODO |
-| P04-08 | 04:27 | 'Queries do not change the buffer' | MODEL | Driveline.SliceBuffer | queries are pure functions of the buffer | TODO |
-| P04-09 | 04:28-29 | 'm = min(k, count-1)'; '{0.0,false} if count < 2' | INT | Driveline.SliceBuffer | count >= 2 and k >= 1 -> 1 <= m, so s[0].t - s[m].t > 0 (from P04-04) | TODO |
-| P04-10 | 04:30 | 'integer difference taken first' | INT | Driveline.SliceBuffer | UInt64 subtraction s[0].t - s[m].t does not underflow, from P04-04 | TODO |
-| P04-13 | 04:32 | 't_query >= s[0].t returns s[0]; t_query <= s[count-1].t returns s[count-1]' | INT | Driveline.SliceBuffer | when count = 1 the two clamps agree (no conflict); Int vs UInt64 comparison is well-defined | TODO |
-| P04-14 | 04:33 | 'returned entry's t is t_query clamped to [s[count-1].t, s[0].t]' | INT | Driveline.SliceBuffer | (at q Interp).t = max s_last (min q s0) | TODO |
-| P04-15 | 04:34 | 'Floor: newest s[k] where s[k].t <= t_query' | INT | Driveline.SliceBuffer | after clamping, such a k exists and is unique (first index under strict decrease) | TODO |
-| P04-16 | 04:35 | 'bracket s[k+1].t <= t_query < s[k].t ... alpha in [0, 1)' | REAL | Driveline.SliceBuffer | the bracket exists and is unique; 0 <= alpha < 1 | TODO |
-| P04-17 | 04:36 | '(1 - alpha) v_{k+1} + alpha v_k' | REAL | Driveline.SliceBuffer | LINEAR result lies in [min, max] of the two samples; this keeps confidence in [0,1] and mu in [0,2] | TODO |
-| P04-20 | 04:38,56 | 'Every integer, enum, flag, and char[] field is HOLD' | MODEL | Driveline.SliceBuffer | classOf field = HOLD for all non-float64 fields | TODO |
-| P04-21 | 04:39,58 | 'interpolated only when its dependency condition holds' | MODEL | Driveline.SliceBuffer | dep fails -> field = s[k+1].field | TODO |
-| P04-22 | 04:58 | 'has_primary_target is 1 exactly when primary_target_id is nonzero' | DECIDE | Driveline.Tracks | WF radar slice: has = 1 <-> id != 0; Interp keeps this (both fields HOLD from s[k+1]) | TODO |
-| P04-23 | 04:41 | 'Matched ... by target_actor_id ... dropped if absent from s[k+1]' | MODEL | Driveline.Tracks | ids of result = ids of s[k+1]; result length <= 32 without needing truncation | TODO |
-| P04-24 | 04:54 | 'each target_actor_id appears at most once' | MODEL | Driveline.Tracks | Nodup ids; kept by merge and by sort+take | TODO |
-| P04-25 | 04:54 | 'sorted by ascending range, ties ... ascending target_actor_id' | MODEL | Driveline.Tracks | Sorted lexLt (range,id); a strict total order given unique ids and non-NaN ranges | TODO |
-| P04-26 | 04:54 | 'keeps the first 32 ... entries beyond num_tracks are zero-filled' | INT | Driveline.Tracks | num_tracks <= 32; tracks[i] = 0 for i >= num_tracks; result = (sort l).take 32 | TODO |
-| P04-27 | 04:48-52 | 'confidence in [0,1]'; 'mu in [0, 2]'; 'ttc_lon +INFINITY when not closing' | MODEL | Driveline.Tracks | range predicates on slice fields; ttc is ENNReal-like (EXTERNAL for the inf encoding) | TODO |
-| PH-03 | H ring view | 'entries + ((head + capacity - k) % capacity) * entry_size' | INT | Driveline.SliceBuffer | head < cap, k < cap -> index < cap, injective in k, k=0 gives head; no UInt32 overflow since cap <= 64 | TODO |
+| P04-01 | 04:16 | 'up to 64 lanes ... nodes beyond count zero-filled' | INT | Driveline.Tracks | route WF: count <= 64, and nodes[i] = 0 for i >= count | PROVED: Driveline.Tracks.encodeRoute_wf |
+| P04-02 | 04:19 | 'capacity N in [1, 64]' | INT | Driveline.SliceBuffer | 1 <= N <= 64 | DUP: PH-03 |
+| P04-03 | 04:19 | 'N_s >= N_c ... holding the newest min(count_s, N_c) samples' | INT | Driveline.SliceBuffer | view b Nc = b.take Nc; view.count = min count_s Nc <= Nc | PROVED: Driveline.SliceBuffer.view_spec |
+| P04-04 | 04:21 | 'Timestamps ... strictly decrease from s[0] to s[count-1]' | MODEL | Driveline.SliceBuffer | Sorted (>) ts; push keeps it when t_new > s[0].t; view preserves it | PROVED: Driveline.SliceBuffer.push_valid |
+| P04-05 | 04:24,27 | 'Guaranteed valid from t = 0'; 'count ... from 1 to N_c' | INT | Driveline.SliceBuffer | after cold init: 1 <= count <= Nc | PROVED: Driveline.SliceBuffer.push_count |
+| P04-06 | 04:26 | 'k is a compile-time constant and k >= N_c, compilation fails' | DECIDE | Driveline.SliceBuffer | accept const index k <-> k < Nc | PROVED: Driveline.SliceBuffer.accept_iff |
+| P04-07 | 04:27 | 'buffer[k] returns ... buffer[count - 1]' | INT | Driveline.SliceBuffer | get k = s[min k (count-1)]; index in bounds since count >= 1 | PROVED: Driveline.SliceBuffer.get_clamp |
+| P04-08 | 04:27 | 'Queries do not change the buffer' | MODEL | Driveline.SliceBuffer | queries are pure functions of the buffer | OUT: prose |
+| P04-09 | 04:28-29 | 'm = min(k, count-1)'; '{0.0,false} if count < 2' | INT | Driveline.SliceBuffer | count >= 2 and k >= 1 -> 1 <= m, so s[0].t - s[m].t > 0 (from P04-04) | PROVED: Driveline.SliceBuffer.rate_of_denom_pos |
+| P04-10 | 04:30 | 'integer difference taken first' | INT | Driveline.SliceBuffer | UInt64 subtraction s[0].t - s[m].t does not underflow, from P04-04 | PROVED: Driveline.SliceBuffer.rate_denom_exact |
+| P04-13 | 04:32 | 't_query >= s[0].t returns s[0]; t_query <= s[count-1].t returns s[count-1]' | INT | Driveline.SliceBuffer | when count = 1 the two clamps agree (no conflict); Int vs UInt64 comparison is well-defined | PROVED: Driveline.SliceBuffer.clamps_overlap |
+| P04-14 | 04:33 | 'returned entry's t is t_query clamped to [s[count-1].t, s[0].t]' | INT | Driveline.SliceBuffer | (at q Interp).t = max s_last (min q s0) | PROVED: Driveline.SliceBuffer.at_interp_t |
+| P04-15 | 04:34 | 'Floor: newest s[k] where s[k].t <= t_query' | INT | Driveline.SliceBuffer | after clamping, such a k exists and is unique (first index under strict decrease) | PROVED: Driveline.SliceBuffer.at_floor_spec |
+| P04-16 | 04:35 | 'bracket s[k+1].t <= t_query < s[k].t ... alpha in [0, 1)' | REAL | Driveline.SliceBuffer | the bracket exists and is unique; 0 <= alpha < 1 | PROVED: Driveline.SliceBuffer.bracket_unique |
+| P04-17 | 04:36 | '(1 - alpha) v_{k+1} + alpha v_k' | REAL | Driveline.SliceBuffer | LINEAR result lies in [min, max] of the two samples; this keeps confidence in [0,1] and mu in [0,2] | PROVED: Driveline.SliceBuffer.lerp_mem |
+| P04-20 | 04:38,56 | 'Every integer, enum, flag, and char[] field is HOLD' | MODEL | Driveline.Tracks | classOf field = HOLD for all non-float64 fields | PROVED: Driveline.Tracks.track_hold |
+| P04-21 | 04:39,58 | 'interpolated only when its dependency condition holds' | MODEL | Driveline.Tracks | dep fails -> field = s[k+1].field | PROVED: Driveline.Tracks.visual_dep_fail |
+| P04-22 | 04:58 | 'has_primary_target is 1 exactly when primary_target_id is nonzero' | DECIDE | Driveline.Tracks | WF radar slice: has = 1 <-> id != 0; Interp keeps this (both fields HOLD from s[k+1]) | PROVED: Driveline.Tracks.interpRadar_wf |
+| P04-23 | 04:41 | 'Matched ... by target_actor_id ... dropped if absent from s[k+1]' | MODEL | Driveline.Tracks | ids of result = ids of s[k+1]; result length <= 32 without needing truncation | PROVED: Driveline.Tracks.mergeTracks_ids |
+| P04-24 | 04:54 | 'each target_actor_id appears at most once' | MODEL | Driveline.Tracks | Nodup ids; kept by merge and by sort+take | PROVED: Driveline.Tracks.finalize_nodup |
+| P04-25 | 04:54 | 'sorted by ascending range, ties ... ascending target_actor_id' | MODEL | Driveline.Tracks | Sorted lexLt (range,id); a strict total order given unique ids and non-NaN ranges | PROVED: Driveline.Tracks.finalize_sorted |
+| P04-26 | 04:54 | 'keeps the first 32 ... entries beyond num_tracks are zero-filled' | INT | Driveline.Tracks | num_tracks <= 32; tracks[i] = 0 for i >= num_tracks; result = (sort l).take 32 | PROVED: Driveline.Tracks.finalize_first32 |
+| P04-27 | 04:48-52 | 'confidence in [0,1]'; 'mu in [0, 2]'; 'ttc_lon +INFINITY when not closing' | MODEL | Driveline.Tracks | range predicates on slice fields; ttc is ENNReal-like (EXTERNAL for the inf encoding) | PROVED: Driveline.Tracks.interpTrack_wf |
+| PH-03 | abi:162-163 | 'entries + ((head + capacity - k) % capacity) * entry_size' | INT | Driveline.SliceBuffer | head < cap, k < cap -> index < cap, injective in k, k=0 gives head; no UInt32 overflow since cap <= 64 | PROVED: Driveline.SliceBuffer.slot_injOn |
 
 ### WP04 Tick schedule and FMU time (§11, §7)
 
