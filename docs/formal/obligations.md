@@ -61,13 +61,13 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | P05-29 | 05:98 | KCF valid: 'bounds under ACCEL and ANGLE are above zero' | DECIDE | Driveline.Validity | NaN rejected, +inf accepted | PROVED: Driveline.Validity.kinematic_bounds_above_zero |
 | P05-30 | 05:114 | ACF valid; 'manual_gear_index is from 0 to num_gears' | DECIDE | Driveline.Validity | - | PROVED: Driveline.Validity.actuator_ranges |
 | P05-31 | 05:119 | yaw, roll in (-pi, pi]; pitch in (-pi/2, pi/2) | DECIDE | Driveline.Validity | - | PROVED: Driveline.Validity.kinematic_state_angles |
-| P10-06 | 10:24 | 'the two branches can never write the same field' | DECIDE | Driveline.Merge | the groups' field sets are disjoint once STT is excluded | TODO |
-| P10-07 | 10:25 | 'It states every group ... never uses SPATIOTEMPORAL_TRAJECTORY' | DECIDE | Driveline.Merge | - | TODO |
-| P10-08 | 10:25 | 'Two valid partial frames always merge into a valid full frame' | DECIDE | Driveline.Merge | forall m a b, validLon m a -> validLat m b -> validFull m (merge a b); zero (merge a b) = merge (zero a) (zero b) | TODO |
-| P10-09 | 10:25 | merged timestamp rules | MODEL | Driveline.Merge | - | TODO |
+| P10-06 | 10:24 | 'the two branches can never write the same field' | DECIDE | Driveline.Merge | the groups' field sets are disjoint once STT is excluded | PROVED: Driveline.Merge.branches_disjoint |
+| P10-07 | 10:25 | 'It states every group ... never uses SPATIOTEMPORAL_TRAJECTORY' | DECIDE | Driveline.Merge | - | PROVED: Driveline.Merge.merge_full_frame |
+| P10-08 | 10:25 | 'Two valid partial frames always merge into a valid full frame' | DECIDE | Driveline.Merge | forall m a b, validLon m a -> validLat m b -> validFull m (merge a b); zero (merge a b) = merge (zero a) (zero b) | PROVED: Driveline.Merge.merge_valid |
+| P10-09 | 10:25 | merged timestamp rules | MODEL | Driveline.Merge | - | PROVED: Driveline.Merge.merge_timestamps |
 | P10-11 | 10:27 | 'a full frame of type T is also a valid override' | DECIDE | Driveline.Validity | same as P05-10 | DUP: P05-10 |
-| P10-12 | 10:27 | Arbiter coupled-motion rule | MODEL | Driveline.Arbiter | arbiterOK p s base out; theorem: valid p, valid s and valid base give valid out | TODO |
-| P10-13 | 10:27 | baseline 'v_ref = max(own.v_lon, 0)' and 'd_ref = own.frenet_d' | MODEL | Driveline.Arbiter | - | TODO |
+| P10-12 | 10:27 | Arbiter coupled-motion rule | MODEL | Driveline.Arbiter | arbiterOK p s base out; theorem: valid p, valid s and valid base give valid out | REFUTED: Driveline.Arbiter.arbiter_baseline_can_fail |
+| P10-13 | 10:27 | baseline 'v_ref = max(own.v_lon, 0)' and 'd_ref = own.frenet_d' | MODEL | Driveline.Arbiter | - | PROVED: Driveline.Arbiter.committed_baseline |
 
 ### WP02 Vehicle and object spec encoding (§3)
 
