@@ -471,6 +471,7 @@ section Choice
 
 variable {α : Type} [LinearOrder α]
 
+/-- One lane of the map, seen from the query point (X, Y). -/
 structure Cand (α : Type) where
   roadId : Bytes
   laneId : ℤ
@@ -478,22 +479,34 @@ structure Cand (α : Type) where
   d : α
   /-- `|psi − driving heading|` wrapped to `[0, π]` -/
   headingDiff : α
+  /-- The lane's area contains (X, Y). -/
+  contains : Bool
+  /-- Distance from (X, Y) to the lane's centerline -/
+  dist : α
 
 /-- Hint match first (`false < true`), then heading difference, then `road_id` by
 unsigned bytes, then `lane_id` as a signed integer (09-abi.md:33). -/
 def key (hint : Bytes) (c : Cand α) : Bool ×ₗ α ×ₗ Bytes ×ₗ ℤ :=
   toLex (c.roadId != hint, toLex (c.headingDiff, toLex (c.roadId, c.laneId)))
 
-def IsChoice (hint : Bytes) (cs : List (Cand α)) (c : Cand α) : Prop :=
-  c ∈ cs ∧ ∀ c' ∈ cs, key hint c ≤ key hint c'
+/-- Off every lane: nearest centerline first, then the same tie-breaks (09-abi.md:33). -/
+def offKey (hint : Bytes) (c : Cand α) : α ×ₗ (Bool ×ₗ α ×ₗ Bytes ×ₗ ℤ) :=
+  toLex (c.dist, key hint c)
 
-theorem exists_min_key (hint : Bytes) : ∀ (cs : List (Cand α)), cs ≠ [] →
-    ∃ c, IsChoice hint cs c
+/-- `c` is a least element of `cs` under `f`. -/
+def IsMinBy {β : Type} [LinearOrder β] (f : Cand α → β) (cs : List (Cand α)) (c : Cand α) :
+    Prop :=
+  c ∈ cs ∧ ∀ c' ∈ cs, f c ≤ f c'
+
+def IsChoice (hint : Bytes) (cs : List (Cand α)) (c : Cand α) : Prop := IsMinBy (key hint) cs c
+
+theorem exists_minBy {β : Type} [LinearOrder β] (f : Cand α → β) : ∀ (cs : List (Cand α)),
+    cs ≠ [] → ∃ c, IsMinBy f cs c
   | [], h => absurd rfl h
   | [a], _ => ⟨a, by simp, by simp⟩
   | a :: b :: r, _ => by
-    obtain ⟨c, hc, hmin⟩ := exists_min_key hint (b :: r) (by simp)
-    rcases le_total (key hint a) (key hint c) with h | h
+    obtain ⟨c, hc, hmin⟩ := exists_minBy f (b :: r) (by simp)
+    rcases le_total (f a) (f c) with h | h
     · refine ⟨a, by simp, ?_⟩
       intro c' hc'
       rcases List.mem_cons.mp hc' with rfl | hc'
@@ -507,30 +520,33 @@ theorem exists_min_key (hint : Bytes) : ∀ (cs : List (Cand α)), cs ≠ [] →
 
 /-- P09-11: "If several lanes contain the point … the callback prefers `hint_road_id`,
 then the lane whose driving heading … is closest to `psi` …, then the smallest
-`(road_id, lane_id)`, with `road_id` compared by bytes and `lane_id` as a signed integer"
-(09-abi.md:33): on a nonempty candidate list whose lanes are distinct, exactly one lane is
-chosen. -/
-theorem choice_unique (hint : Bytes) (cs : List (Cand α)) (hne : cs ≠ [])
-    (hid : (cs.map fun c => (c.roadId, c.laneId)).Nodup) : ∃! c, IsChoice hint cs c := by
-  obtain ⟨c, hc⟩ := exists_min_key hint cs hne
-  refine ⟨c, hc, fun c' hc' => ?_⟩
-  have hk : key hint c' = key hint c := le_antisymm (hc'.2 c hc.1) (hc.2 c' hc'.1)
-  simp only [key, toLex_inj, Prod.mk.injEq] at hk
-  exact List.inj_on_of_nodup_map hid hc'.1 hc.1 (by rw [hk.2.2.1, hk.2.2.2])
+`(road_id, lane_id)` … If no lane contains the point, it returns the lane with the nearest
+centerline, using the same tie-breaks. So `world_to_frenet` succeeds for every finite
+(X, Y)" (09-abi.md:33): when some lane contains the point, a least containing lane exists
+under the tie-breaks, and otherwise a least lane exists under nearest centerline, then the
+same tie-breaks. `hne` is a map with a lane: Pass 1 calls `frenet_to_world` at every
+actor's spawn `(road_id, lane_id, s_0, d_0)` (06-lifecycle.md:72). -/
+theorem choice_exists (hint : Bytes) (lanes : List (Cand α)) (hne : lanes ≠ []) :
+    (lanes.filter (·.contains) ≠ [] → ∃ c, IsChoice hint (lanes.filter (·.contains)) c) ∧
+      (lanes.filter (·.contains) = [] → ∃ c, IsMinBy (offKey hint) lanes c) :=
+  ⟨exists_minBy _ _, fun _ => exists_minBy _ _ hne⟩
 
 /-- "So `world_to_frenet` succeeds for every finite (X, Y)" (09-abi.md:33) needs a lane
 to choose from: on an empty map there is none. -/
 theorem no_choice_empty (hint : Bytes) : ¬ ∃ c : Cand α, IsChoice hint [] c := by
-  simp [IsChoice]
+  simp [IsChoice, IsMinBy]
 
 end Choice
 
-/-- The order has no `s`, and one lane can contain (X, Y) at two values of `s` (a helical
-ramp): both are choices, so the returned `s` is not determined (09-abi.md:33). -/
+/-- P09-21 REFUTE: "Returns the lane whose area contains (X, Y), with `s` on that road's
+reference line, `d` from that lane's centerline" (09-abi.md:33). One lane can contain the
+point at two values of `s` (a helical ramp) with tied heading differences: both are
+choices, so the returned `(s, d)` is not determined by 09-abi.md:33. -/
 theorem refute_unique_s : ∃ (cs : List (Cand ℤ)) (a b : Cand ℤ),
-    IsChoice [] cs a ∧ IsChoice [] cs b ∧ a.s ≠ b.s := by
-  refine ⟨[⟨[1], -1, 10, 0, 0⟩, ⟨[1], -1, 50, 0, 0⟩], ⟨[1], -1, 10, 0, 0⟩,
-    ⟨[1], -1, 50, 0, 0⟩, ⟨by simp, ?_⟩, ⟨by simp, ?_⟩, by decide⟩ <;>
+    IsChoice [] cs a ∧ IsChoice [] cs b ∧ (a.s, a.d) ≠ (b.s, b.d) := by
+  refine ⟨[⟨[1], -1, 10, 0, 0, true, 0⟩, ⟨[1], -1, 50, 0, 0, true, 0⟩],
+    ⟨[1], -1, 10, 0, 0, true, 0⟩, ⟨[1], -1, 50, 0, 0, true, 0⟩,
+    ⟨by simp, ?_⟩, ⟨by simp, ?_⟩, by decide⟩ <;>
     · intro c hc
       simp only [List.mem_cons, List.not_mem_nil, or_false] at hc
       rcases hc with rfl | rfl <;> exact le_rfl
@@ -584,17 +600,22 @@ theorem topo_sorted (succ : List LaneRef) (m : ℕ) :
 
 /-! ## Lane 0 (02-conventions.md:22) -/
 
-/-- The lane-argument check of a map callback: lane 0 fails with
-`DL_STATUS_ERR_INVALID_ARG`, any other lane passes this check. -/
-def laneArgCheck (l : ℤ) : Option Diagnostics.Code :=
-  if l = 0 then some .errInvalidArg else none
+/-- The lane-argument check of a map callback over the map's lanes: lane 0 fails with
+`DL_STATUS_ERR_INVALID_ARG` (02-conventions.md:22), and so does a lane outside the map
+(09-abi.md:31). -/
+def laneArgCheck (lanes : List LaneRef) (r : LaneRef) : Option Diagnostics.Code :=
+  if r.2 = 0 ∨ r ∉ lanes then some .errInvalidArg else none
 
 /-- P02-12: "0 is the road reference line, which has no centerline, so lane 0 in a
-callback argument is `DL_STATUS_ERR_INVALID_ARG`" (02-conventions.md:22). -/
+callback argument is `DL_STATUS_ERR_INVALID_ARG`" (02-conventions.md:22). An OpenDRIVE map
+lists lane 0 as the center lane of every lane section: on such a map lane 0 still fails,
+with code −1, while a listed lane other than 0 passes. -/
 theorem lane_zero_invalid :
-    laneArgCheck 0 = some .errInvalidArg ∧ Diagnostics.Code.errInvalidArg.toInt = -1 ∧
-      ∀ l : ℤ, l ≠ 0 → laneArgCheck l = none := by
-  refine ⟨by simp [laneArgCheck], rfl, fun l hl => by simp [laneArgCheck, hl]⟩
+    laneArgCheck [([1], 0), ([1], -1)] ([1], 0) = some .errInvalidArg ∧
+      laneArgCheck [([1], 0), ([1], -1)] ([1], -1) = none ∧
+      Diagnostics.Code.errInvalidArg.toInt = -1 ∧
+      ∀ (lanes : List LaneRef) (r : Bytes), laneArgCheck lanes (r, 0) = some .errInvalidArg := by
+  refine ⟨by decide, by decide, rfl, fun lanes r => by simp [laneArgCheck]⟩
 
 /-! ## Mode A variable names (07-fmu-packaging.md:21) -/
 

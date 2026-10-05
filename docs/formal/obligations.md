@@ -259,16 +259,17 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | P09-08 | 09:25 | 'dt_step_ns is k_div · Δt_base_ns' | INT | Driveline.Abi | definition | PROVED: Driveline.Abi.stepDt_eq |
 | P09-09 | 09:26 | 'own_states[i] ... at tick time t' | INT | Driveline.Abi | previous physics stamp (t−Δt)+Δt = t, agrees with P09-07 | PROVED: Driveline.Abi.own_state_stamp |
 | P09-10 | 09:31 | 'each s of a road lies in exactly one lane section' | REAL | Driveline.Abi | sorted starts from 0 ⇒ half-open intervals plus closed last one partition [0, len] | PROVED: Driveline.Abi.lane_section_partition |
-| P09-11 | 09:33 | 'world_to_frenet succeeds for every finite (X, Y)' | DECIDE | Driveline.Abi | lexicographic tie-break is a linear order; totality needs a nonempty map | PROVED: Driveline.Abi.choice_unique |
+| P09-11 | 09:33 | 'world_to_frenet succeeds for every finite (X, Y)' | DECIDE | Driveline.Abi | a least lane exists: tie-breaks among containing lanes, else nearest centerline then tie-breaks; nonempty map from 06:72 | PROVED: Driveline.Abi.choice_exists |
 | P09-12 | 09:35 | 'curvature is κ/(1 − κ d) ... negated when sampling toward decreasing s' | REAL | Driveline.Abi | same lemma as P06-01; d_offset sign flip keeps the side | PROVED: Driveline.Abi.offsetCurv_reverse |
 | P09-13 | 09:36 | 'writes at most max_successors ... out_num_successors to the total' | INT | Driveline.Abi | written = min(max, total) | PROVED: Driveline.Abi.topo_written_length |
-| P02-12 | 02:22 | 'lane 0 in a callback argument is DL_STATUS_ERR_INVALID_ARG' | DECIDE | Driveline.Abi | validLane l <-> l != 0; callback l=0 returns -1 | PROVED: Driveline.Abi.lane_zero_invalid |
+| P02-12 | 02:22 | 'lane 0 in a callback argument is DL_STATUS_ERR_INVALID_ARG' | DECIDE | Driveline.Abi | on a map listing lane 0 (OpenDRIVE center lane), the callback still returns -1 for lane 0 | PROVED: Driveline.Abi.lane_zero_invalid |
 | P09-15 | 09:21 | 'A road ID longer than 63 bytes ... a component parameter name longer than 55 bytes ... is a compile-time error' | DECIDE | Driveline.Abi | fits char[64] ↔ len ≤ 63; fits char[56] ↔ len ≤ 55 | PROVED: Driveline.Abi.name_limits |
 | P09-16 | 09:33 | 'road_id compared by bytes' | INT | Driveline.Abi | zero-padded char[64] byte order = content order, proper prefix first | PROVED: Driveline.Abi.pad_lt_iff |
 | P09-17 | 09:24 | 'The component's values for these two fields are ignored' | INT | Driveline.Abi | finalize depends only on the frame body | PROVED: Driveline.Abi.finalize_ignores |
 | P09-18 | H:162-163 | 'entries + ((head + capacity - k) % capacity) * entry_size' | INT | Driveline.Abi | every valid entry lies inside capacity · entry_size bytes | PROVED: Driveline.Abi.entry_in_bounds |
 | P09-19 | H:163 | '((head + capacity - k) % capacity)' in uint32_t | INT | Driveline.Abi | uint32 slot is exact for capacity ≤ 64 (04:19); wraps for capacity > 2^31 (refute_slot32) | PROVED: Driveline.Abi.slot32_eq |
 | P09-20 | 07:17 | 'Every fmi3Binary value uses little-endian byte order' | INT | Driveline.Abi | le32 round trip | PROVED: Driveline.Abi.de32_le32 |
+| P09-21 | 09:33 | 'Returns the lane whose area contains (X, Y), with s on that road's reference line, d from that lane's centerline' | DECIDE | Driveline.Abi | one lane containing the point at two s values with tied heading differences: the returned (s, d) is not determined by 09:33 | REFUTED: Driveline.Abi.refute_unique_s |
 
 ### WP08 Splice, init contexts, tier change, discrete parts (§6.2, §10.4)
 
