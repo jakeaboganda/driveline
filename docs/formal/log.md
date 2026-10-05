@@ -22,3 +22,14 @@ Review changed two verdicts:
 Deferred clauses became rows in their owning packages: P05-40 (WP04), P05-41, P05-42, P10-40 (WP08), P05-43 (WP12).
 
 No spec defect found in WP01.
+
+## WP02 Vehicle and object spec encoding (§3)
+
+Module `VehicleSpec`: the DSL-level spec, the `dl_vehicle_spec_t` encoding, the tier mask, the §3.1 tolerance, and the object encoding. 29 rows proved, 2 refuted, 2 deferred to WP10 (steady state of objects, `num_wheels`).
+
+Review rejected one refutation. P03-22 claimed that `steering_wheel_norm · δ_max` can exceed `δ_max` when `δ_max < 0`. Every spawned actor passes the §8 feasibility check at cold init (`08-steady-state.md:19`, `|δ_ss| ≤ δ_max`), which forces `δ_max ≥ 0` before any component steps. The row is proved from feasibility.
+
+Spec defects found (queued for the spec-fix pass):
+
+* **P02-09** `03-vehicle-parameters.md` and `02-conventions.md:19`. The CG is placed both at `l_r` ahead of the rear axle and at `l_f` behind the front axle, and the §3.1 tolerance lets the two readings differ. Two implementations can place the CG at different points (`Driveline.VehicleSpec.cg_readings_disagree`).
+* **P03-12** `03-vehicle-parameters.md` Tier 2. Only `i_R > 0` is constrained. A negative `max_drive_torque` or `final_drive_ratio` passes every check and turns the reverse drive torque toward `+x` (`Driveline.VehicleSpec.rev_torque_toward_pos_x`).
