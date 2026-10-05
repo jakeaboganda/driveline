@@ -91,9 +91,9 @@ section Theorems
 theorem encode_eq {major minor : ℕ} (hm : minor < 2 ^ 8) :
     encode major minor = major * 2 ^ 16 + minor * 2 ^ 8 := by
   have h : major <<< 16 = (major <<< 8) <<< 8 := by
-    simp [Nat.shiftLeft_eq, mul_assoc, ← pow_add]
-  rw [encode, h, ← Nat.shiftLeft_or_distrib, ← Nat.shiftLeft_add_eq_or_of_lt hm,
-    Nat.shiftLeft_eq, Nat.shiftLeft_eq, Nat.shiftLeft_eq]
+    simp [Nat.shiftLeft_eq, mul_assoc]
+  rw [encode, h, ← Nat.shiftLeft_or_distrib, ← Nat.shiftLeft_add_eq_or_of_lt hm]
+  simp only [Nat.shiftLeft_eq]
   ring
 
 /-- "`DL_ABI_VERSION_<major>_<minor>` has the value `(major << 16) | (minor << 8)`"
@@ -174,6 +174,7 @@ theorem buffer_length (h : SliceHeader) (es : List Bytes) (hc : es.length = h.co
   have hm : es.map List.length = List.replicate es.length h.entrySize :=
     List.eq_replicate_iff.mpr ⟨by simp, by simpa using he⟩
   simp [serializeBuffer, le32, leN_length, List.length_flatten, hm, hc]
+  omega
 
 /-- P07-04: "Each entry is a `uint64_t t_ns` followed by the slice struct"
 (07-fmu-packaging.md:19), so `entry_size` is 8 + sizeof(slice struct). -/
@@ -191,6 +192,7 @@ theorem payload_newest_first (h : SliceHeader) (head : ℕ) (ring : ℕ → Byte
 /-! ## char[N] theorems -/
 
 theorem pad_length {n : ℕ} {c : Bytes} (h : fits n c) : (pad n c).length = n := by
+  have := h.2
   simp [pad]
   omega
 
@@ -198,11 +200,19 @@ theorem pad_length {n : ℕ} {c : Bytes} (h : fits n c) : (pad n c).length = n :
 after the null … are zero" (09-abi.md:21). -/
 theorem pad_wf {n : ℕ} {c : Bytes} (h : fits n c) : wf n (pad n c) := ⟨c, h, rfl⟩
 
+theorem content_append_zero : ∀ {c : Bytes} (zs : Bytes), (∀ x ∈ c, x ≠ 0) →
+    content (c ++ 0 :: zs) = c
+  | [], zs, _ => by simp [content]
+  | x :: c, zs, h => by
+    have hx := h x (by simp)
+    have ih := content_append_zero (c := c) zs (fun y hy => h y (List.mem_cons_of_mem _ hy))
+    simp only [content, decide_not] at ih ⊢
+    simp [hx, ih]
+
 theorem content_pad {n : ℕ} {c : Bytes} (h : fits n c) : content (pad n c) = c := by
-  have hall : c.takeWhile (fun x => decide (x ≠ 0)) = c :=
-    List.takeWhile_eq_self_iff.mpr (by simpa using h.1)
   obtain ⟨k, hk⟩ : ∃ k, n - c.length = k + 1 := ⟨n - c.length - 1, by have := h.2; omega⟩
-  simp [content, pad, List.takeWhile_append, hall, hk, List.replicate_succ]
+  rw [pad, hk, List.replicate_succ]
+  exact content_append_zero _ h.1
 
 theorem wf_length {n : ℕ} {b : Bytes} (h : wf n b) : b.length = n := by
   obtain ⟨c, hc, rfl⟩ := h
@@ -244,8 +254,7 @@ theorem append_zeros_lt_iff : ∀ {a b : Bytes} {i j : ℕ}, (∀ x ∈ a, x ≠
   | [], [], i, j, _, _, _, _, hl => by
     simp at hl
     subst hl
-    simp only [List.nil_append, List.lt_irrefl, iff_false]
-    exact List.lt_irrefl _
+    simp only [List.nil_append, List.lt_irrefl]
   | [], y :: b, i, j, _, hb, hi, _, _ => by
     obtain ⟨i, rfl⟩ : ∃ i', i = i' + 1 := ⟨i - 1, by omega⟩
     have hy : (0 : Byte) < y := Fin.pos_iff_ne_zero.mpr (hb y (by simp))
