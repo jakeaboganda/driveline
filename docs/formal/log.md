@@ -43,3 +43,16 @@ The specifier had refuted P04-09 with `rate_of(window: 0)`, which divides by zer
 Review added theorems for the `rate_of` value rules (P04-42 to P04-45), the glue from `at()` to each slice's interpolation, and the unmatched-track rule. It moved P02-12 to WP07 and P02-13, P02-14 to WP09. P04-41 (non-finite samples in `at()`) stays open.
 
 No spec defect found in WP03.
+
+## WP04 Tick schedule and FMU time (§11, §7)
+
+Modules `Schedule` (tick times, rate validity over ℚ, scheduling and zero-order hold, same-tick dataflow, phase order, actor and group order, chain order, Phase 2 commutation) and `FmuTime` (communication points under an abstract rounding, `t_first`, the FMI call mapping). All 25 rows proved, plus P05-40 (redelivery on ticks where the producer does not step).
+
+The specifier had refuted P11-25: read pair by pair, the 11:27 tie-break could order calls in a cycle. The implementer modeled chain expressions from the grammar and proved that every data path runs from an earlier call to a later one, because frame ports are bound only through `>>`, `+`, and `Arbitrate` (`16-static-semantics.md:75`). Under that model the 11:27 order is the left-to-right call order, so the row is proved.
+
+Review strengthened P07-08 and P07-09: FMI contiguity is now a predicate over the call sequence the runtime emits, not the definition of the points restated.
+
+Spec gaps found (queued for the spec-fix pass):
+
+* **P11-25** `11-execution.md:27`. "Call order in the chain expression after `fn` substitution" does not say where a named chain sits once inlined. For `Arbitrate(Pri(), s, ...)` with `chain s = Sec()`, inlining gives Pri before Sec and source order gives Sec before Pri. Two runtimes can order independent components differently, which changes report order.
+* **P07-40** `07-fmu-packaging.md:46`. "One period later than a native component with the same logic" names no comparator. Informative text; it should say so or be dropped.
