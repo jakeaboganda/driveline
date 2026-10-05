@@ -166,16 +166,18 @@ theorem par_reports {C R : Type} (out : C → CallOut R) (ran : C → Bool) (ord
 
 /-! ## Teardown order (§14.2 item 3) -/
 
-/-- An actor or a group. `phase2`: its components in Phase 2 order, each with
-its per-actor instances in `bind` order; `physics`: its physics instances in
-`bind` order (11-execution.md:27). -/
+/-- An actor or a group. `ent`: its `actor_id`s, keyed by the smallest;
+`phase2`: its components in Phase 2 order, each with its per-actor instances in
+`bind` order; `physics`: its physics instances in `bind` order
+(11-execution.md:27). -/
 structure Entity (I : Type) where
+  ent : Schedule.Entity
   phase2 : List (List I)
   physics : List I
 
-/-- Cold init instantiates "every component instance in Phase 2 order ..., with
-each actor's or group's physics instances after its Stage 2 instances and
-per-actor physics instances in `bind` order" (06-lifecycle.md:70). -/
+/-- The entity's instances in Phase 2 order, "with each actor's or group's
+physics instances after its Stage 2 instances and per-actor physics instances in
+`bind` order" (06-lifecycle.md:70). -/
 def Entity.startup {I : Type} (e : Entity I) : List I := e.phase2.flatten ++ e.physics
 
 /-- "in the reverse of Phase 2 order, physics first, with per-actor instances in
@@ -183,8 +185,7 @@ reverse `bind` order" (14-diagnostics.md:32). -/
 def Entity.teardown {I : Type} (e : Entity I) : List I :=
   e.physics.reverse ++ (e.phase2.map List.reverse).reverse.flatten
 
-/-- `es` in Phase 2 order: ascending `actor_id`, a group by its smallest member
-(11-execution.md:27, `Schedule.entity_order_unique`). -/
+/-- The Phase 2 instance order of the current graph, for `es` in Phase 2 order. -/
 def startupOrder {I : Type} (es : List (Entity I)) : List I := es.flatMap Entity.startup
 
 /-- "in descending `actor_id` order, with a group sorted by its smallest member" (14:32). -/
@@ -193,10 +194,16 @@ def teardownOrder {I : Type} (es : List (Entity I)) : List I := es.reverse.flatM
 /-- P14-07. Teardown visits "instances in descending `actor_id` order, with a
 group sorted by its smallest member, and within one actor or group in the
 reverse of Phase 2 order, physics first, with per-actor instances in reverse
-`bind` order" (14-diagnostics.md:32). That is the reverse of the cold-init
-instantiation order of 06-lifecycle.md:70. -/
-theorem teardown_reverse_startup {I : Type} (es : List (Entity I)) :
-    teardownOrder es = (startupOrder es).reverse := by
+`bind` order" (14-diagnostics.md:32). `es` is in Phase 2 order: "ascending
+order of `actor_id` ... A group sorts by its smallest member `actor_id`"
+(11-execution.md:27), an order that `Schedule.entity_order_unique` makes unique.
+Then `es.reverse` is strictly descending by that key, and teardown is the
+reverse of the current graph's Phase 2 instance order. -/
+theorem teardown_reverse_startup {I : Type} (es : List (Entity I))
+    (hs : es.Pairwise fun a b => a.ent.key < b.ent.key) :
+    es.reverse.Pairwise (fun a b => b.ent.key < a.ent.key) ∧
+      teardownOrder es = (startupOrder es).reverse := by
+  refine ⟨List.pairwise_reverse.2 hs, ?_⟩
   simp only [teardownOrder, startupOrder, List.reverse_flatMap, Entity.startup,
     Function.comp_def, List.reverse_append, List.reverse_flatten]
   rfl

@@ -931,7 +931,10 @@ end-of-run teardown (§14.2 item 3) come after every other report and before
 the end line. Reports of a splice window's teardown calls stay in sequence."
 (18-run-record.md:25). A tick whose Phase 2 ran in parallel writes the same
 lines as sequential execution (`par_reports`, `hcover` as there), and every
-line after the others is an end-of-run teardown report. -/
+line after the others is an end-of-run teardown report. The order of 18:25 is
+encoded by the definition of `Run.body`: cold init, the spawn-state contact
+test, then each tick in the order of `TickRun.events`, then the end-of-run
+teardown. -/
 theorem lines_sequential {C P : Type} (out : C → CallOut P) (ran : C → Bool) (order : List C)
     (hcover : ∀ c ∈ takeUntilIncl (fun c => (out c).err.isSome) order, ran c = true)
     (k : ℕ) (t : TickRun P) (before : List P) (r : Run P) :
