@@ -75,12 +75,20 @@ noncomputable def UnitExpr.factor : UnitExpr → ℝ
 /-- P16-01. "A quantity is a binary64 value with a dimension over meters, kilograms,
 and seconds. Radians and degrees are dimensionless, so `rad/s` and `Hz` have the same
 dimension." (16-static-semantics.md:16). `*` adds dimensions, `/` subtracts them, and
-`rad/s` has the dimension of `Hz`. -/
+`rad/s` has the dimension of `Hz`. 12:82 'A `UnitExpr` applies `*` and `/` left to right,
+so `N*s/m` is N·s/m and `N/m*s` is also N·s/m': the two have the same dimension and
+factor. -/
 theorem dim_mul_div_rad_s_Hz (l : UnitExpr) (r : UnitAtom) :
     (UnitExpr.mul l r).dim = l.dim + r.dim ∧ (UnitExpr.div l r).dim = l.dim - r.dim ∧
-      (UnitExpr.div (.atom ⟨.rad, 1⟩) ⟨.s, 1⟩).dim = (UnitExpr.atom ⟨.Hz, 1⟩).dim := by
-  refine ⟨rfl, rfl, ?_⟩
-  simp [UnitExpr.dim, UnitAtom.dim, UnitName.dim]
+      (UnitExpr.div (.atom ⟨.rad, 1⟩) ⟨.s, 1⟩).dim = (UnitExpr.atom ⟨.Hz, 1⟩).dim ∧
+      (UnitExpr.mul (.div (.atom ⟨.N, 1⟩) ⟨.m, 1⟩) ⟨.s, 1⟩).dim =
+        (UnitExpr.div (.mul (.atom ⟨.N, 1⟩) ⟨.s, 1⟩) ⟨.m, 1⟩).dim ∧
+      (UnitExpr.mul (.div (.atom ⟨.N, 1⟩) ⟨.m, 1⟩) ⟨.s, 1⟩).factor =
+        (UnitExpr.div (.mul (.atom ⟨.N, 1⟩) ⟨.s, 1⟩) ⟨.m, 1⟩).factor := by
+  refine ⟨rfl, rfl, ?_, ?_, ?_⟩
+  · simp [UnitExpr.dim, UnitAtom.dim, UnitName.dim]
+  · simp only [UnitExpr.dim]; abel
+  · simp only [UnitExpr.factor]; ring
 
 /-- The named quantity types of 16:17. -/
 inductive NamedQty
