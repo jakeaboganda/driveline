@@ -284,22 +284,22 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | P06-14 | 06:78 | 'Every latched frame states every group in its baseline mode ... has no NONE group' | DECIDE | Driveline.InitContext | ∀ group in the Pass 1 frames, mode = baseline | PROVED: Driveline.InitContext.pass1_frames_baseline |
 | P06-15 | 06:78 | 'steering_wheel_norm = clamp(δ_ss/δ_max, ±1)' | REAL | Driveline.InitContext | feasibility (abs δ_ss ≤ δ_max) ⇒ norm·δ_max = δ_ss, so the Tick 0 trim check passes | PROVED: Driveline.InitContext.wheel_norm_trim |
 | P06-16 | 06:79 | 'no buffer holds two samples at t = 0' | MODEL | Driveline.InitContext | Phase 1 is skipped on Tick 0 ⇒ timestamps in a buffer are strictly ordered | PROVED: Driveline.InitContext.t0_single_sample |
-| P06-17 | 06:83 | 'a promotion if ... required_tier is 0 and the incoming one's is 1 or 2, and a demotion in the reverse case' | DECIDE | Driveline.TierChange | classify : Fin 4 → Fin 4 → {promo, demo, none, ?}; tier 3 not covered | TODO |
-| P06-18 | 06:83 | 'a splice between them changes no field' | DECIDE | Driveline.TierChange | tiers 1 ↔ 2 ⇒ update = id | TODO |
-| P06-19 | 06:84 | 'A tier change keeps the sign of v_lon, so keeping chi keeps the path in reverse too' | REAL | Driveline.TierChange | rear-axle velocity direction = χ + (v<0 ? π : 0) is invariant when v_lon and χ are fixed | TODO |
-| P06-20 | 06:84 | 'a_lon becomes a_lon − v_lat,ra psi_dot so that v_dot_lon is kept' | REAL | Driveline.TierChange | old v_lat = 0 ⇒ a'+v'ψ̇ = a (`ring`) | TODO |
-| P06-21 | 06:84 | 'Five fields change' | DECIDE | Driveline.TierChange | changed fields ⊆ {v_lat, a_lon, fwa, β, ψ}; equality false when v<1 | TODO |
-| P06-22 | 06:84 | 'psi = chi − gamma ... so the actor keeps its path, as at spawn' | REAL | Driveline.TierChange | ψ'+arctan(v'/v) ≡ χ (mod 2π) | TODO |
-| P06-24 | 06:85 | 'a_lon becomes a_lon + v_lat,ra psi_dot with the old v_lat,ra' | REAL | Driveline.TierChange | new v_lat = 0 ⇒ v̇ kept (`ring`) | TODO |
-| P06-25 | 06:85 | 'These five fields and β_cg change' | DECIDE | Driveline.TierChange | the diff set; β value unspecified | TODO |
-| P06-26 | 06:86 | 'writes the changed fields into the committed state X(t) before any warm start. The map cache is left unchanged' | MODEL | Driveline.TierChange | update ∘ mapCache = mapCache | TODO |
-| P06-27 | 06:87 | re-trim set: 'Stage 2 instance with a data path ... output type is not Lon<T>' | MODEL | Driveline.TierChange | set is a decidable graph filter; Phase 2 order is a sublist | TODO |
+| P06-17 | 06:83 | 'a promotion if ... required_tier is 0 and the incoming one's is 1 or 2, and a demotion in the reverse case' | DECIDE | Driveline.TierChange | classify : Fin 4 → Fin 4 → {promo, demo, none, ?}; tier 3 not covered | PROVED: Driveline.TierChange.classify_spec |
+| P06-18 | 06:83 | 'a splice between them changes no field' | DECIDE | Driveline.TierChange | tiers 1 ↔ 2 ⇒ update = id | PROVED: Driveline.TierChange.update_tiers12 |
+| P06-19 | 06:84 | 'A tier change keeps the sign of v_lon, so keeping chi keeps the path in reverse too' | REAL | Driveline.TierChange | rear-axle velocity direction = χ + (v<0 ? π : 0) is invariant when v_lon and χ are fixed | PROVED: Driveline.TierChange.path_kept |
+| P06-20 | 06:84 | 'a_lon becomes a_lon − v_lat,ra psi_dot so that v_dot_lon is kept' | REAL | Driveline.TierChange | old v_lat = 0 ⇒ a'+v'ψ̇ = a (`ring`) | PROVED: Driveline.TierChange.promote_vdot |
+| P06-21 | 06:84 | 'Five fields change' | DECIDE | Driveline.TierChange | changed fields ⊆ {v_lat, a_lon, fwa, β, ψ}; equality false when v<1 | PROVED: Driveline.TierChange.promote_fields |
+| P06-22 | 06:84 | 'psi = chi − gamma ... so the actor keeps its path, as at spawn' | REAL | Driveline.TierChange | ψ'+arctan(v'/v) ≡ χ (mod 2π) | PROVED: Driveline.TierChange.promote_chi |
+| P06-24 | 06:85 | 'a_lon becomes a_lon + v_lat,ra psi_dot with the old v_lat,ra' | REAL | Driveline.TierChange | new v_lat = 0 ⇒ v̇ kept (`ring`) | PROVED: Driveline.TierChange.demote_vdot |
+| P06-25 | 06:85 | 'These five fields and β_cg change' | DECIDE | Driveline.TierChange | the diff set; β value unspecified | PROVED: Driveline.TierChange.demote_fields |
+| P06-26 | 06:86 | 'writes the changed fields into the committed state X(t) before any warm start. The map cache is left unchanged' | MODEL | Driveline.TierChange | update ∘ mapCache = mapCache | PROVED: Driveline.TierChange.update_keeps |
+| P06-27 | 06:87 | re-trim set: 'Stage 2 instance with a data path ... output type is not Lon<T>' | MODEL | Driveline.TierChange | set is a decidable graph filter; Phase 2 order is a sublist | PROVED: Driveline.TierChange.retrimSet_spec |
 | P06-29 | 06:88 | 'a_lon_cmd equal to the committed v_dot_lon = a_lon + v_lat psi_dot' | REAL | Driveline.InitContext | on the Pass 1 state this equals 0 = the Pass 1 a_lon_cmd | PROVED: Driveline.InitContext.pass1_alon_cmd |
 | P06-30 | 06:88 | 'v_0 = max(v_lon, 0)' | DECIDE | Driveline.InitContext | v_ref ≥ 0 | PROVED: Driveline.InitContext.baseline_vref_nonneg |
 | P06-31 | 06:88 | 'replaces each group ... not in its baseline mode, and is not NONE' | DECIDE | Driveline.InitContext | after conversion every group is baseline or NONE (not 'no NONE') | PROVED: Driveline.InitContext.convert_modes |
 | P06-32 | 06:88 | 'A component whose input and output types are equal ... gets its own last output' | MODEL | Driveline.InitContext | follows from the 'left the component' rule | PROVED: Driveline.InitContext.latched_own_output |
 | P06-33 | 06:90-92 | 'Override<T> output delivers a frame with every group NONE' | DECIDE | Driveline.InitContext | conversion function cases | PROVED: Driveline.InitContext.preStep_cases |
-| P06-34 | 06:93 | 'steering group becomes ANGLE ... A NONE steering group stays NONE ... Longitudinal fields keep their last values' | DECIDE | Driveline.TierChange | idempotent; leaves longitudinal fields unchanged | TODO |
+| P06-34 | 06:93 | 'steering group becomes ANGLE ... A NONE steering group stays NONE ... Longitudinal fields keep their last values' | DECIDE | Driveline.TierChange | idempotent; leaves longitudinal fields unchanged | PROVED: Driveline.TierChange.kcf_steerAfter |
 | P06-35 | 06:94 | slip_angle 0 'when v_lon < 1 m/s ... or when the required_tier ... is 0' | DECIDE | Driveline.InitContext | case split | PROVED: Driveline.InitContext.warm_slip |
 | P06-36 | 06:95 | 'matches each context to its actor slot by chassis_state.actor_id ... in its actor_ids order' | DECIDE | Driveline.InitContext | Nodup actor_ids ⇒ contexts = filter, a Sublist, with injective matching; re-trim filters on tierChanged | PROVED: Driveline.InitContext.ctx_match |
 | P10-01 | 10:13,17-19 | cardinality table | MODEL | Driveline.Splice | dependency relation for each cardinality | TODO |
@@ -311,7 +311,7 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | P10-20 | 10:32 | instantiate/teardown ordering | MODEL | Driveline.Splice | - | TODO |
 | P10-21 | 10:33 | 'A single splice statement does not' | MODEL | Driveline.Splice | - | TODO |
 | P05-41 | 05:32 | 'A frame that the runtime builds by the rules of Pass 1 step 5 uses only baseline modes' | MODEL | Driveline.InitContext | every Pass 1 step 5 frame has isBaseline modes | PROVED: Driveline.InitContext.built_frames_baseline |
-| P05-42 | 05:32 | 'the steering that the runtime writes after a tier change uses ANGLE' | MODEL | Driveline.TierChange | steering replacement sets steer_mode/wheel_mode ANGLE | TODO |
+| P05-42 | 05:32 | 'the steering that the runtime writes after a tier change uses ANGLE' | MODEL | Driveline.TierChange | steering replacement sets steer_mode/wheel_mode ANGLE | PROVED: Driveline.TierChange.steerAfter_angle |
 | P00-40 | 00:34 | 'a static actor, which `place` creates' (17:22) | MODEL | Driveline.InitContext | an actor is static <-> place created it | PROVED: Driveline.InitContext.static_iff_place |
 | P10-40 | 10:25 | 'the runtime re-forms its merged frame in the splice window ... stamped with the next tick's time' | MODEL | Driveline.Splice | splice-window merged frame stamp = next tick time | TODO |
 
