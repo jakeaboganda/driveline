@@ -661,7 +661,8 @@ The pairs are those that the same sentence's test covers: "every pair of actors
 a < b by `actor_id`, except a pair of two static actors" (`mem_pairList`), so a
 pair of two static actors gets no line, as stated. For each pair: at most one
 line, a line exactly when the pair is in contact on some tested committed state,
-and its tick is the first such state. -/
+and its tick is the first such state. That `Run.spawnPairs` and
+`TickRun.pairs` are these lines is P11-40, `TODO`. -/
 theorem collision_first_contact (ids : Finset ℕ) (static : ℕ → Bool)
     (contact : ℕ → ℕ × ℕ → Bool) (n : ℕ) (p : ℕ × ℕ) :
     ((collisions contact (pairList ids static) n).filter (·.2 == p)).length ≤ 1 ∧
@@ -808,18 +809,107 @@ def Run.WF {P : Type} (r : Run P) : Prop :=
   | .failed .coldInit _ => r.ticks = [] ∧ r.spawnPairs = []
   | .failed (.exec k) _ | .failed (.splice k) _ | .succeeded k => r.ticks.length = k + 1
 
+/-- "When a `dl_*` call returns an error ... the runtime stops the run. It
+finishes no further phase. ... reports from calls after it are discarded. It
+reports the error with the tick, the instance name, and the call, and then runs
+teardown." (14-diagnostics.md:31). So the error report of a failed run is its
+last line before the end-of-run teardown, at the position of its context: the
+last cold-init report; a report of tick k before its splice window, with no
+collision line after it unless it comes from the `terminate when` or `on`
+evaluation; or a report of the splice window after tick k. -/
+def Run.StopsAtError {P : Type} (r : Run P) : Prop :=
+  match r.ending with
+  | .failed .coldInit _ => r.cold ≠ []
+  | .failed (.exec _) _ => ∃ t, r.ticks.getLast? = some t ∧ t.window = [] ∧
+      (t.late ≠ [] ∨ (t.pairs = [] ∧ t.early ≠ []))
+  | .failed (.splice _) _ => ∃ t, r.ticks.getLast? = some t ∧ t.window ≠ []
+  | .succeeded _ => True
+
+/-- The error report of a failed run (14:31). -/
+def Run.error {P : Type} (r : Run P) : Option (Event P) :=
+  match r.ending with
+  | .failed _ _ => r.pre.getLast?
+  | .succeeded _ => none
+
+theorem ticksEv_append {P : Type} (k : ℕ) (ts : List (TickRun P)) (t : TickRun P) :
+    ticksEv k (ts ++ [t]) = ticksEv k ts ++ t.events (k + ts.length) := by
+  induction ts generalizing k with
+  | nil => simp [ticksEv]
+  | cons a ts ih =>
+    simp only [List.cons_append, ticksEv, ih, List.append_assoc, List.length_cons]
+    congr 3; omega
+
+theorem pre_getLast {P : Type} (r : Run P) (t : TickRun P) (k : ℕ)
+    (hl : r.ticks.getLast? = some t) (hk : r.ticks.length = k + 1) :
+    r.pre.getLast? = (t.events k).getLast?.or r.pre.getLast? ∧
+      (t.events k ≠ [] → r.pre.getLast? = (t.events k).getLast?) := by
+  obtain ⟨ts, hts⟩ := List.getLast?_eq_some_iff.1 hl
+  have hlen : ts.length = k := by simp [hts] at hk; omega
+  have hp : r.pre = (r.cold.map (fun p => (⟨reportTick .coldInit, .report p⟩ : Event P)) ++
+      r.spawnPairs.map (fun q => (⟨0, .collision q.1 q.2⟩ : Event P)) ++ ticksEv 0 ts) ++
+      t.events k := by
+    simp [Run.pre, hts, ticksEv_append, hlen]
+  rw [hp, List.getLast?_append]
+  refine ⟨?_, fun hne => ?_⟩
+  · cases h : (t.events k).getLast? <;> simp [List.getLast?_append, h]
+  · obtain ⟨x, hx⟩ := Option.ne_none_iff_exists'.1 (mt List.getLast?_eq_none_iff.1 hne)
+    simp [hx]
+
 /-- P14-12. "A teardown report carries the same tick and time as the error that
 ended the run, or, after a successful run, the tick whose Phase 4 ended it."
-(14-diagnostics.md:34) -/
-theorem teardown_report_tick {P : Type} (r : Run P) :
-    ∀ e ∈ r.body.drop r.pre.length,
-      e.tick = (match r.ending with
-        | .failed c _ => reportTick c
-        | .succeeded k => k) ∧ e.kind.isCollision = false := by
-  intro e he
-  simp only [Run.body, List.drop_left, List.mem_map] at he
-  obtain ⟨p, _, rfl⟩ := he
-  exact ⟨by cases r.ending <;> rfl, rfl⟩
+(14-diagnostics.md:34). The error is `Run.error`, the last line before the
+end-of-run teardown (14:31, `Run.StopsAtError`): a report with the tick of its
+context (14:34, `report_tick`). Every teardown line is a report with the same
+tick and time as the error after a failed run, and tick k with its time after
+a run that tick k's Phase 4 ended. -/
+theorem teardown_report_tick {P : Type} (dt : ℕ+) (r : Run P) (hwf : r.WF)
+    (hs : r.StopsAtError) :
+    (∀ c b, r.ending = .failed c b → ∃ err p, r.error = some err ∧ err = ⟨reportTick c, .report p⟩ ∧
+      ∀ e ∈ r.body.drop r.pre.length, e.tick = err.tick ∧
+        Schedule.tickTime dt e.tick = Schedule.tickTime dt err.tick ∧ e.kind.isCollision = false) ∧
+    (∀ k, r.ending = .succeeded k → ∀ e ∈ r.body.drop r.pre.length, e.tick = k ∧
+        Schedule.tickTime dt e.tick = Schedule.tickTime dt k ∧ e.kind.isCollision = false) := by
+  have hT : ∀ e ∈ r.body.drop r.pre.length, e.tick = teardownTick r.ending ∧
+      e.kind.isCollision = false := by
+    intro e he
+    simp only [Run.body, List.drop_left, List.mem_map] at he
+    obtain ⟨p, _, rfl⟩ := he
+    exact ⟨rfl, rfl⟩
+  refine ⟨fun c b hc => ?_, fun k hk e he => ?_⟩
+  · have herr : ∃ p, r.pre.getLast? = some ⟨reportTick c, .report p⟩ := by
+      simp only [Run.WF, Run.StopsAtError, hc] at hwf hs
+      cases c with
+      | coldInit =>
+        obtain ⟨x, hx⟩ := Option.ne_none_iff_exists'.1 (mt List.getLast?_eq_none_iff.1 hs)
+        refine ⟨x, ?_⟩
+        simp [Run.pre, hwf.1, hwf.2, ticksEv, List.getLast?_map, hx]
+      | exec k =>
+        obtain ⟨t, hl, hw, hr⟩ := hs
+        have hne : t.events k ≠ [] := by
+          rcases hr with h | ⟨_, h⟩ <;> simp [TickRun.events, h]
+        rw [(pre_getLast r t k hl hwf).2 hne]
+        rcases hr with h | ⟨hp, h⟩
+        · obtain ⟨x, hx⟩ := Option.ne_none_iff_exists'.1 (mt List.getLast?_eq_none_iff.1 h)
+          exact ⟨x, by simp [TickRun.events, hw, List.getLast?_append, List.getLast?_map, hx]⟩
+        · obtain ⟨x, hx⟩ := Option.ne_none_iff_exists'.1 (mt List.getLast?_eq_none_iff.1 h)
+          by_cases hL : t.late = []
+          · exact ⟨x, by simp [TickRun.events, hw, hp, hL, List.getLast?_map, hx]⟩
+          · obtain ⟨y, hy⟩ := Option.ne_none_iff_exists'.1 (mt List.getLast?_eq_none_iff.1 hL)
+            exact ⟨y, by simp [TickRun.events, hw, List.getLast?_append, List.getLast?_map, hy]⟩
+      | splice k =>
+        obtain ⟨t, hl, hw⟩ := hs
+        have hne : t.events k ≠ [] := by simp [TickRun.events, hw]
+        rw [(pre_getLast r t k hl hwf).2 hne]
+        obtain ⟨x, hx⟩ := Option.ne_none_iff_exists'.1 (mt List.getLast?_eq_none_iff.1 hw)
+        exact ⟨x, by simp [TickRun.events, List.getLast?_append, List.getLast?_map, hx]⟩
+    obtain ⟨p, hp⟩ := herr
+    refine ⟨_, p, by simp [Run.error, hc, hp], rfl, fun e he => ?_⟩
+    obtain ⟨h1, h2⟩ := hT e he
+    rw [hc] at h1
+    exact ⟨h1, by rw [h1]; rfl, h2⟩
+  · obtain ⟨h1, h2⟩ := hT e he
+    rw [hk] at h1
+    exact ⟨h1, by rw [h1]; rfl, h2⟩
 
 /-- P18-08. "The committed state after Phase 4 of tick k has tick k + 1 ... So
 a collision line carries the committed state's tick, while a report from the

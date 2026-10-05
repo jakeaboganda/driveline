@@ -176,6 +176,7 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | ID | Spec | Quote | Class | Lean module | Statement | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | P11-21 | 11:24 | "first tick that a pair is in contact, and on no later tick" | MODEL | Driveline.RunRecord | `∀ pair, count collisionLines pair ≤ 1`; a line exists ↔ ∃ tick in contact | PROVED: Driveline.RunRecord.collision_first_contact |
+| P11-40 | 11:24 | "On the first tick that a pair is in contact, and on no later tick, the runtime writes a `collision` line" | MODEL | Driveline.RunRecord | `Run.spawnPairs` and `TickRun.pairs` of a run equal the lines of `collisions` for its contact test, by tick | TODO |
 | P14-01 | 14:12 | "negative code is an error. positive … warning" | DECIDE | Driveline.Diagnostics | `severity c = if c<0 then err else if c>0 then warn else ok` | PROVED: Driveline.Diagnostics.severity_by_sign |
 | P14-03 | 14:26 | "DL_STATUS_ERR_FMU … Components never return it" | MODEL | Driveline.Diagnostics | a component-returned -6 is invalid | PROVED: Driveline.Diagnostics.errFmu_runtime_only |
 | P14-04 | 14:30 | warnings: "The run continues" | MODEL | Driveline.Diagnostics | a warning does not change the control state | PROVED: Driveline.Diagnostics.warning_continues |
