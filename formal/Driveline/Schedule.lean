@@ -196,8 +196,7 @@ theorem stepDt_period (d dt : ℕ+) (k : Tick) (h : runs d k) :
     have hd : (d : ℕ) ∣ j - k := Nat.dvd_sub ((runs_iff_dvd d j).mp hj) hk
     have hpos : 0 < j - k := Nat.sub_pos_of_lt hkj
     have := Nat.le_of_dvd hpos hd
-    show k + (d : ℕ) ≤ j
-    omega
+    exact Nat.add_le_of_le_sub' hkj.le this
   · simp [tickTime, stepDt, add_mul]
 
 /-! ## Phase 2 dataflow -/
@@ -465,7 +464,7 @@ order of `actor_id` … A group sorts by its smallest member `actor_id`." For
 disjoint entities this order exists. -/
 theorem entity_order_exists (es : List Entity)
     (hd : es.Pairwise (fun a b => Disjoint a.ids b.ids)) :
-    ∃ l, l.Perm es ∧ l.Pairwise (fun a b => a.key < b.key) := by
+    ∃ l : List Entity, l.Perm es ∧ l.Pairwise (fun a b => a.key < b.key) := by
   have hne : es.Pairwise (fun a b => a.key ≠ b.key) :=
     hd.imp fun {a b} (h : Disjoint a.ids b.ids) (hk : a.key = b.key) =>
       Finset.disjoint_left.mp h (Finset.min'_mem a.ids a.ne)

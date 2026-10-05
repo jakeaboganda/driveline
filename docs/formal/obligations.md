@@ -144,31 +144,31 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 
 | ID | Spec | Quote | Class | Lean module | Statement | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| P07-08 | 07:36 | 'each later one is the previous one plus the previous communicationStepSize in binary64, so the points are contiguous' | MODEL | Driveline.FmuTime | p_{k+1} = fl(p_k+h) ⇒ FMI contiguity (rfl); drift vs nearest(t_k/1e9) bounded but nonzero | TODO |
-| P07-09 | 07:43 | 'currentCommunicationPoint of tick t by the Times rule ... communicationStepSize = h' | MODEL | Driveline.FmuTime | scheduled ticks t_first + k·h map 1:1 to p_k | TODO |
-| P07-10 | 07:44 | 'fmi3Warning counts as fmi3OK' | DECIDE | Driveline.FmuTime | status map | TODO |
-| P07-11 | 07:46 | 'react ... one period later' | MODEL | Driveline.FmuTime | output(t) depends on inputs ≤ t only | TODO |
-| P07-12 | 07:59 | 't_first, the earliest tick time t' ≥ t at which the component is scheduled' | INT | Driveline.FmuTime | t_first = least scheduled tick ≥ t; first DoStep point = startTime | TODO |
-| P07-14 | 07:62-63 | terminate/free conditions | DECIDE | Driveline.FmuTime | call predicate | TODO |
-| P11-01 | 11:12 | "t_ns = k_tick · Δt_base_ns", Δt ∈ ℤ⁺ | INT | Driveline.Schedule | `tickTime k = k * dt` over ℕ; strictly increasing when dt>0 | TODO |
-| P11-02 | 11:13 | "k_div · Δt_base_ns · f_comp = 10^9 exactly" | DECIDE | Driveline.Schedule | `validRate dt f ↔ ∃ k:ℕ+, k*dt*f = 1e9` over ℚ; decidable as `(1e9/(dt*f)).den = 1 ∧ >0`; at most one k_div exists | TODO |
-| P11-03 | 11:13 | "30Hz on a 500Hz base clock … compile-time error" | DECIDE | Driveline.Schedule | `¬ validRate 2_000_000 30` by `decide` | TODO |
-| P11-04 | 11:14 | "omits a (rate: …) clause inherits … k_div = 1" | MODEL | Driveline.Schedule | `defaultDiv = 1`; `validRate dt (1e9/dt)` | TODO |
-| P11-05 | 11:15 | "executes on tick k iff (k mod k_div) == 0" | DECIDE | Driveline.Schedule | `runs k d ↔ d ∣ k`; `runs 0 d` holds for every d | TODO |
-| P11-06 | 11:15 | "holds its output constant via ZOH" | MODEL | Driveline.Schedule | `out k = out (d * (k / d))`; constant on `[d*m, d*m+d)` | TODO |
-| P11-08 | 11:17 | "most recent step at or before the current tick … topological order" | MODEL | Driveline.Schedule | the value read at tick k is the upstream output at `max {j ≤ k ∣ runs j}`, with the same-tick write before the read because of topological order | TODO |
-| P11-09 | 11:18 | "dt = k_div · Δt_base" | INT | Driveline.Schedule | `stepDt d dt = d*dt`; Int64 no overflow under a bound | TODO |
-| P11-10 | 11:19-23 | "four phases in this order" | MODEL | Driveline.Schedule | `tick = P1 ≫ P2 ≫ P3 ≫ P4`; tick 0 = `P2 ≫ P3 ≫ P4` (11:20) | TODO |
-| P11-11 | 11:23 | "sim_time is t + Δt … committed KinematicState" | MODEL | Driveline.Schedule | predicate env at tick k has `simTime = (k+1)*dt` | TODO |
-| P11-12 | 11:23 | "If the predicate is true … no on statement fires" | MODEL | Driveline.Schedule | `term k → onFired k = ∅` | TODO |
-| P11-13 | 11:23 | "static actor's committed state keeps every field except timestamp_ns" | MODEL | Driveline.Schedule | frame lemma on the commit | TODO |
-| P11-14 | 11:23 | "adds the horizontal distance … to odometer_m" | REAL | Driveline.Schedule | the odometer never decreases (dist ≥ 0) | TODO |
-| P11-24 | 11:27 | "ascending order of actor_id … group sorts by its smallest member" | DECIDE | Driveline.Schedule | evaluation order = `sortBy (minId)`; well defined because ids are unique (16:71) and groups are disjoint | TODO |
-| P11-25 | 11:27 | "left-to-right order of their calls … after fn substitution" | MODEL | Driveline.Schedule | order = lexicographic topological sort, tie-break by call position; `IsTopo` | TODO |
-| P11-26 | 11:27 | "per-actor instances … in bind order before the next component" | MODEL | Driveline.Schedule | group order = component-major, bind-minor | TODO |
-| P11-27 | 11:27 | "No component reads another entity's output within a tick, so this order never delays data" | MODEL | Driveline.Schedule | the read set of an entity's components ⊆ that entity's buffers ∪ the P1 snapshot | TODO |
-| P11-28 | 11:27 | "Phase 2 is data-race-free and parallelizable across actors" | MODEL | Driveline.Schedule | any interleaving of entity blocks gives the same state (commutation) | TODO |
-| P05-40 | 05:40 | 'On a tick where a producer does not step ..., its consumers receive its last output again' | MODEL | Driveline.Schedule | delivered frame on a non-stepping tick = last output | TODO |
+| P07-08 | 07:36 | 'each later one is the previous one plus the previous communicationStepSize in binary64, so the points are contiguous' | MODEL | Driveline.FmuTime | p_{k+1} = fl(p_k+h) ⇒ FMI contiguity (rfl); drift vs nearest(t_k/1e9) bounded but nonzero | PROVED: Driveline.FmuTime.contiguous |
+| P07-09 | 07:43 | 'currentCommunicationPoint of tick t by the Times rule ... communicationStepSize = h' | MODEL | Driveline.FmuTime | scheduled ticks t_first + k·h map 1:1 to p_k | PROVED: Driveline.FmuTime.doStep_ticks |
+| P07-10 | 07:44 | 'fmi3Warning counts as fmi3OK' | DECIDE | Driveline.FmuTime | status map | PROVED: Driveline.FmuTime.doStepOk_iff |
+| P07-11 | 07:46 | 'react ... one period later' | MODEL | Driveline.FmuTime | output(t) depends on inputs ≤ t only | PROVED: Driveline.FmuTime.out_causal |
+| P07-12 | 07:59 | 't_first, the earliest tick time t' ≥ t at which the component is scheduled' | INT | Driveline.FmuTime | t_first = least scheduled tick ≥ t; first DoStep point = startTime | PROVED: Driveline.FmuTime.tFirst_isLeast |
+| P07-14 | 07:62-63 | terminate/free conditions | DECIDE | Driveline.FmuTime | call predicate | PROVED: Driveline.FmuTime.fatal_no_calls |
+| P11-01 | 11:12 | "t_ns = k_tick · Δt_base_ns", Δt ∈ ℤ⁺ | INT | Driveline.Schedule | `tickTime k = k * dt` over ℕ; strictly increasing when dt>0 | PROVED: Driveline.Schedule.tickTime_strictMono |
+| P11-02 | 11:13 | "k_div · Δt_base_ns · f_comp = 10^9 exactly" | DECIDE | Driveline.Schedule | `validRate dt f ↔ ∃ k:ℕ+, k*dt*f = 1e9` over ℚ; decidable as `(1e9/(dt*f)).den = 1 ∧ >0`; at most one k_div exists | PROVED: Driveline.Schedule.validRate_iff |
+| P11-03 | 11:13 | "30Hz on a 500Hz base clock … compile-time error" | DECIDE | Driveline.Schedule | `¬ validRate 2_000_000 30` by `decide` | PROVED: Driveline.Schedule.rate30_on_500_invalid |
+| P11-04 | 11:14 | "omits a (rate: …) clause inherits … k_div = 1" | MODEL | Driveline.Schedule | `defaultDiv = 1`; `validRate dt (1e9/dt)` | PROVED: Driveline.Schedule.default_div |
+| P11-05 | 11:15 | "executes on tick k iff (k mod k_div) == 0" | DECIDE | Driveline.Schedule | `runs k d ↔ d ∣ k`; `runs 0 d` holds for every d | PROVED: Driveline.Schedule.runs_iff_dvd |
+| P11-06 | 11:15 | "holds its output constant via ZOH" | MODEL | Driveline.Schedule | `out k = out (d * (k / d))`; constant on `[d*m, d*m+d)` | PROVED: Driveline.Schedule.held_zoh |
+| P11-08 | 11:17 | "most recent step at or before the current tick … topological order" | MODEL | Driveline.Schedule | the value read at tick k is the upstream output at `max {j ≤ k ∣ runs j}`, with the same-tick write before the read because of topological order | PROVED: Driveline.Schedule.read_latest |
+| P11-09 | 11:18 | "dt = k_div · Δt_base" | INT | Driveline.Schedule | `stepDt d dt = d*dt`; Int64 no overflow under a bound | PROVED: Driveline.Schedule.stepDt_period |
+| P11-10 | 11:19-23 | "four phases in this order" | MODEL | Driveline.Schedule | `tick = P1 ≫ P2 ≫ P3 ≫ P4`; tick 0 = `P2 ≫ P3 ≫ P4` (11:20) | PROVED: Driveline.Schedule.phases_sorted |
+| P11-11 | 11:23 | "sim_time is t + Δt … committed KinematicState" | MODEL | Driveline.Schedule | predicate env at tick k has `simTime = (k+1)*dt` | PROVED: Driveline.Schedule.predTime_next |
+| P11-12 | 11:23 | "If the predicate is true … no on statement fires" | MODEL | Driveline.Schedule | `term k → onFired k = ∅` | PROVED: Driveline.Schedule.term_no_on |
+| P11-13 | 11:23 | "static actor's committed state keeps every field except timestamp_ns" | MODEL | Driveline.Schedule | frame lemma on the commit | PROVED: Driveline.Schedule.commitStatic_rest |
+| P11-14 | 11:23 | "adds the horizontal distance … to odometer_m" | REAL | Driveline.Schedule | the odometer never decreases (dist ≥ 0) | PROVED: Driveline.Schedule.odo_mono |
+| P11-24 | 11:27 | "ascending order of actor_id … group sorts by its smallest member" | DECIDE | Driveline.Schedule | evaluation order = `sortBy (minId)`; well defined because ids are unique (16:71) and groups are disjoint | PROVED: Driveline.Schedule.entity_order_unique |
+| P11-25 | 11:27 | "left-to-right order of their calls … after fn substitution" | MODEL | Driveline.Schedule | order = lexicographic topological sort, tie-break by call position; `IsTopo` | PROVED: Driveline.Schedule.ChainExpr.chain_order_is_call_order |
+| P11-26 | 11:27 | "per-actor instances … in bind order before the next component" | MODEL | Driveline.Schedule | group order = component-major, bind-minor | PROVED: Driveline.Schedule.groupOrder_precedes |
+| P11-27 | 11:27 | "No component reads another entity's output within a tick, so this order never delays data" | MODEL | Driveline.Schedule | the read set of an entity's components ⊆ that entity's buffers ∪ the P1 snapshot | PROVED: Driveline.Schedule.block_reads_own |
+| P11-28 | 11:27 | "Phase 2 is data-race-free and parallelizable across actors" | MODEL | Driveline.Schedule | any interleaving of entity blocks gives the same state (commutation) | PROVED: Driveline.Schedule.phase_perm |
+| P05-40 | 05:40 | 'On a tick where a producer does not step ..., its consumers receive its last output again' | MODEL | Driveline.Schedule | delivered frame on a non-stepping tick = last output | PROVED: Driveline.Schedule.redelivered_when_idle |
 
 ### WP05 Diagnostics and run record (§14, §18)
 
