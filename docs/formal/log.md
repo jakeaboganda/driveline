@@ -66,3 +66,17 @@ The specifier had proposed five refutations, among them "overlapping static acto
 Review strengthened P18-01 (header `files` entries are typed, and a framing theorem shows `\n` only ends a line and whitespace appears only inside strings), P14-12 (teardown reports carry the tick of the error that ended the run), and P14-07 (teardown order is descending by smallest `actor_id`). Binary64 number formatting is P18-40, `OUT: external`. P11-40 (deriving the run model's contact pairs from the contact test) stays open.
 
 No spec defect found in WP05.
+
+## WP06 Manifest, types, units (§15, §16)
+
+Modules `Units` (dimension vectors, unit atoms, the left-to-right `UnitExpr` fold, the §3.1 tolerance over ℝ), `Types` (DSL types, the conversion relation, `Time` arithmetic with truncating division and overflow, literal ranges), and `Manifest` (signature sources, manifest validity, mode lists, parameter passing). 37 rows proved.
+
+The specifier had refuted P15-13: the `dl_param_t` type tag does not tell `i64`, `Time`, `Bool`, and enum apart, and long names do not fit. The receiver reads each value by the type its own manifest declares (`15-manifest.md:48`), and `09-abi.md:21` makes a name over 55 bytes a compile-time error, so the row is proved as a typed round trip. P16-05 was a claim the inventory guessed (a preorder); the spec states only the conversion rules and one output covariance, and those are proved.
+
+Review added Int64 range checks on `i64` and `Time` defaults, typed the parameter round trip, and let a field without a `modes` entry accept `NONE`.
+
+Spec gaps found (queued for the spec-fix pass):
+
+* **P15-13** `15-manifest.md:48`. An enum parameter's `default` is "its numeric value", and no rule says the number must name a member of the enum. One compiler can reject `9` for `GearMode` while another passes it to `dl_set_parameters`.
+* **P15-11** `15-manifest.md:49`. A `modes` entry for a mode field that the component's inputs do not have, or a misspelled key, is neither required to be rejected nor allowed. An ignored misspelling also silently means "accepts every mode" for the real field.
+* **P03-41** `03-vehicle-parameters.md:31`. With no upper bound on tier values, an invariant whose sum overflows to infinity passes the binary64 tolerance (`inf ≤ inf`). Recorded `OUT: external`; the spec may want a finiteness or magnitude rule.
