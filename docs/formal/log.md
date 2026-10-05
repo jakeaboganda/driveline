@@ -33,3 +33,13 @@ Spec defects found (queued for the spec-fix pass):
 
 * **P02-09** `03-vehicle-parameters.md` and `02-conventions.md:19`. The CG is placed both at `l_r` ahead of the rear axle and at `l_f` behind the front axle, and the §3.1 tolerance lets the two readings differ. Two implementations can place the CG at different points (`Driveline.VehicleSpec.cg_readings_disagree`).
 * **P03-12** `03-vehicle-parameters.md` Tier 2. Only `i_R > 0` is constrained. A negative `max_drive_torque` or `final_drive_ratio` passes every check and turns the reverse drive torque toward `+x` (`Driveline.VehicleSpec.rev_torque_toward_pos_x`).
+
+## WP03 SliceBuffer queries and track lists (§4)
+
+Modules `Angles` (`wrap` to `(-π, π]`), `SliceBuffer` (buffer views, `latest`, history clamp, `rate_of`, `at` in both modes, the ring index), and `Tracks` (per-slice interpolation, dependency conditions, track matching, sort and truncation). 26 rows proved, plus P04-11 and P04-18 in WP09 through `wrap`.
+
+The specifier had refuted P04-09 with `rate_of(window: 0)`, which divides by zero. The implementer found that `16-static-semantics.md:69` requires `window ≥ 1`, so the counterexample is unreachable; the row is proved under that rule.
+
+Review added theorems for the `rate_of` value rules (P04-42 to P04-45), the glue from `at()` to each slice's interpolation, and the unmatched-track rule. It moved P02-12 to WP07 and P02-13, P02-14 to WP09. P04-41 (non-finite samples in `at()`) stays open.
+
+No spec defect found in WP03.
