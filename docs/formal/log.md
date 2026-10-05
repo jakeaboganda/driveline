@@ -56,3 +56,13 @@ Spec gaps found (queued for the spec-fix pass):
 
 * **P11-25** `11-execution.md:27`. "Call order in the chain expression after `fn` substitution" does not say where a named chain sits once inlined. For `Arbitrate(Pri(), s, ...)` with `chain s = Sec()`, inlining gives Pri before Sec and source order gives Sec before Pri. Two runtimes can order independent components differently, which changes report order.
 * **P07-40** `07-fmu-packaging.md:46`. "One period later than a native component with the same logic" names no comparator. Informative text; it should say so or be dropped.
+
+## WP05 Diagnostics and run record (§14, §18)
+
+Modules `Diagnostics` (status severity, first failing call, parallel reports, teardown order, output-validation order, report ticks) and `RunRecord` (the JSON Lines encoding, line framing, record structure, collision lines, tick rules). 22 rows proved; P14-08 is a duplicate of the WP00 teardown theorem.
+
+The specifier had proposed five refutations, among them "overlapping static actors get no collision line" and "teardown reports come after the error". Each turned out to be behavior the spec states on purpose (the static-pair exception in 11:24, the report order in 18:25), so all five rows are proved as written.
+
+Review strengthened P18-01 (header `files` entries are typed, and a framing theorem shows `\n` only ends a line and whitespace appears only inside strings), P14-12 (teardown reports carry the tick of the error that ended the run), and P14-07 (teardown order is descending by smallest `actor_id`). Binary64 number formatting is P18-40, `OUT: external`. P11-40 (deriving the run model's contact pairs from the contact test) stays open.
+
+No spec defect found in WP05.
