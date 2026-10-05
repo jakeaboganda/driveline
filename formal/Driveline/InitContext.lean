@@ -186,11 +186,15 @@ theorem offset_curvature (κ d a : ℝ) (T : ℝ × ℝ) (hT : T.1 ^ 2 + T.2 ^ 2
   simp only [signedCurv, kappa0, o1, o2, N, Prod.smul_fst, Prod.smul_snd, Prod.fst_add,
     Prod.snd_add, Prod.fst_neg, Prod.snd_neg, smul_eq_mul, hs, hs']
   have hc' : (1 - κ * d) ≠ 0 := hc.ne'
+  have hn : (1 - κ * d) * T.1 * (a * T.2 + (1 - κ * d) * κ * T.1) -
+      (1 - κ * d) * T.2 * (a * T.1 + (1 - κ * d) * κ * -T.2) = (1 - κ * d) ^ 2 * κ := by
+    linear_combination (1 - κ * d) ^ 2 * κ * hT
+  have hn' : -((1 - κ * d) * T.1) * (a * T.2 + (1 - κ * d) * κ * T.1) -
+      -((1 - κ * d) * T.2) * (a * T.1 + (1 - κ * d) * κ * -T.2) = -((1 - κ * d) ^ 2 * κ) := by
+    linear_combination -((1 - κ * d) ^ 2 * κ) * hT
   refine ⟨?_, ?_, by push_cast; ring, by push_cast; ring⟩
-  · field_simp
-    linear_combination (1 - κ * d) ^ 2 * κ * (1 - κ * d) * hT
-  · field_simp
-    linear_combination -((1 - κ * d) ^ 2 * κ * (1 - κ * d)) * hT
+  · rw [hn]; field_simp
+  · rw [hn']; field_simp
 
 /-- P06-02. 06:72 'A spawn or placement with kappa_lane · d_0 ≥ 1 lies at or beyond the
 center of curvature and is DL_STATUS_ERR_NUMERIC'. Past the guard the denominator of
@@ -205,24 +209,28 @@ direction. The spawn speed is ≥ 0 (17:21), and at v_0 = 0 the 06:73 clause 'at
 psi_0 = psi_travel' applies. -/
 theorem spawn_heading_tangent (ψt vLat v0 : ℝ) (hv : 0 < v0) :
     let ψ0 := psi0 .st ψt vLat v0
-    ∃ k > 0, (v0 * Real.cos ψ0 - vLat * Real.sin ψ0, v0 * Real.sin ψ0 + vLat * Real.cos ψ0) =
-      k • (Real.cos ψt, Real.sin ψt) := by
+    ∃ k : ℝ, 0 < k ∧ (v0 * Real.cos ψ0 - vLat * Real.sin ψ0,
+      v0 * Real.sin ψ0 + vLat * Real.cos ψ0) = k • (Real.cos ψt, Real.sin ψt) := by
   intro ψ0
-  set θ := Angles.atan2 vLat v0
-  set r := Real.sqrt (v0 ^ 2 + vLat ^ 2)
-  have hr : 0 < r := Real.sqrt_pos.2 (by positivity)
   obtain ⟨hc, hs⟩ := Angles.atan2_polar vLat v0
-  obtain ⟨n, hn⟩ := Angles.wrap_eq_add (ψt - θ)
-  have hψ : ψ0 = ψt - θ + n * (2 * Real.pi) := by
-    simp only [ψ0, psi0, hv.ne', or_false, reduceCtorEq, if_false]; exact hn
-  refine ⟨r, hr, ?_⟩
-  rw [hψ, Real.cos_add_int_mul_two_pi, Real.sin_add_int_mul_two_pi, ← hc, ← hs,
-    Real.cos_sub, Real.sin_sub]
+  obtain ⟨n, hn⟩ := Angles.wrap_eq_add (ψt - Angles.atan2 vLat v0)
+  have hψ : ψ0 = ψt - Angles.atan2 vLat v0 + n * (2 * Real.pi) := by
+    simp only [ψ0, psi0, hv.ne', or_false, reduceCtorEq, ite_false]; exact hn
+  have hr : 0 < Real.sqrt (v0 ^ 2 + vLat ^ 2) :=
+    Real.sqrt_pos.2 (add_pos_of_pos_of_nonneg (pow_pos hv 2) (sq_nonneg _))
+  refine ⟨_, hr, ?_⟩
+  rw [hψ, Real.cos_add_int_mul_two_pi, Real.sin_add_int_mul_two_pi, Real.cos_sub, Real.sin_sub]
+  generalize Angles.atan2 vLat v0 = θ at hc hs ⊢
+  generalize Real.sqrt (v0 ^ 2 + vLat ^ 2) = r at hc hs ⊢
   ext
   · simp only [Prod.smul_fst, smul_eq_mul]
-    linear_combination r * Real.cos ψt * Real.sin_sq_add_cos_sq θ
+    linear_combination (-(Real.cos ψt * Real.cos θ + Real.sin ψt * Real.sin θ)) * hc +
+      (-(Real.cos ψt * Real.sin θ - Real.sin ψt * Real.cos θ)) * hs +
+      r * Real.cos ψt * Real.sin_sq_add_cos_sq θ
   · simp only [Prod.smul_snd, smul_eq_mul]
-    linear_combination r * Real.sin ψt * Real.sin_sq_add_cos_sq θ
+    linear_combination (-(Real.sin ψt * Real.cos θ - Real.cos ψt * Real.sin θ)) * hc +
+      (-(Real.sin ψt * Real.sin θ + Real.cos ψt * Real.cos θ)) * hs +
+      r * Real.sin ψt * Real.sin_sq_add_cos_sq θ
 
 /-- P06-05. 06:73 'For KS, or at v_0 = 0, psi_0 = psi_travel'. The clause agrees with the
 general formula for a KS actor (v_lat,ra = 0), because a spawn speed is ≥ 0 (17:21 'with
@@ -357,11 +365,14 @@ theorem convert_modes {map : RoadMap} (o : OwnView map) (t : UInt64) (f : Drivel
       (B.pedal = .none ∨ B.pedal.isBaseline) ∧ (B.wheel = .none ∨ B.wheel.isBaseline) ∧
       (B.gear = .none ∨ B.gear.isBaseline) ∧ B.header = b.header := by
   intro F K B
+  have hg : g = .none ∨ g.isBaseline = true := by cases g <;> simp [GearMode.isBaseline]
   simp only [F, K, B, IntentFrame.convert, KinematicControlFrame.convert,
     ActuatorControlFrame.convert]
   refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
     split_ifs <;> simp_all [IntentFrame.withLonFrom, IntentFrame.withLatFrom,
-      IntentFrame.committedBaseline, baseKcf, baseAcf, GearMode.isBaseline]
+      IntentFrame.committedBaseline, baseKcf, baseAcf, GearMode.isBaseline, LonMode.isBaseline,
+      LatMode.isBaseline, TurnSignal.isBaseline, AccelMode.isBaseline, SteerMode.isBaseline,
+      PedalMode.isBaseline, WheelMode.isBaseline, hg]
 
 /-- P06-32. 06:88 'For a re-trim, the latched frame of each type is the last frame of that
 type that left the component, or, if none left it, the last frame of that type that reached
