@@ -87,6 +87,12 @@ def gapRule (f : IntentFrame) : Prop :=
 def valid (f : IntentFrame) (map : RoadMap) (d : Decl) : Prop :=
   f.partialOverrideRule d ∧ f.sttRule ∧ f.laneRule map ∧ f.polylineRule ∧ f.gapRule
 
+/-- Validity of a frame of declared type `d` at the port it reaches (05:34).
+`partialPort` marks a `Lon<T>` or `Lat<T>` port, where a full frame must also
+not use `SPATIOTEMPORAL_TRAJECTORY`. -/
+def validAt (f : IntentFrame) (map : RoadMap) (d : Decl) (partialPort : Bool) : Prop :=
+  f.valid map d ∧ (partialPort = true → d = .full → ¬ f.usesSTT)
+
 theorem pOR_congr {f g : IntentFrame} {d : Decl} (hl : f.lon = g.lon) (ht : f.lat = g.lat)
     (hs : f.signal = g.signal) : f.partialOverrideRule d ↔ g.partialOverrideRule d := by
   have hm : f.modeNat = g.modeNat := by
@@ -424,9 +430,82 @@ theorem outputCheck_numeric {n : Nat} {d : Decl} {f : ActuatorControlFrame}
 
 end ActuatorControlFrame
 
+/-! ## Decidability of `IntentFrame` validity (05:66)
+
+The order on `ℝ` is decidable only classically in Mathlib, so these instances
+are noncomputable. They are built rule by rule from the decisions of the parts,
+and need decidable map predicates. -/
+
+namespace F64
+
+noncomputable instance decLt (a b : F64) : Decidable (a < b) := by
+  cases a <;> cases b <;>
+    first | exact Real.decidableLT _ _ | exact isTrue trivial | exact isFalse id
+
+noncomputable instance decEq : DecidableEq F64 := fun a b => by
+  cases a <;> cases b <;>
+    first | exact isTrue rfl | exact isFalse nofun | exact decidable_of_iff _ ⟨congrArg fin, fin.inj⟩
+
+noncomputable instance decLe (a b : F64) : Decidable (a ≤ b) :=
+  inferInstanceAs (Decidable (a < b ∨ (a = b ∧ a ≠ nan)))
+
+noncomputable instance decInIoc (lo hi : ℝ) (a : F64) : Decidable (a.inIoc lo hi) := by
+  cases a <;> unfold inIoc <;> infer_instance
+
+end F64
+
+namespace IntentFrame
+
+instance decPOR (d : Decl) (f : IntentFrame) : Decidable (f.partialOverrideRule d) := by
+  unfold partialOverrideRule
+  rw [IntentGroup.forall_iff]
+  infer_instance
+
+noncomputable instance decStt (f : IntentFrame) : Decidable f.sttRule := by
+  unfold sttRule trajOK timesIncrease
+  infer_instance
+
+instance decLane (map : RoadMap) [∀ r, Decidable (map.road r)] [∀ r l, Decidable (map.lane r l)]
+    (f : IntentFrame) : Decidable (f.laneRule map) := by
+  unfold laneRule
+  infer_instance
+
+noncomputable instance decPolyline (f : IntentFrame) : Decidable f.polylineRule := by
+  unfold polylineRule pathOK
+  infer_instance
+
+noncomputable instance decGap (f : IntentFrame) : Decidable f.gapRule := by
+  unfold gapRule
+  infer_instance
+
+noncomputable instance decValid (map : RoadMap) [∀ r, Decidable (map.road r)]
+    [∀ r l, Decidable (map.lane r l)] (d : Decl) (f : IntentFrame) :
+    Decidable (f.valid map d) := by
+  unfold valid
+  infer_instance
+
+end IntentFrame
+
 end Driveline
 
 namespace Driveline.Validity
+
+/-- P05-02. 'Every full frame states every group' (docs/spec/05-checkpoints.md:14):
+a valid full frame has no `NONE` group. -/
+theorem full_states_every_group :
+    (∀ (map : RoadMap) (f : IntentFrame), f.valid map .full → ∀ g, f.modeNat g ≠ 0) ∧
+    (∀ f : KinematicControlFrame, f.valid .full → ∀ g, f.modeNat g ≠ 0) ∧
+    (∀ (n : Nat) (f : ActuatorControlFrame), f.valid n .full → ∀ g, f.modeNat g ≠ 0) := by
+  refine ⟨fun _ f hv g => ?_, fun f hv g => ?_, fun _ f hv g => ?_⟩
+  · rcases hv.1 with h | ⟨h, -⟩
+    · cases h
+    · exact (h g).1 (by cases g <;> rfl)
+  · rcases hv.1 with h | h
+    · cases h
+    · exact (h g).1 (by cases g <;> rfl)
+  · rcases hv.1 with h | ⟨-, h⟩
+    · cases h
+    · exact h g
 
 /-- P05-08. 'A `Lon<T>` frame ... states the `LON` group and has every other
 group `NONE`. ... A stated group is never `NONE`, and neither uses
@@ -474,15 +553,28 @@ theorem full_is_override :
 /-- P05-11. 'A full frame that a step produces and that reaches a `Lon<T>` or
 `Lat<T>` port ... is valid only if, in addition, it does not use
 `SPATIOTEMPORAL_TRAJECTORY`' (docs/spec/05-checkpoints.md:34), with the
-conversion at the port of 05:40. The last conjunct shows that the exclusion is
-needed. -/
+conversion at the port of 05:40. At a partial port, a full frame is valid if and
+only if it is valid and does not use STT; a partial frame, and any frame at a
+full port, needs only `valid`. Such a frame converts to valid partial frames.
+`KinematicControlFrame` has no STT mode, so every valid full frame converts. The
+last conjunct shows that the exclusion is needed. -/
 theorem port_conversion :
-    (∀ (map : RoadMap) (f : IntentFrame), f.valid map .full → ¬ f.usesSTT →
+    (∀ (map : RoadMap) (f : IntentFrame),
+      f.validAt map .full true ↔ f.valid map .full ∧ ¬ f.usesSTT) ∧
+    (∀ (map : RoadMap) (d : Decl) (f : IntentFrame), d ≠ .full →
+      (f.validAt map d true ↔ f.valid map d)) ∧
+    (∀ (map : RoadMap) (d : Decl) (f : IntentFrame), f.validAt map d false ↔ f.valid map d) ∧
+    (∀ (map : RoadMap) (f : IntentFrame), f.validAt map .full true →
       f.toLon.valid map .lon ∧ f.toLat.valid map .lat) ∧
     (∀ f : KinematicControlFrame, f.valid .full → f.toLon.valid .lon ∧ f.toLat.valid .lat) ∧
-    (∀ map : RoadMap, ∃ f : IntentFrame, f.valid map .full ∧ ¬ f.toLon.valid map .lon) := by
-  refine ⟨fun map f hv hs => ?_, fun f hv => ?_, fun map => ?_⟩
-  · obtain ⟨hp, ⟨_, _⟩, hlane, hpoly, hgap⟩ := hv
+    (∀ map : RoadMap, ∃ f : IntentFrame, f.valid map .full ∧ ¬ f.validAt map .full true ∧
+      ¬ f.toLon.valid map .lon) := by
+  refine ⟨fun _ _ => ⟨fun ⟨h, s⟩ => ⟨h, s rfl rfl⟩, fun ⟨h, s⟩ => ⟨h, fun _ _ => s⟩⟩,
+    fun _ _ _ hd => ⟨fun h => h.1, fun h => ⟨h, fun _ h' => absurd h' hd⟩⟩,
+    fun _ _ _ => ⟨fun h => h.1, fun h => ⟨h, nofun⟩⟩, fun map f ⟨hv, hs⟩ => ?_,
+    fun f hv => ?_, fun map => ?_⟩
+  · replace hs := hs rfl rfl
+    obtain ⟨hp, ⟨_, _⟩, hlane, hpoly, hgap⟩ := hv
     obtain ⟨h1, h2, h3⟩ := (IntentFrame.pOR_full f).mp hp
     have hl : f.lon ≠ .stt := fun h => hs (Or.inl h)
     have ht : f.lat ≠ .stt := fun h => hs (Or.inr h)
@@ -514,6 +606,7 @@ theorem port_conversion :
             have : i.val < j.val := hij
             omega⟩⟩,
         nofun, nofun, nofun, nofun, nofun, nofun⟩
+    · exact fun h => h.2 rfl rfl (Or.inl rfl)
     · exact ((IntentFrame.pOR_lon _).mp
         ((IntentFrame.zero_valid_iff _ _ _).mp h).1).2.1 rfl
 
@@ -538,9 +631,16 @@ theorem infinity_no_bound :
         f.uses .distanceGapMin = true ∧ f.distanceGapMin = x ∨ f.uses .dRef = true ∧ f.dRef = x ∨
         f.uses .stopAtOdometer = true ∧ f.stopAtOdometer = x ∧ x ≠ .posInf) →
       f.outputCheck map d = .numeric) ∧
+    (∀ (map : RoadMap) (d : Decl) (f : IntentFrame), f.wellFormed d →
+      (f.uses .pathPoints = true ∧
+          ∃ i : Fin 64, i.val < f.numWaypoints ∧ ¬ (f.pathPoints i).Finite ∨
+        f.uses .trajectory = true ∧
+          ∃ i : Fin 64, i.val < f.numTrajPoints ∧ ¬ (f.trajectory i).Finite) →
+      f.outputCheck map d = .numeric) ∧
     (∀ odo : ℝ, ¬ stopNow .posInf odo) := by
   refine ⟨fun map d f h => ?_, fun d f h ha => ?_, fun d f h hs => ?_,
-    fun map d f x hx hw h => IntentFrame.outputCheck_numeric hw fun hf => ?_, not_stopNow_posInf⟩
+    fun map d f x hx hw h => IntentFrame.outputCheck_numeric hw fun hf => ?_,
+    fun map d f hw h => IntentFrame.outputCheck_numeric hw fun hf => ?_, not_stopNow_posInf⟩
   · obtain ⟨hw, ⟨h1, h2, -, h4, h5, h6, h7, h8⟩, hv⟩ := IntentFrame.outputCheck_ok.1 h
     exact IntentFrame.outputCheck_ok.2 ⟨hw, ⟨h1, h2, fun _ => Or.inr rfl, h4, h5, h6, h7, h8⟩, hv⟩
   · obtain ⟨hw, ⟨h1, -, h3, h4⟩, hp, -, hv⟩ := KinematicControlFrame.outputCheck_ok.1 h
@@ -559,6 +659,10 @@ theorem infinity_no_bound :
     · rcases h3 hu with h | h
       · exact hx (he ▸ h)
       · exact hne (he ▸ h)
+  · obtain ⟨-, -, -, -, -, -, h7, h8⟩ := hf
+    rcases h with ⟨hu, i, hi, hn⟩ | ⟨hu, i, hi, hn⟩
+    · exact hn (h7 hu i hi)
+    · exact hn (h8 hu i hi)
 
 /-- P05-14. 'After the check, the runtime sets every field that the frame's
 modes do not use, and every array entry past its count, to zero, so the bytes
@@ -593,11 +697,16 @@ theorem zeroing :
 
 /-- P05-17. 'An `IntentFrame` is valid if and only if every rule below holds,
 together with the Partial and Override rule above'
-(docs/spec/05-checkpoints.md:66). The mode-value rule holds by the enum types. -/
-theorem intent_valid_iff (map : RoadMap) (d : Decl) (f : IntentFrame) :
-    f.valid map d ↔ f.partialOverrideRule d ∧ f.sttRule ∧ f.laneRule map ∧ f.polylineRule ∧
-      f.gapRule :=
-  Iff.rfl
+(docs/spec/05-checkpoints.md:66). Given decidable map predicates, validity is
+decidable (`IntentFrame.decValid`), and the decision is the conjunction of the
+decisions of the five rules. The mode-value rule holds by the enum types. -/
+theorem intent_valid_decidable (map : RoadMap) [∀ r, Decidable (map.road r)]
+    [∀ r l, Decidable (map.lane r l)] (d : Decl) (f : IntentFrame) :
+    Nonempty (Decidable (f.valid map d)) ∧
+      decide (f.valid map d) = (decide (f.partialOverrideRule d) && decide f.sttRule &&
+        decide (f.laneRule map) && decide f.polylineRule && decide f.gapRule) := by
+  refine ⟨⟨inferInstance⟩, ?_⟩
+  simp [IntentFrame.valid, Bool.and_assoc]
 
 theorem timesIncrease_of_adjacent {n : Nat} (hn : n ≤ 64) {t : Fin 64 → Int}
     (h : ∀ k (hk : k + 1 < n), t ⟨k, by omega⟩ < t ⟨k + 1, by omega⟩) :

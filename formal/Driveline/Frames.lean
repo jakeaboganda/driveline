@@ -824,11 +824,35 @@ theorem baseline_modes :
     rw [ActuatorControlFrame.pOR_full, h1, h2]
     exact ⟨by decide, by decide, (GearMode.isBaseline_iff _).mp h3⟩
 
+/-- P05-07. 'In `IntentFrame`, `SPATIOTEMPORAL_TRAJECTORY` couples the two
+motion groups: `num_traj_points` and `trajectory` then govern both, and the
+other fields of `LON` and `LAT` do not apply' (docs/spec/05-checkpoints.md:32).
+The frame-level claim needs the coupling of 05:68 (`lon_mode` is STT if and only
+if `lat_mode` is); the last conjunct shows that without it, a `LANE_OFFSET`
+field applies beside an STT `LON` group. -/
+theorem stt_couples :
+    (∀ fld, LonMode.stt.uses fld = true ↔ fld = .numTrajPoints ∨ fld = .trajectory) ∧
+    (∀ fld, LatMode.stt.uses fld = true ↔ fld = .numTrajPoints ∨ fld = .trajectory) ∧
+    (∀ f : IntentFrame, (f.lon = .stt ↔ f.lat = .stt) → f.lon = .stt →
+      ∀ fld, f.uses fld = true → fld = .numTrajPoints ∨ fld = .trajectory) ∧
+    (∀ f : IntentFrame, (f.lon = .stt ↔ f.lat = .stt) → f.lat = .stt →
+      ∀ fld, f.uses fld = true → fld = .numTrajPoints ∨ fld = .trajectory) ∧
+    (∃ f : IntentFrame, f.lon = .stt ∧ f.uses .targetRoadId = true) := by
+  refine ⟨fun fld => by cases fld <;> decide, fun fld => by cases fld <;> decide,
+    fun f hc hl fld hu => ?_, fun f hc ht fld hu => ?_,
+    ⟨{ IntentFrame.blank ⟨0, 0⟩ with lon := .stt, lat := .laneOffset }, rfl, rfl⟩⟩
+  · simp only [IntentFrame.uses, hl, hc.1 hl] at hu
+    revert hu; cases fld <;> decide
+  · simp only [IntentFrame.uses, ht, hc.2 ht] at hu
+    revert hu; cases fld <;> decide
+
 /-- P05-15. 'The runtime delivers each producer's latest output, as validated,
 zeroed, and stamped, without further change, except for ... the conversion of
 a full frame at a `Lon<T>` or `Lat<T>` port, which sets the unstated groups to
-`NONE` and their fields to zero' (docs/spec/05-checkpoints.md:40). The steering
-replacement and the pre-step conversion are left to the §6.2.4 work package. -/
+`NONE` and their fields to zero' (docs/spec/05-checkpoints.md:40), for
+`IntentFrame` and `KinematicControlFrame`. The steering replacement and the
+pre-step conversion are left to the §6.2.4 work package, and redelivery on a
+tick where the producer does not step to the §11 work package. -/
 theorem delivery :
     (∀ f : IntentFrame, f.deliver .asIs = f) ∧
     (∀ f : IntentFrame, f.toLon.lat = .none ∧ f.toLon.signal = .none ∧
@@ -836,9 +860,16 @@ theorem delivery :
       (∀ fld, f.lon.uses fld = true → f.toLon.agreeOn fld f)) ∧
     (∀ f : IntentFrame, f.toLat.lon = .none ∧ f.toLat.signal = f.signal ∧
       (∀ fld, IntentGroup.lat ∉ fld.groups → f.toLat.agreeOn fld (IntentFrame.blank f.header)) ∧
-      (∀ fld, f.lat.uses fld = true → f.toLat.agreeOn fld f)) := by
+      (∀ fld, f.lat.uses fld = true → f.toLat.agreeOn fld f)) ∧
+    (∀ f : KinematicControlFrame, f.toLon.accel = f.accel ∧ f.toLon.steer = .none ∧
+      f.toLon.steerAngleCmd = 0 ∧ f.toLon.steerRateCmd = 0 ∧
+      (∀ fld, f.accel.uses fld = true → f.toLon.agreeOn fld f)) ∧
+    (∀ f : KinematicControlFrame, f.toLat.steer = f.steer ∧ f.toLat.accel = .none ∧
+      f.toLat.aLonCmd = 0 ∧ f.toLat.jerkLonCmd = 0 ∧
+      (∀ fld, f.steer.uses fld = true → f.toLat.agreeOn fld f)) := by
   refine ⟨fun f => rfl, fun f => ⟨rfl, rfl, fun fld hg => ?_, fun fld hu => ?_⟩,
-    fun f => ⟨rfl, rfl, fun fld hg => ?_, fun fld hu => ?_⟩⟩
+    fun f => ⟨rfl, rfl, fun fld hg => ?_, fun fld hu => ?_⟩,
+    fun f => ⟨rfl, rfl, ?_, ?_, fun fld hu => ?_⟩, fun f => ⟨rfl, rfl, ?_, ?_, fun fld hu => ?_⟩⟩
   · exact IntentFrame.zero_unused _ fld
       (by simp [IntentFrame.uses, LonMode.uses_eq_false _ _ hg, LatMode.none_uses])
   · have := IntentFrame.zero_keeps ({ f with lat := .none, signal := .none } : IntentFrame) fld
@@ -848,6 +879,16 @@ theorem delivery :
       (by simp [IntentFrame.uses, LatMode.uses_eq_false _ _ hg, LonMode.none_uses])
   · have := IntentFrame.zero_keeps ({ f with lon := .none } : IntentFrame) fld
       (IntentFrame.uses_of_lat hu)
+    cases fld <;> exact this
+  · obtain ⟨_, a, _, _, _, _, _⟩ := f; cases a <;> rfl
+  · obtain ⟨_, a, _, _, _, _, _⟩ := f; cases a <;> rfl
+  · have := KinematicControlFrame.zero_keeps ({ f with steer := .none } : KinematicControlFrame)
+      fld (by simp [KinematicControlFrame.uses, hu])
+    cases fld <;> exact this
+  · obtain ⟨_, _, s, _, _, _, _⟩ := f; cases s <;> rfl
+  · obtain ⟨_, _, s, _, _, _, _⟩ := f; cases s <;> rfl
+  · have := KinematicControlFrame.zero_keeps ({ f with accel := .none } : KinematicControlFrame)
+      fld (by simp [KinematicControlFrame.uses, hu])
     cases fld <;> exact this
 
 /-- P05-26. 'A component that accepts `GAP_PROFILE` and has no such port treats
