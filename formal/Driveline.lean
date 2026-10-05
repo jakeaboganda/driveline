@@ -4,3 +4,4 @@ import Driveline.Frames
 import Driveline.Validity
 import Driveline.Merge
 import Driveline.Arbiter
+import Driveline.VehicleSpec

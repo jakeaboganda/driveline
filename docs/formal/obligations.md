@@ -73,36 +73,36 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 
 | ID | Spec | Quote | Class | Lean module | Statement | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| P00-02 | 00:37-42 | 'Its stage follows from its output type' / 'Override<T> has the stage of T' | DECIDE | Driveline.VehicleSpec | stage : OutType -> Fin 4 is total; stage (Override T) = stage T; Lon/Lat preserve stage | TODO |
-| P00-03 | 00:43 | 'Arbiter ... primary T ... secondary Override<T> ... T is IntentFrame, KinematicControlFrame, or ActuatorControlFrame' | DECIDE | Driveline.VehicleSpec | isArbiter sig <-> sig = (T, Override T) -> T with T in a 3-element set; stage arb = stage T | TODO |
-| P00-04 | 00:34 | 'exactly one physics component, except a static actor' | MODEL | Driveline.VehicleSpec | WF actor: static -> sensors=priors=comps=[]; else count physics = 1 | TODO |
-| P00-05 | 00:33 | 'Passing a value of a world-truth type to a component port is a compile-time error' | MODEL | Driveline.VehicleSpec | forall port, portType not in {OpenDriveMap, FrictionField} | TODO |
-| P02-09 | 02:19 | 'CG ... l_r forward of the rear axle, l_f behind the front axle' | REAL | Driveline.VehicleSpec | with rear axle at x=0, front axle at x=L: cgX = l_r and L - cgX = l_f, so l_f + l_r = L (agrees with P03-07) | TODO |
-| P02-10 | 02:19 | 'object actor ... reference origin is the center of its box's footprint' | REAL | Driveline.VehicleSpec | with object values (P03-14) the box x-range is [-len/2, len/2], centred on 0 | TODO |
-| P03-01 | 03:12 | 'Tier 2 requires Tiers 0 and 1; Tier 1 requires Tier 0 ... Tier 3 requires Tier 1, and so Tier 0' | DECIDE | Driveline.VehicleSpec | validVehicleMask m <-> m in {1,3,7,11,15}; closure: bit3 -> bit1 -> bit0, bit2 -> bit1 | TODO |
-| P03-02 | 03:36 | 'Bit k ... set if and only if Tier k is populated, and bit 4 is clear' | DECIDE | Driveline.VehicleSpec | encode spec mask agrees with populated tiers; mask &&& 16 = 0 for vehicles | TODO |
-| P03-03 | 03:44 | 'bits 0 and 4 of populated_tiers_mask set' | DECIDE | Driveline.VehicleSpec | encodeObject mask = 0x11; disjoint from the vehicle masks of P03-01 | TODO |
-| P03-04 | 03:36,44 | 'Every field of an unpopulated tier is zero' / 'every other field zero' | MODEL | Driveline.VehicleSpec | not populated k -> tier_k = default zero record | TODO |
-| P03-05 | 03:20 | 'bounding box spans x in [-o_r, L+o_f], y in [-W/2, W/2], z in [0, H]' | REAL | Driveline.VehicleSpec | box extents: (L+o_f) - (-o_r) = L_bbox under P03-06; width = W; height = H | TODO |
-| P03-06 | 03:20 | 'L_bbox == L + o_f + o_r' | REAL | Driveline.VehicleSpec | approxEq L_bbox (L+o_f+o_r) (approxEq from P03-09) | TODO |
-| P03-07 | 03:21 | 'l_f + l_r == L' | REAL | Driveline.VehicleSpec | Tier1 populated -> approxEq (l_f+l_r) L | TODO |
-| P03-08 | 03:22 | 'm_s + m_uf + m_ur == m' | REAL | Driveline.VehicleSpec | Tier2 populated -> approxEq (m_s+m_uf+m_ur) m (m from Tier1, guaranteed by P03-01) | TODO |
-| P03-11 | 03:22 | 'reverse_gear_ratio i_R > 0' | MODEL | Driveline.VehicleSpec | Tier2 WF: 0 < i_R | TODO |
-| P03-12 | 03:22 | 'Peak drive torque ... T*i_g*i_fd ... In reverse ... T*i_R*i_fd, acting toward -x' | REAL | Driveline.VehicleSpec | wheelTorque g = T*i_g*i_fd; reverse torque x-component = -(T*i_R*i_fd) <= 0 given T, i_R, i_fd >= 0 | TODO |
-| P03-13 | 03:36 | 'num_gears is the number of gear_ratios values, and the unused entries are zero' | INT | Driveline.VehicleSpec | num_gears <= 10 and forall i >= num_gears, gear_ratios[i] = 0 | TODO |
-| P03-14 | 03:42 | 'L = 0, o_f = o_r = length/2, L_bbox = length ... delta_max = delta_dot_max = i_s = 0' | REAL | Driveline.VehicleSpec | objectTier0 satisfies P03-06 exactly: 0 + len/2 + len/2 = len | TODO |
-| P03-15 | 03:42 | 'Where a rule divides by delta_max, the quotient is 0 for an object' | MODEL | Driveline.VehicleSpec | safeDiv x 0 = 0 for objects (matches Lean's x/0 = 0) | TODO |
+| P00-02 | 00:37-42 | 'Its stage follows from its output type' / 'Override<T> has the stage of T' | DECIDE | Driveline.VehicleSpec | stage : OutType -> Fin 4 is total; stage (Override T) = stage T; Lon/Lat preserve stage | PROVED: Driveline.VehicleSpec.stage_rules |
+| P00-03 | 00:43 | 'Arbiter ... primary T ... secondary Override<T> ... T is IntentFrame, KinematicControlFrame, or ActuatorControlFrame' | DECIDE | Driveline.VehicleSpec | isArbiter sig <-> sig = (T, Override T) -> T with T in a 3-element set; stage arb = stage T | PROVED: Driveline.VehicleSpec.arbiter_stage |
+| P00-04 | 00:34 | 'exactly one physics component, except a static actor' | MODEL | Driveline.VehicleSpec | WF actor: static -> sensors=priors=comps=[]; else count physics = 1 | PROVED: Driveline.VehicleSpec.static_no_physics |
+| P00-05 | 00:33 | 'Passing a value of a world-truth type to a component port is a compile-time error' | MODEL | Driveline.VehicleSpec | forall port, portType not in {OpenDriveMap, FrictionField} | PROVED: Driveline.VehicleSpec.reject_world_truth |
+| P02-09 | 02:19 | 'CG ... l_r forward of the rear axle, l_f behind the front axle' | REAL | Driveline.VehicleSpec | with rear axle at x=0, front axle at x=L: cgX = l_r and L - cgX = l_f, so l_f + l_r = L (agrees with P03-07) | REFUTED: Driveline.VehicleSpec.cg_readings_disagree |
+| P02-10 | 02:19 | 'object actor ... reference origin is the center of its box's footprint' | REAL | Driveline.VehicleSpec | with object values (P03-14) the box x-range is [-len/2, len/2], centred on 0 | PROVED: Driveline.VehicleSpec.object_origin_centred |
+| P03-01 | 03:12 | 'Tier 2 requires Tiers 0 and 1; Tier 1 requires Tier 0 ... Tier 3 requires Tier 1, and so Tier 0' | DECIDE | Driveline.VehicleSpec | validVehicleMask m <-> m in {1,3,7,11,15}; closure: bit3 -> bit1 -> bit0, bit2 -> bit1 | PROVED: Driveline.VehicleSpec.vehicle_mask_tier_closure |
+| P03-02 | 03:36 | 'Bit k ... set if and only if Tier k is populated, and bit 4 is clear' | DECIDE | Driveline.VehicleSpec | encode spec mask agrees with populated tiers; mask &&& 16 = 0 for vehicles | PROVED: Driveline.VehicleSpec.mask_bit_iff |
+| P03-03 | 03:44 | 'bits 0 and 4 of populated_tiers_mask set' | DECIDE | Driveline.VehicleSpec | encodeObject mask = 0x11; disjoint from the vehicle masks of P03-01 | PROVED: Driveline.VehicleSpec.object_mask |
+| P03-04 | 03:36,44 | 'Every field of an unpopulated tier is zero' / 'every other field zero' | MODEL | Driveline.VehicleSpec | not populated k -> tier_k = default zero record | PROVED: Driveline.VehicleSpec.unpopulated_zero |
+| P03-05 | 03:20 | 'bounding box spans x in [-o_r, L+o_f], y in [-W/2, W/2], z in [0, H]' | REAL | Driveline.VehicleSpec | box extents: (L+o_f) - (-o_r) = L_bbox under P03-06; width = W; height = H | PROVED: Driveline.VehicleSpec.box_extents |
+| P03-06 | 03:20 | 'L_bbox == L + o_f + o_r' | REAL | Driveline.VehicleSpec | approxEq L_bbox (L+o_f+o_r) (approxEq from P03-09) | PROVED: Driveline.VehicleSpec.tier0_inv |
+| P03-07 | 03:21 | 'l_f + l_r == L' | REAL | Driveline.VehicleSpec | Tier1 populated -> approxEq (l_f+l_r) L | PROVED: Driveline.VehicleSpec.tier1_inv |
+| P03-08 | 03:22 | 'm_s + m_uf + m_ur == m' | REAL | Driveline.VehicleSpec | Tier2 populated -> approxEq (m_s+m_uf+m_ur) m (m from Tier1, guaranteed by P03-01) | PROVED: Driveline.VehicleSpec.tier2_inv |
+| P03-11 | 03:22 | 'reverse_gear_ratio i_R > 0' | MODEL | Driveline.VehicleSpec | Tier2 WF: 0 < i_R | PROVED: Driveline.VehicleSpec.reverse_pos |
+| P03-12 | 03:22 | 'Peak drive torque ... T*i_g*i_fd ... In reverse ... T*i_R*i_fd, acting toward -x' | REAL | Driveline.VehicleSpec | wheelTorque g = T*i_g*i_fd; reverse torque x-component = -(T*i_R*i_fd) <= 0 given T, i_R, i_fd >= 0 | REFUTED: Driveline.VehicleSpec.rev_torque_toward_pos_x |
+| P03-13 | 03:36 | 'num_gears is the number of gear_ratios values, and the unused entries are zero' | INT | Driveline.VehicleSpec | num_gears <= 10 and forall i >= num_gears, gear_ratios[i] = 0 | PROVED: Driveline.VehicleSpec.gears_encoding |
+| P03-14 | 03:42 | 'L = 0, o_f = o_r = length/2, L_bbox = length ... delta_max = delta_dot_max = i_s = 0' | REAL | Driveline.VehicleSpec | objectTier0 satisfies P03-06 exactly: 0 + len/2 + len/2 = len | PROVED: Driveline.VehicleSpec.object_tier0 |
+| P03-15 | 03:42 | 'Where a rule divides by delta_max, the quotient is 0 for an object' | MODEL | Driveline.VehicleSpec | safeDiv x 0 = 0 for objects (matches Lean's x/0 = 0) | PROVED: Driveline.VehicleSpec.object_div_delta |
 | P03-16 | 03:42 | 'v_lat,ra = delta_ss = beta_cg = 0 ... reports front_wheel_angle 0' | MODEL | Driveline.VehicleSpec | object steady state has zero lateral terms | TODO |
-| P03-17 | 03:40 | 'each value above zero' | MODEL | Driveline.VehicleSpec | ObjectSpec WF: length, width, height, v_max, a_max > 0 | TODO |
-| P03-19 | 03:40 | 'STATIC ... which only place may use' | MODEL | Driveline.VehicleSpec | class = STATIC <-> created by place | TODO |
-| P03-20 | 03:26 | 'required_tier not populated ... is a compile-time error' | DECIDE | Driveline.VehicleSpec | accept bind <-> testBit mask required_tier | TODO |
-| P03-21 | 03:28 | 'KinematicBicycle accepts only ... KinematicControlFrame' | DECIDE | Driveline.VehicleSpec | input type of the KS physics = KCF; ACF wiring rejected | TODO |
-| P03-22 | 03:29 | 'delta = steering_wheel_norm * delta_max' | REAL | Driveline.VehicleSpec | abs norm <= 1 -> abs delta <= delta_max | TODO |
-| P03-23 | 03:43 | 'No chain that serves an object actor ... carries a KinematicControlFrame or ActuatorControlFrame' | DECIDE | Driveline.VehicleSpec | object chain types avoid {KCF, ACF} under Lon/Lat/Override wrappers | TODO |
-| P03-24 | 03:34-35 | 'OVERRIDE_TIER1_2 ... Never Overridden: Tier 0 geometry ... Tier 1 values that the steady-state solve uses' | MODEL | Driveline.VehicleSpec | effectiveParams with deck: tier0 unchanged; steady-state input = spec.tier1 | TODO |
-| P03-25 | 03:36 | 'A value longer than 255 bytes ... is a compile-time error' | INT | Driveline.VehicleSpec | uri byte length <= 255 <-> fits uri[256] with NUL | TODO |
-| P03-26 | 03:23 / H | 'deck_type (NONE, PACEJKA_TIR, SOLVER_URI)'; H '0:SUPPLEMENT_ONLY, 1:OVERRIDE_TIER1_2' | DECIDE | Driveline.VehicleSpec | enum encode/decode round trip on Fin 3 / Fin 2 | TODO |
-| P03-27 | 03:14 / H | class CAR/TRUCK/CYCLIST/MOTORCYCLE; H '0:UNKNOWN ... 7:STATIC' | DECIDE | Driveline.VehicleSpec | vehicle classes map into {1,2,4,5}, object classes into {0,3,6,7}; disjoint and injective | TODO |
+| P03-17 | 03:40 | 'each value above zero' | MODEL | Driveline.VehicleSpec | ObjectSpec WF: length, width, height, v_max, a_max > 0 | PROVED: Driveline.VehicleSpec.object_pos |
+| P03-19 | 03:40 | 'STATIC ... which only place may use' | MODEL | Driveline.VehicleSpec | class = STATIC <-> created by place | PROVED: Driveline.VehicleSpec.static_only_place |
+| P03-20 | 03:26 | 'required_tier not populated ... is a compile-time error' | DECIDE | Driveline.VehicleSpec | accept bind <-> testBit mask required_tier | PROVED: Driveline.VehicleSpec.tierCheck_abi |
+| P03-21 | 03:28 | 'KinematicBicycle accepts only ... KinematicControlFrame' | DECIDE | Driveline.VehicleSpec | input type of the KS physics = KCF; ACF wiring rejected | PROVED: Driveline.VehicleSpec.kb_rejects_acf |
+| P03-22 | 03:29 | 'delta = steering_wheel_norm * delta_max' | REAL | Driveline.VehicleSpec | abs norm <= 1 -> abs delta <= delta_max | REFUTED: Driveline.VehicleSpec.steer_bound_counterexample |
+| P03-23 | 03:43 | 'No chain that serves an object actor ... carries a KinematicControlFrame or ActuatorControlFrame' | DECIDE | Driveline.VehicleSpec | object chain types avoid {KCF, ACF} under Lon/Lat/Override wrappers | PROVED: Driveline.VehicleSpec.object_chain_rejects |
+| P03-24 | 03:34-35 | 'OVERRIDE_TIER1_2 ... Never Overridden: Tier 0 geometry ... Tier 1 values that the steady-state solve uses' | MODEL | Driveline.VehicleSpec | effectiveParams with deck: tier0 unchanged; steady-state input = spec.tier1 | PROVED: Driveline.VehicleSpec.tier0_never_overridden |
+| P03-25 | 03:36 | 'A value longer than 255 bytes ... is a compile-time error' | INT | Driveline.VehicleSpec | uri byte length <= 255 <-> fits uri[256] with NUL | PROVED: Driveline.VehicleSpec.uri_nul |
+| P03-26 | 03:23 / H | 'deck_type (NONE, PACEJKA_TIR, SOLVER_URI)'; H '0:SUPPLEMENT_ONLY, 1:OVERRIDE_TIER1_2' | DECIDE | Driveline.VehicleSpec | enum encode/decode round trip on Fin 3 / Fin 2 | PROVED: Driveline.VehicleSpec.deck_roundtrip |
+| P03-27 | 03:14 / H | class CAR/TRUCK/CYCLIST/MOTORCYCLE; H '0:UNKNOWN ... 7:STATIC' | DECIDE | Driveline.VehicleSpec | vehicle classes map into {1,2,4,5}, object classes into {0,3,6,7}; disjoint and injective | PROVED: Driveline.VehicleSpec.class_numbering |
 | PH-05 | H init ctx | 'num_wheels 0 (no Tier 2) or 4'; '4..7 zero' | DECIDE | Driveline.VehicleSpec | num_wheels = if Tier2 populated then 4 else 0; wheels[i] = 0 for i >= 4 | TODO |
 
 ### WP03 SliceBuffer queries and track lists (§4)
