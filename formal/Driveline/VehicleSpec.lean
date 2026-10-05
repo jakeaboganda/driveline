@@ -145,9 +145,10 @@ def Actor.WF (a : Actor) : Prop :=
 
 /-- P00-04. 00:34 'exactly one physics component, except a static actor ... which has no
 sensors, priors, or components'. -/
-theorem static_no_physics (a : Actor) (h : a.WF) (hs : a.isStatic = true) :
-    a.comps.count true = 0 := by
-  simp [(h.1 hs).2.2]
+theorem actor_physics_count (a : Actor) (h : a.WF) :
+    (a.isStatic = true → a.comps.count true = 0) ∧
+    (a.isStatic = false → a.comps.count true = 1) :=
+  ⟨fun hs => by simp [(h.1 hs).2.2], h.2⟩
 
 /-- 00:33 'World-truth types: `OpenDriveMap` ... and `FrictionField`'. -/
 def worldTruth : PortType → Prop
@@ -397,6 +398,8 @@ def OSpec.WF (o : OSpec) : Prop :=
 def boxX (t : Tier0) : ℝ × ℝ := (-t.overhang_rear, t.wheelbase + t.overhang_front)
 /-- The body-frame y range of the box, 03:20 'y in [-W_bbox/2, W_bbox/2]'. -/
 def boxY (t : Tier0) : ℝ × ℝ := (-t.bbox_width / 2, t.bbox_width / 2)
+/-- The body-frame z range of the box, 03:20 'z in [0, H_bbox]'. -/
+def boxZ (t : Tier0) : ℝ × ℝ := (0, t.bbox_height)
 
 /-! ## Reference origin and CG (02:19) -/
 
@@ -543,8 +546,9 @@ theorem unpopulated_zero :
 y in [-W_bbox/2, W_bbox/2], and z in [0, H_bbox]'. -/
 theorem box_extents (s : VSpec) (h : s.WF) :
     approxEq s.tier0.bbox_length ((boxX s.tier0).2 - (boxX s.tier0).1) ∧
-    (boxY s.tier0).2 - (boxY s.tier0).1 = s.tier0.bbox_width := by
-  refine ⟨?_, by simp only [boxY]; ring⟩
+    (boxY s.tier0).2 - (boxY s.tier0).1 = s.tier0.bbox_width ∧
+    (boxZ s.tier0).1 = 0 ∧ (boxZ s.tier0).2 - (boxZ s.tier0).1 = s.tier0.bbox_height := by
+  refine ⟨?_, by simp only [boxY]; ring, rfl, by simp only [boxZ]; ring⟩
   have e : (boxX s.tier0).2 - (boxX s.tier0).1 =
       s.tier0.wheelbase + s.tier0.overhang_front + s.tier0.overhang_rear := by
     simp only [boxX]; ring
@@ -608,7 +612,8 @@ def revWitness : VSpec :=
 
 /-- P03-12, refuted. 03:22 'In reverse it is T_drive,max i_R i_fd, acting toward -x'.
 Nothing makes `max_drive_torque` or `final_drive_ratio` non-negative, so an accepted spec
-can have a reverse wheel torque toward +x. -/
+can have a reverse wheel torque toward +x. The claim holds only under those conditions,
+which `rev_toward_neg_x` proves. -/
 theorem rev_torque_toward_pos_x : ∃ s : VSpec, s.WF ∧ ∃ t2 ∈ s.tier2,
     0 < revWheelTorqueX (encodeTier2 t2) := by
   refine ⟨revWitness, ⟨?_, ?_, ?_, ?_⟩, _, rfl, ?_⟩
@@ -705,13 +710,19 @@ theorem kb_rejects_acf :
 theorem steer_bound (n dmax : ℝ) (hn : |n| ≤ 1) : |n * dmax| ≤ |dmax| := by
   rw [abs_mul]; exact mul_le_of_le_one_left (abs_nonneg _) hn
 
-/-- P03-22, refuted. 03:29 'it converts steering with delta = `steering_wheel_norm` *
-delta_max'. Nothing makes delta_max non-negative (03:20), so |delta| <= delta_max fails
-for norm = 1, delta_max = -1/2. -/
-theorem steer_bound_counterexample : ∃ n dmax : ℝ, |n| ≤ 1 ∧ ¬ |n * dmax| ≤ dmax := by
-  refine ⟨1, -1 / 2, by simp, ?_⟩
-  rw [one_mul, abs_of_neg (by norm_num)]
-  norm_num
+/-- 08:19 'A steady state is infeasible if |delta_ss| > delta_max'. -/
+def feasible (δss δmax : ℝ) : Prop := |δss| ≤ δmax
+
+/-- P03-22. 03:29 'it converts steering with delta = `steering_wheel_norm` * delta_max'.
+08:19 'During cold init, an infeasible spawn state is `DL_STATUS_ERR_NUMERIC`, and the run
+fails before Tick 0', and 06:72-73 Pass 1 solves the steady state for every spawned actor,
+so a running actor has a feasible delta_ss, hence delta_max >= 0 and |delta| <= delta_max. -/
+theorem steer_bound_of_feasible :
+    (∀ δss δmax : ℝ, feasible δss δmax → 0 ≤ δmax) ∧
+    (∀ n δss δmax : ℝ, |n| ≤ 1 → feasible δss δmax → |n * δmax| ≤ δmax) := by
+  refine ⟨fun δss δmax h => (abs_nonneg δss).trans h, fun n δss δmax hn h => ?_⟩
+  have h0 : 0 ≤ δmax := (abs_nonneg δss).trans h
+  simpa [abs_of_nonneg h0] using steer_bound n δmax hn
 
 /-- 03:43: a type carries a control frame, whole, partial, or `Override<T>`. -/
 def carriesControl (t : FrameType) : Prop := t.root = .kcf ∨ t.root = .acf
