@@ -14,6 +14,7 @@ The review found that regexes could not decide soundness: a `/-` inside a `--` c
 - Sorry warnings: the build fails if its output contains `declaration uses`. Cached builds replay the warning, so this holds on a second run.
 - Textual ban, kept as defense in depth: `\b(sorry\w*|admit|native_decide|debug\.skipKernelTC|unsafe)\b` and `^\s*(@\[[^\]]*\]\s*)*((private|protected|noncomputable)\s+)*axiom\b`, scanned on raw lines with comments included. A hit inside a comment is a false positive that we accept. `formal/README.md` tells authors not to write those words in comments.
 - `--no-build` skips `lake build` and the axiom audit, and prints a `skip` line for each. Only the full run is a gate.
+- Theorem check: the audit file also imports `Lean` and defines a `#dl_kind` command, emitted before each `#print axioms`. It prints `KIND <name> thm` only when the environment entry is a theorem; any other result, such as a `def notThm : Prop := True` named as `PROVED`, fails. `#print axioms` alone accepted defs.
 - Output: `ok   lean names: N resolved` is replaced by `ok   axiom audit: N names`.
 
 Re-run of the review fixture, one case per copy of the repo with the shared `.lake`. Every case failed in the full run: hidden sorry behind a fake comment, theorem in a nested comment, theorem in a string, `prim'` named as `prim`, private theorem, indented axiom, `sorryAx`, and `native_decide`. The clean repo printed `0 failure(s)` with 8 names audited.

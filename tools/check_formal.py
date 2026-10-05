@@ -135,10 +135,21 @@ def run_build():
     return True
 
 
+# Prints `KIND <name> thm` only when the name is a theorem constant, so a def can't stand in for one.
+AUDIT_HEADER = """import Driveline
+import Lean
+open Lean Elab Command in
+elab "#dl_kind " id:ident : command => do
+  match (← getEnv).find? id.getId with
+  | some (.thmInfo _) => logInfo m!"KIND {id.getId} thm"
+  | _ => logInfo m!"KIND {id.getId} other"
+"""
+
+
 def audit_axioms(names):
-    """Ask Lean which axioms each ledger theorem depends on."""
+    """Ask Lean whether each ledger name is a theorem and which axioms it depends on."""
     with tempfile.NamedTemporaryFile("w", suffix=".lean", delete=False) as f:
-        f.write("import Driveline\n" + "".join(f"#print axioms {n}\n" for n in names))
+        f.write(AUDIT_HEADER + "".join(f"#dl_kind {n}\n#print axioms {n}\n" for n in names))
     try:
         r = subprocess.run(["lake", "env", "lean", "--json", f.name],
                            cwd=FORMAL, env=lean_env(), capture_output=True, text=True)
@@ -147,7 +158,8 @@ def audit_axioms(names):
         return
     finally:
         os.unlink(f.name)
-    # Line 1 is the import; name i is on line i + 2.
+    # Name i has #dl_kind on line base + 2i and #print axioms on the next line.
+    base = AUDIT_HEADER.count("\n") + 1
     by_line = {}
     for raw in r.stdout.splitlines():
         try:
@@ -161,7 +173,13 @@ def audit_axioms(names):
         return
     before = len(failures)
     for i, name in enumerate(names):
-        msgs = by_line.pop(i + 2, [])
+        kind = by_line.pop(base + 2 * i, [])
+        data = kind[0].get("data", "").strip() if len(kind) == 1 else ""
+        msgs = by_line.pop(base + 2 * i + 1, [])
+        if data != f"KIND {name} thm":
+            text = "; ".join(m.get("data", "") for m in kind) or "no output"
+            fail(f"{name}: not a theorem ({text})")
+            continue
         if len(msgs) != 1 or msgs[0].get("severity") != "information":
             text = "; ".join(m.get("data", "") for m in msgs) or "no output"
             fail(f"{name}: {text}")
