@@ -442,9 +442,7 @@ noncomputable instance decLt (a b : F64) : Decidable (a < b) := by
   cases a <;> cases b <;>
     first | exact Real.decidableLT _ _ | exact isTrue trivial | exact isFalse id
 
-noncomputable instance decEq : DecidableEq F64 := fun a b => by
-  cases a <;> cases b <;>
-    first | exact isTrue rfl | exact isFalse nofun | exact decidable_of_iff _ ⟨congrArg fin, fin.inj⟩
+noncomputable instance decEq : DecidableEq F64 := Classical.decEq _
 
 noncomputable instance decLe (a b : F64) : Decidable (a ≤ b) :=
   inferInstanceAs (Decidable (a < b ∨ (a = b ∧ a ≠ nan)))
@@ -597,7 +595,7 @@ theorem port_conversion :
       (KinematicControlFrame.zero_valid_iff _ _).mpr
         ⟨(KinematicControlFrame.pOR_lat _).mpr ⟨h2, rfl⟩, nofun, hs⟩⟩
   · refine ⟨{ IntentFrame.blank ⟨0, 0⟩ with
-      lon := .stt, lat := .stt, signal := .off, numTrajPoints := 1 }, ?_, fun h => ?_⟩
+      lon := .stt, lat := .stt, signal := .off, numTrajPoints := 1 }, ?_, ?_, fun h => ?_⟩
     · refine ⟨(IntentFrame.pOR_full _).mpr ⟨nofun, nofun, nofun⟩,
         ⟨⟨fun _ => rfl, fun _ => rfl⟩, fun _ => ⟨le_refl 1, by decide,
           fun _ _ => ⟨le_refl 0, F64.zero_le_zero, F64.inIoc_zero_pi⟩,
@@ -632,10 +630,10 @@ theorem infinity_no_bound :
         f.uses .stopAtOdometer = true ∧ f.stopAtOdometer = x ∧ x ≠ .posInf) →
       f.outputCheck map d = .numeric) ∧
     (∀ (map : RoadMap) (d : Decl) (f : IntentFrame), f.wellFormed d →
-      (f.uses .pathPoints = true ∧
-          ∃ i : Fin 64, i.val < f.numWaypoints ∧ ¬ (f.pathPoints i).Finite ∨
-        f.uses .trajectory = true ∧
-          ∃ i : Fin 64, i.val < f.numTrajPoints ∧ ¬ (f.trajectory i).Finite) →
+      ((f.uses .pathPoints = true ∧
+          ∃ i : Fin 64, i.val < f.numWaypoints ∧ ¬ (f.pathPoints i).Finite) ∨
+        (f.uses .trajectory = true ∧
+          ∃ i : Fin 64, i.val < f.numTrajPoints ∧ ¬ (f.trajectory i).Finite)) →
       f.outputCheck map d = .numeric) ∧
     (∀ odo : ℝ, ¬ stopNow .posInf odo) := by
   refine ⟨fun map d f h => ?_, fun d f h ha => ?_, fun d f h hs => ?_,
@@ -706,7 +704,9 @@ theorem intent_valid_decidable (map : RoadMap) [∀ r, Decidable (map.road r)]
       decide (f.valid map d) = (decide (f.partialOverrideRule d) && decide f.sttRule &&
         decide (f.laneRule map) && decide f.polylineRule && decide f.gapRule) := by
   refine ⟨⟨inferInstance⟩, ?_⟩
-  simp [IntentFrame.valid, Bool.and_assoc]
+  rw [Bool.eq_iff_iff]
+  simp only [Bool.and_eq_true, decide_eq_true_eq]
+  exact ⟨fun ⟨a, b, c, e, g⟩ => ⟨⟨⟨⟨a, b⟩, c⟩, e⟩, g⟩, fun ⟨⟨⟨⟨a, b⟩, c⟩, e⟩, g⟩ => ⟨a, b, c, e, g⟩⟩
 
 theorem timesIncrease_of_adjacent {n : Nat} (hn : n ≤ 64) {t : Fin 64 → Int}
     (h : ∀ k (hk : k + 1 < n), t ⟨k, by omega⟩ < t ⟨k + 1, by omega⟩) :

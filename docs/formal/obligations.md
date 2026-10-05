@@ -39,24 +39,24 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 
 | ID | Spec | Quote | Class | Lean module | Statement | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| P05-01 | 05:12 | 'Every checkpoint frame carries timestamp_ns ... and actor_id' | DECIDE | Driveline.Frames | header struct shared by all frames; header is in no group | TODO |
-| P05-02 | 05:14 | 'Every full frame states every group' | DECIDE | Driveline.Frames | validFull f -> forall g, mode f g != NONE | TODO |
-| P05-03 | 05:18-25 | mode table (groups/modes/fields) | DECIDE | Driveline.Frames | enum encodings match ABI comments (abi:187-189, 207-208, 217-219) through ofNat/toNat round trip | TODO |
-| P05-04 | 05:28-30 | 'A field applies only under the modes listed here' | DECIDE | Driveline.Frames | uses : Mode -> Field -> Bool; jerk_lon_cmd used under ACCEL and JERK; steer_rate_cmd under ANGLE and RATE | TODO |
-| P05-05 | 05:32 | 'numbered from 1 in the order shown' | DECIDE | Driveline.Frames | index lemma for each enum | TODO |
-| P05-06 | 05:32 | baseline modes list; 'every mode of gear_mode' | DECIDE | Driveline.Frames | isBaseline; Pass 1 step 5 frames use only baseline modes (needs a §6 model) | TODO |
-| P05-07 | 05:32 | 'SPATIOTEMPORAL_TRAJECTORY couples the two motion groups' | DECIDE | Driveline.Frames | under STT, uses f fld = false for every non-trajectory LON/LAT field | TODO |
+| P05-01 | 05:12 | 'Every checkpoint frame carries timestamp_ns ... and actor_id' | DECIDE | Driveline.Frames | header struct shared by all frames; header is in no group | PROVED: Driveline.Frames.header_kept |
+| P05-02 | 05:14 | 'Every full frame states every group' | DECIDE | Driveline.Frames | valid f .full -> forall g, modeNat f g != 0 (no NONE group) | PROVED: Driveline.Validity.full_states_every_group |
+| P05-03 | 05:18-25 | mode table (groups/modes/fields) | DECIDE | Driveline.Frames | enum encodings match ABI comments (abi:187-189, 207-208, 217-219) through ofNat/toNat round trip | PROVED: Driveline.Frames.mode_encodings |
+| P05-04 | 05:28-30 | 'A field applies only under the modes listed here' | DECIDE | Driveline.Frames | uses : Mode -> Field -> Bool; jerk_lon_cmd used under ACCEL and JERK; steer_rate_cmd under ANGLE and RATE | PROVED: Driveline.Frames.fields_per_mode |
+| P05-05 | 05:32 | 'numbered from 1 in the order shown' | DECIDE | Driveline.Frames | index lemma for each enum | PROVED: Driveline.Frames.modes_numbered |
+| P05-06 | 05:32 | baseline modes list; 'every mode of gear_mode' | DECIDE | Driveline.Frames | isBaseline; baseline-mode frames state every group and do not use STT (Pass 1 step 5 and tier-change steering: P05-41, P05-42) | PROVED: Driveline.Frames.baseline_modes |
+| P05-07 | 05:32 | 'SPATIOTEMPORAL_TRAJECTORY couples the two motion groups' | DECIDE | Driveline.Frames | STT uses only num_traj_points and trajectory; under the 05:68 coupling, f.lon = STT or f.lat = STT and uses f fld -> fld is one of them | PROVED: Driveline.Frames.stt_couples |
 | P05-08 | 05:34 | 'A Lon<T> frame states the LON group and has every other group NONE' | DECIDE | Driveline.Validity | validLon f <-> lon != NONE and lon != STT and all other groups NONE | PROVED: Driveline.Validity.lon_frame_groups |
 | P05-09 | 05:34 | 'A Lat<T> frame states LAT, and for IntentFrame also SIGNAL' | DECIDE | Driveline.Validity | same shape as validLon | PROVED: Driveline.Validity.lat_frame_groups |
 | P05-10 | 05:34 | 'An Override<T> frame may have any group NONE. Every other frame has no NONE group.' | DECIDE | Driveline.Validity | validFull f -> validOverride f | PROVED: Driveline.Validity.full_is_override |
-| P05-11 | 05:34,40 | 'a full frame ... reaches a Lon<T> or Lat<T> port ... valid only if ... it does not use SPATIOTEMPORAL_TRAJECTORY' | DECIDE | Driveline.Validity | validFull f and not usesSTT f -> validLon (toLon f) and validLat (toLat f) | PROVED: Driveline.Validity.port_conversion |
-| P05-12 | 05:36 | 'The value +INFINITY means no bound' | DECIDE | Driveline.Validity | bound predicate accepts +inf | PROVED: Driveline.Validity.infinity_no_bound |
-| P05-14 | 05:38 | 'sets every field that the frame's modes do not use ... to zero' | DECIDE | Driveline.Validity | zero is idempotent; valid f -> valid (zero f); zero keeps used fields | PROVED: Driveline.Validity.zeroing |
-| P05-15 | 05:40 | 'delivers ... without further change, except ...' | MODEL | Driveline.Frames | deliver is id except for the listed transforms | TODO |
-| P05-17 | 05:66-70 | 'valid if and only if every rule below holds' | DECIDE | Driveline.Validity | validIntent (map : RoadOracle) f is Decidable given the oracle | PROVED: Driveline.Validity.intent_valid_iff |
+| P05-11 | 05:34,40 | 'a full frame ... reaches a Lon<T> or Lat<T> port ... valid only if ... it does not use SPATIOTEMPORAL_TRAJECTORY' | DECIDE | Driveline.Validity | validAt f .full (partialPort := true) <-> valid f .full and not usesSTT f; such f converts: validLon (toLon f) and validLat (toLat f) | PROVED: Driveline.Validity.port_conversion |
+| P05-12 | 05:36 | 'The value +INFINITY means no bound' | DECIDE | Driveline.Validity | on outputCheck: +inf passes only in stop_at_odometer, jerk_lon_cmd under ACCEL, steer_rate_cmd under ANGLE; other used fields at +inf, -inf or NaN give numeric | PROVED: Driveline.Validity.infinity_no_bound |
+| P05-14 | 05:38 | 'sets every field that the frame's modes do not use ... to zero' | DECIDE | Driveline.Validity | zero is idempotent; valid f -> valid (zero f); zero keeps used fields (abstract; byte-level zeroing is §9.1, see WP07) | PROVED: Driveline.Validity.zeroing |
+| P05-15 | 05:40 | 'delivers ... without further change, except ...' | MODEL | Driveline.Frames | deliver is id except the port conversions (IntentFrame and KinematicControlFrame toLon/toLat); redelivery on non-stepping ticks: P05-40 | PROVED: Driveline.Frames.delivery |
+| P05-17 | 05:66-70 | 'valid if and only if every rule below holds' | DECIDE | Driveline.Validity | validIntent (map : RoadOracle) f is Decidable given decidable map predicates; decide valid = conjunction of the rule decisions | PROVED: Driveline.Validity.intent_valid_decidable |
 | P05-18 | 05:68 | 'lon_mode is STT if and only if lat_mode is ... 1 to 64 ... strictly increase ... v_k >= 0 ... (-pi, pi]' | DECIDE | Driveline.Validity | StrictMono on Fin n of t_ns (Int64) | PROVED: Driveline.Validity.stt_trajectory_rule |
 | P05-20 | 05:70 | 'gap_target_actor_id is not 0 ... not negative' | DECIDE | Driveline.Validity | not (x < 0) vs 0 <= x | PROVED: Driveline.Validity.gap_rule |
-| P05-26 | 05:80 | GAP_PROFILE fallback to VELOCITY_TARGET; g = rel_x | MODEL | Driveline.Frames | effectiveLonMode | TODO |
+| P05-26 | 05:80 | GAP_PROFILE fallback to VELOCITY_TARGET; g = rel_x | MODEL | Driveline.Frames | effectiveLonMode (g = rel_x: P05-43) | PROVED: Driveline.Frames.effective_lon_mode |
 | P05-27 | 05:82 | 'returns DL_STATUS_ERR_UNSUPPORTED_MODE ... NONE is never checked' | MODEL | Driveline.Validity | supported m NONE = true | PROVED: Driveline.Validity.unsupported_mode_check |
 | P05-29 | 05:98 | KCF valid: 'bounds under ACCEL and ANGLE are above zero' | DECIDE | Driveline.Validity | NaN rejected, +inf accepted | PROVED: Driveline.Validity.kinematic_bounds_above_zero |
 | P05-30 | 05:114 | ACF valid; 'manual_gear_index is from 0 to num_gears' | DECIDE | Driveline.Validity | - | PROVED: Driveline.Validity.actuator_ranges |
@@ -64,7 +64,7 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | P10-06 | 10:24 | 'the two branches can never write the same field' | DECIDE | Driveline.Merge | the groups' field sets are disjoint once STT is excluded | PROVED: Driveline.Merge.branches_disjoint |
 | P10-07 | 10:25 | 'It states every group ... never uses SPATIOTEMPORAL_TRAJECTORY' | DECIDE | Driveline.Merge | - | PROVED: Driveline.Merge.merge_full_frame |
 | P10-08 | 10:25 | 'Two valid partial frames always merge into a valid full frame' | DECIDE | Driveline.Merge | forall m a b, validLon m a -> validLat m b -> validFull m (merge a b); zero (merge a b) = merge (zero a) (zero b) | PROVED: Driveline.Merge.merge_valid |
-| P10-09 | 10:25 | merged timestamp rules | MODEL | Driveline.Merge | - | PROVED: Driveline.Merge.merge_timestamps |
+| P10-09 | 10:25 | merged timestamp rules | MODEL | Driveline.Merge | forming-tick stamp; splice-window stamp: P10-40 | PROVED: Driveline.Merge.merge_timestamps |
 | P10-11 | 10:27 | 'a full frame of type T is also a valid override' | DECIDE | Driveline.Validity | same as P05-10 | DUP: P05-10 |
 | P10-12 | 10:27 | Arbiter coupled-motion rule | MODEL | Driveline.Arbiter | arbiterOK p s base out; theorem: valid p, valid s and the committed baseline give valid out | PROVED: Driveline.Arbiter.arbiter_output_valid |
 | P10-13 | 10:27 | baseline 'v_ref = max(own.v_lon, 0)' and 'd_ref = own.frenet_d' | MODEL | Driveline.Arbiter | - | PROVED: Driveline.Arbiter.committed_baseline |
@@ -166,6 +166,7 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | P11-26 | 11:27 | "per-actor instances … in bind order before the next component" | MODEL | Driveline.Schedule | group order = component-major, bind-minor | TODO |
 | P11-27 | 11:27 | "No component reads another entity's output within a tick, so this order never delays data" | MODEL | Driveline.Schedule | the read set of an entity's components ⊆ that entity's buffers ∪ the P1 snapshot | TODO |
 | P11-28 | 11:27 | "Phase 2 is data-race-free and parallelizable across actors" | MODEL | Driveline.Schedule | any interleaving of entity blocks gives the same state (commutation) | TODO |
+| P05-40 | 05:40 | 'On a tick where a producer does not step ..., its consumers receive its last output again' | MODEL | Driveline.Schedule | delivered frame on a non-stepping tick = last output | TODO |
 
 ### WP05 Diagnostics and run record (§14, §18)
 
@@ -296,6 +297,9 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | P10-19 | 10:32 | ascending actor_id, all-or-nothing write; net change 'between 0 and 1 or 2' | MODEL | Driveline.Splice | netChange b a := (b = 0) != (a = 0) | TODO |
 | P10-20 | 10:32 | instantiate/teardown ordering | MODEL | Driveline.Splice | - | TODO |
 | P10-21 | 10:33 | 'A single splice statement does not' | MODEL | Driveline.Splice | - | TODO |
+| P05-41 | 05:32 | 'A frame that the runtime builds by the rules of Pass 1 step 5 uses only baseline modes' | MODEL | Driveline.InitContext | every Pass 1 step 5 frame has isBaseline modes | TODO |
+| P05-42 | 05:32 | 'the steering that the runtime writes after a tier change uses ANGLE' | MODEL | Driveline.TierChange | steering replacement sets steer_mode/wheel_mode ANGLE | TODO |
+| P10-40 | 10:25 | 'the runtime re-forms its merged frame in the splice window ... stamped with the next tick's time' | MODEL | Driveline.Splice | splice-window merged frame stamp = next tick time | TODO |
 
 ### WP09 Angles and rigid-body kinematics (§2, §5.3)
 
@@ -372,6 +376,7 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | P17-17 | 17:58 | "smallest positive rel_x, then the smaller target_actor_id" | DECIDE | Driveline.Sensors | lead is unique; lead_ttc=+∞ ↔ no lead | TODO |
 | P17-18 | 17:58 | "out_left_lane_id ... if σ = +1" | DECIDE | Driveline.Sensors | the left/right swap under σ is an involution | TODO |
 | P17-19 | 17:56 | "mu_mean is their mean" | REAL | Driveline.Sensors | min ≤ mean ≤ max | TODO |
+| P05-43 | 05:80 | 'g is that track's rel_x' | MODEL | Driveline.Sensors | measured gap = rel_x of the track with target_actor_id = gap_target_actor_id from latest() of the first such port | TODO |
 
 ### WP13 Standard components (§17.3–17.5)
 
