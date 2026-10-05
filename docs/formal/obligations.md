@@ -175,29 +175,29 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 
 | ID | Spec | Quote | Class | Lean module | Statement | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| P11-21 | 11:24 | "first tick that a pair is in contact, and on no later tick" | MODEL | Driveline.RunRecord | `∀ pair, count collisionLines pair ≤ 1`; a line exists ↔ ∃ tick in contact | TODO |
-| P14-01 | 14:12 | "negative code is an error. positive … warning" | DECIDE | Driveline.Diagnostics | `severity c = if c<0 then err else if c>0 then warn else ok` | TODO |
-| P14-03 | 14:26 | "DL_STATUS_ERR_FMU … Components never return it" | MODEL | Driveline.Diagnostics | a component-returned -6 is invalid | TODO |
-| P14-04 | 14:30 | warnings: "The run continues" | MODEL | Driveline.Diagnostics | a warning does not change the control state | TODO |
-| P14-05 | 14:31 | "reported error is the first failing call in the order of §11" | MODEL | Driveline.Diagnostics | `reported = (seqOrder.filter failed).head?`, independent of parallel interleaving | TODO |
-| P14-06 | 14:31 | "reports are exactly those that sequential execution … up to and including that error" | MODEL | Driveline.Diagnostics | `reports par = takeWhileIncl (¬isErr) (reports seq)` | TODO |
-| P14-07 | 14:32 | "teardown … descending actor_id … group sorted by smallest member … reverse of Phase 2 order, physics first … reverse bind order" | DECIDE | Driveline.Diagnostics | `teardownOrder = reverse startupOrder` (if the phrase is meant literally, a theorem) | TODO |
-| P14-08 | 14:32 | "dl_terminate if the state allows it … dl_free_instance if not Uninstantiated" | MODEL | Driveline.Diagnostics | per-instance teardown state machine is total and ends in Freed/Uninstantiated | TODO |
-| P14-09 | 14:33 | "group instance's frames are checked in actor_ids order, each through every step … first failure" | MODEL | Driveline.Diagnostics | validation = frame-major, check-minor; first failure in that order is the result (rest cut off by the tool) | TODO |
-| P14-10 | 14:33 | "every mode field must hold one of its listed values … counts … at m…" | DECIDE | Driveline.Diagnostics | `validFrame` is decidable; count ≤ capacity | TODO |
-| P14-11 | 14:34 | "cold init carries tick 0 … splice window carries the tick after … tick k, Phase 4 included" | MODEL | Driveline.Diagnostics | `reportTick` by context; `simTime = reportTick*dt` | TODO |
-| P14-12 | 14:34 | "teardown report carries the same tick … as the error … or … the tick whose Phase 4 ended it" | MODEL | Driveline.Diagnostics | teardown tick = tick of the terminating event | TODO |
-| P14-13 | 14:34 | report field order "tick, sim_time_ns, severity, co…" | MODEL | Driveline.RunRecord | field list fixed (shared with 18:21) | TODO |
-| P18-01 | 18:16 | "JSON Lines … no other whitespace … member order … escapes" | MODEL | Driveline.RunRecord | `encode` injective; `decode ∘ encode = id` | TODO |
-| P18-02 | 18:16 | "integer … decimal with no leading zeros" | INT | Driveline.RunRecord | canonical `Nat.repr` (sign rule not stated) | TODO |
-| P18-03 | 18:20,23 | "Header: first line … End: last line" | MODEL | Driveline.RunRecord | `head = header ∧ last = end`; exactly one of each | TODO |
-| P18-04 | 18:22 | "actor_a and actor_b … ascending" | DECIDE | Driveline.RunRecord | `a < b` | TODO |
-| P18-05 | 18:22 | "(v_lon cos ψ − v_lat sin ψ, v_lon sin ψ + v_lat cos ψ)" | REAL | Driveline.RunRecord | equals `rot ψ (v_lon, v_lat)`; norm preserved | TODO |
-| P18-06 | 18:22 | "Lines of one tick follow the pair …" | DECIDE | Driveline.RunRecord | within a tick, collision lines are sorted lex by (a,b) | TODO |
-| P18-07 | 18:23 | "0 and 0 for a run that fails during cold init" | MODEL | Driveline.RunRecord | the end line on a cold-init failure has tick 0 | TODO |
-| P18-08 | 18:25 | "committed state after Phase 4 of tick k has tick k+1" | INT | Driveline.RunRecord | `collisionTick = reportTick + 1` within one Phase 4 | TODO |
-| P18-09 | 18:25 | "ticks need not increase from line to line" | MODEL | Driveline.RunRecord | counterexample witness; prove only `tick(l₂) ≥ tick(l₁) - 1` for consecutive body lines | TODO |
-| P18-10 | 18:25 | "Lines … in the order that sequential execution … produces" | MODEL | Driveline.RunRecord | `body = trace seqExec` | TODO |
+| P11-21 | 11:24 | "first tick that a pair is in contact, and on no later tick" | MODEL | Driveline.RunRecord | `∀ pair, count collisionLines pair ≤ 1`; a line exists ↔ ∃ tick in contact | PROVED: Driveline.RunRecord.collision_first_contact |
+| P14-01 | 14:12 | "negative code is an error. positive … warning" | DECIDE | Driveline.Diagnostics | `severity c = if c<0 then err else if c>0 then warn else ok` | PROVED: Driveline.Diagnostics.severity_by_sign |
+| P14-03 | 14:26 | "DL_STATUS_ERR_FMU … Components never return it" | MODEL | Driveline.Diagnostics | a component-returned -6 is invalid | PROVED: Driveline.Diagnostics.errFmu_runtime_only |
+| P14-04 | 14:30 | warnings: "The run continues" | MODEL | Driveline.Diagnostics | a warning does not change the control state | PROVED: Driveline.Diagnostics.warning_continues |
+| P14-05 | 14:31 | "reported error is the first failing call in the order of §11" | MODEL | Driveline.Diagnostics | `reported = (seqOrder.filter failed).head?`, independent of parallel interleaving | PROVED: Driveline.Diagnostics.reported_first |
+| P14-06 | 14:31 | "reports are exactly those that sequential execution … up to and including that error" | MODEL | Driveline.Diagnostics | `reports par = takeWhileIncl (¬isErr) (reports seq)` | PROVED: Driveline.Diagnostics.par_reports |
+| P14-07 | 14:32 | "teardown … descending actor_id … group sorted by smallest member … reverse of Phase 2 order, physics first … reverse bind order" | DECIDE | Driveline.Diagnostics | `teardownOrder = reverse startupOrder` (if the phrase is meant literally, a theorem) | PROVED: Driveline.Diagnostics.teardown_reverse_startup |
+| P14-08 | 14:32 | "dl_terminate if the state allows it … dl_free_instance if not Uninstantiated" | MODEL | Driveline.Diagnostics | per-instance teardown state machine is total and ends in Freed/Uninstantiated | DUP: L06-08 |
+| P14-09 | 14:33 | "group instance's frames are checked in actor_ids order, each through every step … first failure" | MODEL | Driveline.Diagnostics | validation = frame-major, check-minor; first failure in that order is the result (rest cut off by the tool) | PROVED: Driveline.Diagnostics.group_check_frame_major |
+| P14-10 | 14:33 | "every mode field must hold one of its listed values … counts … at m…" | DECIDE | Driveline.Diagnostics | `validFrame` is decidable; count ≤ capacity | PROVED: Driveline.Diagnostics.output_step1 |
+| P14-11 | 14:34 | "cold init carries tick 0 … splice window carries the tick after … tick k, Phase 4 included" | MODEL | Driveline.Diagnostics | `reportTick` by context; `simTime = reportTick*dt` | PROVED: Driveline.Diagnostics.report_tick |
+| P14-12 | 14:34 | "teardown report carries the same tick … as the error … or … the tick whose Phase 4 ended it" | MODEL | Driveline.Diagnostics | teardown tick = tick of the terminating event | PROVED: Driveline.RunRecord.teardown_report_tick |
+| P14-13 | 14:34 | report field order "tick, sim_time_ns, severity, co…" | MODEL | Driveline.RunRecord | field list fixed (shared with 18:21) | PROVED: Driveline.RunRecord.report_members |
+| P18-01 | 18:16 | "JSON Lines … no other whitespace … member order … escapes" | MODEL | Driveline.RunRecord | `encode` injective; `decode ∘ encode = id` | PROVED: Driveline.RunRecord.encode_eq_iff |
+| P18-02 | 18:16 | "integer … decimal with no leading zeros" | INT | Driveline.RunRecord | canonical `Nat.repr` (sign rule not stated) | PROVED: Driveline.RunRecord.jnat_canonical |
+| P18-03 | 18:20,23 | "Header: first line … End: last line" | MODEL | Driveline.RunRecord | `head = header ∧ last = end`; exactly one of each | PROVED: Driveline.RunRecord.record_ends |
+| P18-04 | 18:22 | "actor_a and actor_b … ascending" | DECIDE | Driveline.RunRecord | `a < b` | PROVED: Driveline.RunRecord.pair_ascending |
+| P18-05 | 18:22 | "(v_lon cos ψ − v_lat sin ψ, v_lon sin ψ + v_lat cos ψ)" | REAL | Driveline.RunRecord | equals `rot ψ (v_lon, v_lat)`; norm preserved | PROVED: Driveline.RunRecord.worldVel_rotation |
+| P18-06 | 18:22 | "Lines of one tick follow the pair …" | DECIDE | Driveline.RunRecord | within a tick, collision lines are sorted lex by (a,b) | PROVED: Driveline.RunRecord.tick_lines_sorted |
+| P18-07 | 18:23 | "0 and 0 for a run that fails during cold init" | MODEL | Driveline.RunRecord | the end line on a cold-init failure has tick 0 | PROVED: Driveline.RunRecord.end_cold_init |
+| P18-08 | 18:25 | "committed state after Phase 4 of tick k has tick k+1" | INT | Driveline.RunRecord | `collisionTick = reportTick + 1` within one Phase 4 | PROVED: Driveline.RunRecord.phase4_collision_tick |
+| P18-09 | 18:25 | "ticks need not increase from line to line" | MODEL | Driveline.RunRecord | counterexample witness; prove only `tick(l₂) ≥ tick(l₁) - 1` for consecutive body lines | PROVED: Driveline.RunRecord.ticks_need_not_increase |
+| P18-10 | 18:25 | "Lines … in the order that sequential execution … produces" | MODEL | Driveline.RunRecord | `body = trace seqExec` | PROVED: Driveline.RunRecord.lines_sequential |
 
 ### WP06 Manifest, types, units (§15, §16)
 
