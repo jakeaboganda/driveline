@@ -209,7 +209,7 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | P02-01 | 02:15 | 'unsigned 64-bit count of nanoseconds' | MODEL | Driveline.Units | Timestamp := UInt64; FrameTime := Int64; DSL Time := Int64, with their ranges | PROVED: Driveline.Units.time_carriers |
 | P02-02 | 02:15 | 't - 0.18s is -130,000,000 ns' at t=0.05s | INT | Driveline.Units | (50_000_000 : Int) - 180_000_000 = -130_000_000 (by decide/omega) | PROVED: Driveline.Units.t_minus_018 |
 | P02-03 | 02:15 | 'Overflow in Time arithmetic is DL_STATUS_ERR_NUMERIC' | INT | Driveline.Units | tAdd/tSub/tMul a b = ok (exact result) if it is in [-2^63, 2^63-1], else error ERR_NUMERIC | PROVED: Driveline.Units.time_overflow_numeric |
-| P03-09 | 03:31 | 'holds when abs(a-b) <= 1e-6 * max(abs a, abs b, 1)' | REAL | Driveline.Units | over ℝ: approxEq reflexive, symmetric, implied by equality, not transitive (0, 1e-6, 2e-6). NaN/inf unreachable: tier values are constant expressions (16:100) and a non-finite one is a compile-time error (16:44) | PROVED: Driveline.Units.approxEq_refl_symm_not_trans |
+| P03-09 | 03:31 | 'holds when abs(a-b) <= 1e-6 * max(abs a, abs b, 1)' | REAL | Driveline.Units | over ℝ: approxEq reflexive, symmetric, implied by equality, not transitive (0, 1e-6, 2e-6) | PROVED: Driveline.Units.approxEq_refl_symm_not_trans |
 | P11-07 | 11:16 | "Stage 3 … k_div = 1. A rate clause on a Stage 3 component is a compile-time error" | MODEL | Driveline.Types | stage 3 ⇔ output KinematicState (00:41); a valid stage-3 declaration has k_div = 1 and runs every tick, and one with a rate clause is invalid | PROVED: Driveline.Types.stage3_runs_every_tick |
 | P15-01 | 15:16-22 | signature source table | MODEL | Driveline.Manifest | `sigSource : Kind → Source` is total | PROVED: Driveline.Manifest.sigSource_table |
 | P15-02 | 15:24 | "signature from its declaration is OneToOne, reads no Tier 3 deck" | MODEL | Driveline.Manifest | `declSig → card = OneToOne ∧ decks = []` | PROVED: Driveline.Manifest.declSig_oneToOne_no_deck |
@@ -221,7 +221,7 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | P15-08 | 15:45 | "entity … only in a Stage 3 manifest … object requires required_tier 0" | DECIDE | Driveline.Manifest | `entity? ≠ none → stage=3`; `entity=object → tier=0` | PROVED: Driveline.Manifest.entity_rules |
 | P15-09 | 15:48 | "unit '1' for i64, Bool, enum, 's' for Time" | DECIDE | Driveline.Manifest | `unitOk ty u` decidable | PROVED: Driveline.Manifest.unit_rules |
 | P15-10 | 15:48 | "null default makes the parameter mandatory" | MODEL | Driveline.Manifest | `mandatory p ↔ p.default = none` | PROVED: Driveline.Manifest.mandatory_iff_null |
-| P15-11 | 15:49 | "An entry must include the field's baseline modes" | DECIDE | Driveline.Manifest | `baseline f ⊆ modes f`; a missing entry means all modes | PROVED: Driveline.Manifest.baseline_modes_required |
+| P15-11 | 15:49 | "An entry must include the field's baseline modes" | DECIDE | Driveline.Manifest | `baseline f ⊆ modes f`; a missing entry accepts every mode, NONE included (05:34) | PROVED: Driveline.Manifest.baseline_modes_required |
 | P15-12 | 15:54 | "unknown name, missing mandatory, unit whose dimension differs" | DECIDE | Driveline.Manifest | call-site check over a finite map | PROVED: Driveline.Manifest.call_site_errors |
 | P15-13 | 15:54 | "passes every parameter … in SI units, including defaults … f64 → type = 0" | MODEL | Driveline.Manifest | `encode` total over all params; given args of their parameters' types, each passed entry d of parameter p has (d.type = 0 ↔ p.ty = f64) and decode p.ty d = the value passed; i64 and Time defaults in Int64 range (16:33, 16:36); names ≤ 55 bytes (09:21) | PROVED: Driveline.Manifest.params_round_trip |
 | P16-01 | 16:16 | "dimension over meters, kilograms, and seconds … rad/s and Hz same dimension" | INT | Driveline.Units | Dim := ℤ×ℤ×ℤ additive group; mul = +, div = -; rad/s and Hz same dimension | PROVED: Driveline.Units.dim_mul_div_rad_s_Hz |
@@ -461,6 +461,7 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | P03-18 | 03:40 | 'keeps abs v_lon <= v_max and abs a_lon <= a_max, and the runtime does not check them' | PROSE | — | component obligation the runtime does not check | OUT: prose |
 | P03-28 | 03:30 | 'cannot be overridden inline' | CHECKED | — | grammar/static-semantics rule (§12/§16) | CHECKED |
 | P03-29 | 03:36 | uri path normalization | EXTERNAL | — | filesystem / §19.2 path semantics | OUT: external |
+| P03-41 | 03:31 | 'evaluated in IEEE 754 binary64' | EXTERNAL | — | binary64 evaluation of the 03:31 tolerance (overflowing sums such as 1e308+1e308 compare as inf ≤ inf) | OUT: external |
 | P04-12 | 04:30 | 'not finite ... {0.0, false}' | EXTERNAL | — | binary64 non-finite values; modelled as Option real | OUT: external |
 | P04-28 | 04:44 | OSI mapping | EXTERNAL | — | ASAM OSI field semantics; open-items | OUT: external |
 | P04-40 | 04:48 | 'ttc_lon +INFINITY encoding' | EXTERNAL | — | binary64 infinity; float64 fields are modeled as reals | OUT: external |

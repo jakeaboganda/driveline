@@ -181,8 +181,8 @@ theorem tick_start (dt : ℕ+) :
 def approxEq (a b : ℝ) : Prop := |a - b| ≤ 1 / 10 ^ 6 * max |a| (max |b| 1)
 
 /-- P03-09. "An invariant written a == b in the tier table holds when
-|a - b| ≤ 10⁻⁶ · max(|a|, |b|, 1)" (03-vehicle-parameters.md:31). The relation is
-reflexive and symmetric, implied by exact equality, and not transitive. -/
+|a - b| ≤ 10⁻⁶ · max(|a|, |b|, 1)" (03-vehicle-parameters.md:31). Over ℝ the relation is reflexive and symmetric, implied by
+exact equality, and not transitive. Its binary64 evaluation is out of scope (P03-41). -/
 theorem approxEq_refl_symm_not_trans :
     (∀ a : ℝ, approxEq a a) ∧ (∀ a b : ℝ, approxEq a b → approxEq b a) ∧
       (∀ a b : ℝ, a = b → approxEq a b) ∧

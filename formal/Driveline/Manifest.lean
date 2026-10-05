@@ -117,9 +117,11 @@ def modesOk (ms : Modes) : Prop := ∀ f ∈ ModeField.all, entryOk f (ms f)
 
 instance (ms : Modes) : Decidable (modesOk ms) := by unfold modesOk; infer_instance
 
-/-- 15:49 'A field without an entry accepts every mode.' -/
+/-- 15:49 'A field without an entry accepts every mode', `NONE` included: an
+`Override<T>` input may have any group `NONE` (05:34). An entry accepts its listed
+modes. -/
 def accepts (ms : Modes) (f : ModeField) (e : f.Val) : Prop :=
-  e ∈ f.listed ∧ ∀ xs, ms f = some xs → e ∈ xs
+  ∀ xs, ms f = some xs → e ∈ xs
 
 /-! ## Parameters (15:48) -/
 
@@ -398,14 +400,15 @@ theorem mandatory_iff_null (p : MParam) (ports : List String) (ps : List MParam)
 
 /-- P15-11. 15:49 'A field without an entry accepts every mode. An entry must include the
 field's baseline modes (§5), or the reference is a compile-time error', with the
-baseline modes of 05:32. The check is decidable. -/
-theorem baseline_modes_required (ms : Modes) (f : ModeField) (e : f.Val) (he : e ∈ f.listed) :
+baseline modes of 05:32. A field without an entry accepts every mode, `NONE` included
+(05:34). The check is decidable. -/
+theorem baseline_modes_required (ms : Modes) (f : ModeField) (e : f.Val) :
     (ms f = none → accepts ms f e) ∧
-      (modesOk ms → f.isBaseline e = true → accepts ms f e) ∧
-      (∀ xs, ms f = some xs → f.isBaseline e = true → e ∉ xs → ¬ modesOk ms) ∧
+      (e ∈ f.listed → modesOk ms → f.isBaseline e = true → accepts ms f e) ∧
+      (∀ xs, ms f = some xs → e ∈ f.listed → f.isBaseline e = true → e ∉ xs → ¬ modesOk ms) ∧
       (decide (modesOk ms) = true ↔ modesOk ms) := by
-  refine ⟨fun h => ⟨he, by simp [h]⟩, fun ok hb => ⟨he, fun xs hx => ?_⟩,
-    fun xs hx hb hn ok => ?_, decide_eq_true_iff⟩
+  refine ⟨fun h xs hx => by simp [h] at hx, fun he ok hb xs hx => ?_,
+    fun xs hx he hb hn ok => ?_, decide_eq_true_iff⟩
   · have := ok f (ModeField.mem_all f)
     rw [hx] at this
     exact this.2 e he hb
