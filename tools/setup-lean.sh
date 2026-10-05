@@ -1,6 +1,7 @@
 #!/bin/sh
 # Installs elan, the Lean toolchain manager, then builds formal/.
 # elan reads formal/lean-toolchain and downloads that exact Lean version.
+# Mathlib comes prebuilt from its cache, about 8 GB under formal/.lake.
 set -eu
 
 if ! command -v elan >/dev/null 2>&1 && [ ! -x "$HOME/.elan/bin/elan" ]; then
@@ -11,6 +12,7 @@ PATH="$HOME/.elan/bin:$PATH"
 export PATH
 
 cd "$(dirname "$0")/../formal"
+lake exe cache get
 lake build
 
 echo "Lean ready. Add \$HOME/.elan/bin to PATH to use lean and lake directly."
