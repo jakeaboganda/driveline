@@ -36,10 +36,7 @@ each initialization, including a re-trim after `fmi3Reset`, is that
 initialization's `startTime`". -/
 theorem point_zero (T : Times) (t h : ℕ) : point T t h 0 = startTime T t := rfl
 
-/-- P07-08 (`07-fmu-packaging.md:36`): "each later one is the previous one plus the
-previous `communicationStepSize` in binary64, so the points are contiguous as FMI
-3.0 requires." -/
-theorem contiguous (T : Times) (t h j : ℕ) :
+theorem point_succ (T : Times) (t h j : ℕ) :
     point T t h (j + 1) = T.fl (point T t h j + stepSize T h) := rfl
 
 /-- P07-08 (`07-fmu-packaging.md:36`): "`startTime` and `communicationStepSize` are
@@ -49,7 +46,7 @@ theorem point_exact (t h : ℕ) :
     ∀ j : ℕ, point ⟨id, id⟩ t h j = ((t + j * h : ℕ) : ℚ) / 10 ^ 9
   | 0 => by simp [point, startTime]
   | j + 1 => by
-    rw [contiguous, point_exact t h j]
+    rw [point_succ, point_exact t h j]
     simp only [stepSize, id]
     push_cast
     ring
@@ -85,6 +82,50 @@ theorem doStep_time (dt d : ℕ+) (k0 j : ℕ) :
     tickTime dt (k0 + j * d) = tickTime dt k0 + j * stepDt d dt := by
   simp only [tickTime, stepDt]
   ring
+
+/-- FMI 3.0 contiguity of a call sequence `(cp j, h j)`: each
+`currentCommunicationPoint` is the previous one plus the previous
+`communicationStepSize` in binary64, `cp (j + 1) = fl (cp j + h j)`. -/
+def Contiguous (T : Times) (cp h : ℕ → ℚ) : Prop := ∀ j, cp (j + 1) = T.fl (cp j + h j)
+
+/-- The runtime's `fmi3DoStep` arguments `(currentCommunicationPoint,
+communicationStepSize)` on tick `kt`, for a component with divisor `d` initialized
+for tick `k`. Tick `kt` is the `(kt - tFirst d k) / d`-th scheduled tick from
+`tFirst d k`, and the `j`-th one gets `point j` and the step size of `h`. -/
+def doStepCall (T : Times) (dt d : ℕ+) (k kt : Tick) : ℚ × ℚ :=
+  (point T (tickTime dt (tFirst d k)) (stepDt d dt) ((kt - tFirst d k) / d),
+    stepSize T (stepDt d dt))
+
+theorem tFirst_runs (d : ℕ+) (k : Tick) : runs d (tFirst d k) :=
+  (runs_iff_dvd d _).mpr (Nat.dvd_mul_right _ _)
+
+/-- P07-09 (`07-fmu-packaging.md:43`): "It calls `fmi3DoStep` with the
+`currentCommunicationPoint` of tick t by the Times rule of §7 and
+`communicationStepSize` = h." The `j`-th scheduled tick from `tFirst` is
+scheduled, lies `j` periods of `h = stepDt d dt` after `tFirst`, and gets point
+`j` and step size `h`. -/
+theorem doStep_call (T : Times) (dt d : ℕ+) (k j : ℕ) :
+    runs d (tFirst d k + j * d) ∧
+      tickTime dt (tFirst d k + j * d) = tickTime dt (tFirst d k) + j * stepDt d dt ∧
+      doStepCall T dt d k (tFirst d k + j * d) =
+        (point T (tickTime dt (tFirst d k)) (stepDt d dt) j, stepSize T (stepDt d dt)) := by
+  refine ⟨(runs_iff_dvd d _).mpr
+    (Nat.dvd_add ((runs_iff_dvd d _).mp (tFirst_runs d k)) (Nat.dvd_mul_left _ _)),
+    doStep_time dt d _ j, ?_⟩
+  simp [doStepCall, Nat.mul_div_cancel j d.pos]
+
+/-- P07-08 (`07-fmu-packaging.md:36`): "The first `currentCommunicationPoint` after
+each initialization … is that initialization's `startTime`, and each later one is
+the previous one plus the previous `communicationStepSize` in binary64, so the
+points are contiguous as FMI 3.0 requires." The runtime's calls on the scheduled
+ticks from `tFirst` start at `startTime` and are contiguous. -/
+theorem calls_contiguous (T : Times) (dt d : ℕ+) (k : Tick) :
+    (doStepCall T dt d k (tFirst d k)).1 = startTime T (tickTime dt (tFirst d k)) ∧
+      Contiguous T (fun j => (doStepCall T dt d k (tFirst d k + j * d)).1)
+        (fun j => (doStepCall T dt d k (tFirst d k + j * d)).2) := by
+  refine ⟨by simp [doStepCall, point], fun j => ?_⟩
+  simp only [(doStep_call T dt d k _).2.2]
+  rfl
 
 inductive FmiStatus
   | ok
@@ -128,8 +169,9 @@ theorem Fmu.state_causal (m : Fmu X U Y) (x0 : X) (p : ℕ → ℚ) (h : ℚ) (u
     rw [Fmu.state_causal m x0 p h u u' j (fun i hi => hu i (by omega)), hu j (by omega)]
 
 /-- P07-11 (`07-fmu-packaging.md:46`): "The outputs read in step 3 describe the FMU
-at t + h computed from inputs held over [t, t + h)." Step `j`'s output depends
-only on inputs up to step `j`. -/
+at t + h computed from inputs held over [t, t + h)." The output after step `j` is
+computed from the inputs held over steps `0 … j` only: inputs held over later
+steps do not change it. -/
 theorem out_causal (m : Fmu X U Y) (x0 : X) (p : ℕ → ℚ) (h : ℚ) (u u' : ℕ → U) (j : ℕ)
     (hu : ∀ i ≤ j, u i = u' i) : m.out x0 u p h j = m.out x0 u' p h j := by
   unfold Fmu.out

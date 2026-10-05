@@ -199,6 +199,19 @@ theorem stepDt_period (d dt : ℕ+) (k : Tick) (h : runs d k) :
     exact Nat.add_le_of_le_sub' hkj.le this
   · simp [tickTime, stepDt, add_mul]
 
+/-- The arguments `(t, dt)` of a component's `step` on tick `k`, in nanoseconds. -/
+def stepArgs (d dt : ℕ+) (k : Tick) : ℕ × ℕ := (tickTime dt k, stepDt d dt)
+
+/-- P11-09 (`11-execution.md:18`): "A scenario-declared component's `step(t, dt)`
+receives t, the tick time, and dt = k_div · Δt_base, its own period." On a tick
+where it runs, `t` is the tick time, `dt = k_div · Δt_base`, and `dt` is the time
+from this tick to the component's next scheduled tick. -/
+theorem stepArgs_spec (d dt : ℕ+) (k : Tick) (h : runs d k) :
+    (stepArgs d dt k).1 = tickTime dt k ∧ (stepArgs d dt k).2 = (d : ℕ) * dt ∧
+      IsLeast {j : Tick | k < j ∧ runs d j} (k + (d : ℕ)) ∧
+      tickTime dt (k + (d : ℕ)) = (stepArgs d dt k).1 + (stepArgs d dt k).2 :=
+  ⟨rfl, rfl, (stepDt_period d dt k h).1, (stepDt_period d dt k h).2⟩
+
 /-! ## Phase 2 dataflow -/
 
 /-- Phase 2 executor: one buffer slot per component, components in `order`. -/
@@ -461,7 +474,12 @@ def Entity.key (e : Entity) : ℕ := e.ids.min' e.ne
 
 /-- P11-24 (`11-execution.md:27`): "actors and groups are evaluated in ascending
 order of `actor_id` … A group sorts by its smallest member `actor_id`." For
-disjoint entities this order exists. -/
+disjoint entities this order exists. Disjointness comes from the spec: "IDs must be
+unique within the scenario" (`16-static-semantics.md:71`), "The names in a `bind`
+list must be distinct actors" (`10-composition.md:21`), each spawned actor "gets
+exactly one Stage 3 physics component, from either its `physics` declaration or one
+`bind` statement" (`10-composition.md:34`), and "An actor in a `bind` statement has
+no chains of its own" (`11-execution.md:27`), so no actor is in two entities. -/
 theorem entity_order_exists (es : List Entity)
     (hd : es.Pairwise (fun a b => Disjoint a.ids b.ids)) :
     ∃ l : List Entity, l.Perm es ∧ l.Pairwise (fun a b => a.key < b.key) := by
@@ -502,7 +520,12 @@ def tieOrder {n : ℕ} (c : Chain n) (a b : Fin n) : Prop :=
   c.path a b ∨ (¬ c.path a b ∧ ¬ c.path b a ∧ a < b)
 
 /-- A chain expression (`12-grammar.md:47-49`) after `fn` substitution and inlining
-of named chains. -/
+of named chains. Each named chain is inlined at its one use site, because "each
+named chain is used exactly once, in its actor's `physics` declaration or in another
+chain that leads there" (`11-execution.md:27`) and "Each named chain must be used
+exactly once, in the actor's `physics` declaration or in another chain"
+(`16-static-semantics.md:80`). The spec does not state where an inlined chain sits
+in the left-to-right call order; this model places its calls at the use site. -/
 inductive ChainExpr
   /-- One component call. -/
   | call
@@ -752,15 +775,19 @@ theorem groupOrder_precedes {κ : Type*} (cs : List κ) (bs : List ℕ) (hc : cs
     precedes_iff_of_nodup hb (List.getElem?_eq_getElem hj₁) (List.getElem?_eq_getElem hj₂),
     hceq]
 
-/-- An entity's Phase 2 block. By its type it reads only the snapshot `s` and its
-own slot, and writes only its own slot (`11:27`). -/
+/-- An entity's Phase 2 block. It writes only its own slot (`11:27`). Its read set,
+the snapshot `s` and its own slot, is a model assumption, not a theorem: the spec
+binds a frame port "only as the pipe input or an `Arbitrate` operand" and a
+`SliceBuffer` port "takes a sensor buffer (`sensors.n` or `a.sensors.n`)"
+(`16-static-semantics.md:75`), and `rate_of` reads a field "of the buffer's slice
+type" (`16-static-semantics.md:69`). The type of `f` encodes that reading. -/
 def block {E S β : Type*} [DecidableEq E] (f : E → S → β → β) (s : S) (st : E → β) (e : E) :
     E → β :=
   Function.update st e (f e s (st e))
 
 /-- P11-27 (`11-execution.md:27`): "No component reads another entity's output
-within a tick, so this order never delays data." An entity's result depends only
-on its own slot. -/
+within a tick, so this order never delays data." Under the read-set assumption of
+`block`, an entity's result depends only on its own slot. -/
 theorem block_reads_own {E S β : Type*} [DecidableEq E] (f : E → S → β → β) (s : S) (e : E)
     (st st' : E → β) (h : st e = st' e) : block f s st e e = block f s st' e e := by
   simp [block, h]
