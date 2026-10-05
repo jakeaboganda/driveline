@@ -73,7 +73,7 @@ To run the checks before every commit, link the hook: `ln -s ../../tools/pre-com
 
 The 32-bit build needs `gcc -m32` support. If it is missing, the check reports the 32-bit step as skipped.
 
-`tools/check_formal.py` checks the formal model: ledger statuses in `docs/formal/obligations.md`, that `PROVED`/`REFUTED` names are theorems in `formal/`, no `sorry`/`admit`/`native_decide`/`axiom`, that every module is imported, and `lake build` (skip it with `--no-build`).
+`tools/check_formal.py` checks the formal model: ledger statuses in `docs/formal/obligations.md`, that every module is imported, `lake build` with no `sorry` warnings, and that Lean's `#print axioms` shows each `PROVED`/`REFUTED` name exists and uses only `propext`, `Classical.choice`, and `Quot.sound`. A textual ban on `sorry`, `admit`, `native_decide`, `unsafe`, and `axiom` adds a cheap second check. `--no-build` skips the build and the axiom audit, so only the full run is a gate.
 
 ## Formal model
 

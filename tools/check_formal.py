@@ -1,9 +1,15 @@
 #!/usr/bin/env python3
-"""Checks for the formal model and its obligations ledger. Exit status 1 on any failure."""
+"""Checks for the formal model and its obligations ledger. Exit status 1 on any failure.
+
+Only the full run is a gate: --no-build skips lake build and the Lean axiom audit,
+so it checks just the ledger, the textual ban, and the imports.
+"""
+import json
 import os
 import re
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -18,11 +24,12 @@ STATUS = re.compile(
     r"|(PROVED|REFUTED): (Driveline(?:\.[A-Za-z_][A-Za-z0-9_']*)+)"
     r"|DUP: ([A-Z]+\d*-\d{2}))$"
 )
-NAMESPACE = re.compile(r"^\s*namespace\s+([A-Za-z0-9_.]+)")
-END = re.compile(r"^\s*end\s+([A-Za-z0-9_.]+)")
-BANNED = re.compile(r"\b(sorry|admit|native_decide)\b")
-AXIOM = re.compile(r"^axiom\s")
+BANNED = re.compile(r"\b(sorry\w*|admit|native_decide|debug\.skipKernelTC|unsafe)\b")
+AXIOM = re.compile(r"^\s*(@\[[^\]]*\]\s*)*((private|protected|noncomputable)\s+)*axiom\b")
 IMPORT = re.compile(r"^import\s+(Driveline(?:\.[A-Za-z0-9_]+)+)\s*$")
+AXIOMS_USED = re.compile(r"^'(.+)' depends on axioms: \[(.*)\]$")
+NO_AXIOMS = re.compile(r"^'(.+)' does not depend on any axioms$")
+ALLOWED_AXIOMS = {"propext", "Classical.choice", "Quot.sound"}
 COUNT_KEYS = ["TODO", "PROVED", "REFUTED", "CHECKED", "OUT: external", "OUT: prose", "DUP"]
 
 failures = []
@@ -74,43 +81,11 @@ def check_ledger(rows):
     return counts
 
 
-def code_lines(path):
-    text = re.sub(r"/-.*?-/", lambda m: "\n" * m.group(0).count("\n"), path.read_text(), flags=re.S)
-    return [(i, line) for i, line in enumerate(text.splitlines(), 1)
-            if not line.lstrip().startswith("--")]
-
-
-def check_name(row_id, name):
-    module, short = name.rsplit(".", 1)
-    path = FORMAL / (module.replace(".", "/") + ".lean")
-    if not path.exists():
-        fail(f"{row_id}: {name}: missing file {rel(path)}")
-        return False
-    decl = re.compile(
-        r"^\s*(?:@\[[^\]]*\]\s*)?(?:private\s+|protected\s+)?(?:theorem|lemma)\s+"
-        + re.escape(short) + r"\b"
-    )
-    scopes = []
-    for _, line in code_lines(path):
-        m = NAMESPACE.match(line)
-        if m:
-            scopes.append(m.group(1))
-            continue
-        m = END.match(line)
-        if m:
-            if scopes and scopes[-1] == m.group(1):
-                scopes.pop()
-            continue
-        if decl.match(line) and ".".join(scopes) == module:
-            return True
-    fail(f"{row_id}: {name} is not declared in {rel(path)}")
-    return False
-
-
 def check_banned():
+    """Defense in depth only; the axiom audit is the real check. Scans raw lines, comments included."""
     before = len(failures)
     for path in [LIB_ROOT, *sorted(LIB_DIR.rglob("*.lean"))]:
-        for lineno, line in code_lines(path):
+        for lineno, line in enumerate(path.read_text().splitlines(), 1):
             m = BANNED.search(line)
             if m:
                 fail(f"{rel(path)}:{lineno}: banned token {m.group(1)}")
@@ -135,19 +110,76 @@ def check_imports():
         notes.append("imports")
 
 
-def run_build():
+def lean_env():
     env = dict(os.environ)
     env["PATH"] = os.path.expanduser("~/.elan/bin") + os.pathsep + env.get("PATH", "")
+    return env
+
+
+def run_build():
     try:
-        r = subprocess.run(["lake", "build"], cwd=FORMAL, env=env, capture_output=True, text=True)
+        r = subprocess.run(["lake", "build"], cwd=FORMAL, env=lean_env(), capture_output=True, text=True)
     except FileNotFoundError as e:
         fail(f"lake build: {e}")
-        return
+        return False
+    out = r.stdout + r.stderr
     if r.returncode != 0:
-        tail = "\n".join((r.stdout + r.stderr).splitlines()[-20:])
+        tail = "\n".join(out.splitlines()[-20:])
         fail(f"lake build (exit {r.returncode}):\n{tail}")
-    else:
+        return False
+    sorries = [line for line in out.splitlines() if "declaration uses" in line]
+    for line in sorries:
+        fail(f"lake build: {line.strip()}")
+    if not sorries:
         notes.append("lake build")
+    return True
+
+
+def audit_axioms(names):
+    """Ask Lean which axioms each ledger theorem depends on."""
+    with tempfile.NamedTemporaryFile("w", suffix=".lean", delete=False) as f:
+        f.write("import Driveline\n" + "".join(f"#print axioms {n}\n" for n in names))
+    try:
+        r = subprocess.run(["lake", "env", "lean", "--json", f.name],
+                           cwd=FORMAL, env=lean_env(), capture_output=True, text=True)
+    except FileNotFoundError as e:
+        fail(f"axiom audit: {e}")
+        return
+    finally:
+        os.unlink(f.name)
+    # Line 1 is the import; name i is on line i + 2.
+    by_line = {}
+    for raw in r.stdout.splitlines():
+        try:
+            msg = json.loads(raw)
+            by_line.setdefault(msg["pos"]["line"], []).append(msg)
+        except (ValueError, KeyError, TypeError):
+            fail(f"axiom audit: unexpected output {raw!r}")
+    if r.returncode != 0 and not by_line:
+        tail = "\n".join((r.stdout + r.stderr).splitlines()[-20:])
+        fail(f"axiom audit (exit {r.returncode}):\n{tail}")
+        return
+    before = len(failures)
+    for i, name in enumerate(names):
+        msgs = by_line.pop(i + 2, [])
+        if len(msgs) != 1 or msgs[0].get("severity") != "information":
+            text = "; ".join(m.get("data", "") for m in msgs) or "no output"
+            fail(f"{name}: {text}")
+            continue
+        data = msgs[0].get("data", "").strip()
+        m = AXIOMS_USED.match(data) or NO_AXIOMS.match(data)
+        if not m or m.group(1) != name:
+            fail(f"{name}: unexpected output {data!r}")
+            continue
+        used = {a.strip() for a in m.group(2).split(",")} if m.re is AXIOMS_USED else set()
+        bad = sorted(used - ALLOWED_AXIOMS)
+        if bad:
+            fail(f"{name}: depends on disallowed axioms {', '.join(bad)}")
+    for line, msgs in sorted(by_line.items()):
+        for m in msgs:
+            fail(f"axiom audit: line {line}: {m.get('data', '')}")
+    if len(failures) == before:
+        notes.append(f"axiom audit: {len(names)} names")
 
 
 def main(argv):
@@ -159,25 +191,22 @@ def main(argv):
     counts = check_ledger(rows)
     if len(failures) == before:
         notes.append(f"ledger: {len(rows)} rows")
-    before = len(failures)
-    resolved = 0
-    for _, row_id, status in rows:
-        m = STATUS.fullmatch(status)
-        if m and m.group(3):
-            resolved += check_name(row_id, m.group(3))
-    if len(failures) == before:
-        notes.append(f"lean names: {resolved} resolved")
+    names = [m.group(3) for m in (STATUS.fullmatch(status) for _, _, status in rows)
+             if m and m.group(3)]
     check_banned()
     check_imports()
+    skipped = []
     if "--no-build" in argv:
-        skipped = "skip lake build (--no-build)"
+        skipped.append("skip lake build (--no-build)")
+        skipped.append("skip axiom audit (--no-build)")
+    elif run_build():
+        audit_axioms(names)
     else:
-        skipped = None
-        run_build()
+        skipped.append("skip axiom audit (lake build failed)")
     for n in notes:
         print("ok   ", n)
-    if skipped:
-        print(skipped)
+    for s in skipped:
+        print(s)
     for key in COUNT_KEYS:
         print(f"  {key} {counts[key]}")
     for f in failures:
