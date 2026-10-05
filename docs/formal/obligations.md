@@ -210,7 +210,7 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | P02-02 | 02:15 | 't - 0.18s is -130,000,000 ns' at t=0.05s | INT | Driveline.Units | (50_000_000 : Int) - 180_000_000 = -130_000_000 (by decide/omega) | PROVED: Driveline.Units.t_minus_018 |
 | P02-03 | 02:15 | 'Overflow in Time arithmetic is DL_STATUS_ERR_NUMERIC' | INT | Driveline.Units | tAdd/tSub/tMul a b = ok (exact result) if it is in [-2^63, 2^63-1], else error ERR_NUMERIC | PROVED: Driveline.Units.time_overflow_numeric |
 | P03-09 | 03:31 | 'holds when abs(a-b) <= 1e-6 * max(abs a, abs b, 1)' | REAL | Driveline.Units | over ℝ: approxEq reflexive, symmetric, implied by equality, not transitive (0, 1e-6, 2e-6). NaN/inf unreachable: tier values are constant expressions (16:100) and a non-finite one is a compile-time error (16:44) | PROVED: Driveline.Units.approxEq_refl_symm_not_trans |
-| P11-07 | 11:16 | "Stage 3 … k_div = 1. A rate clause on a Stage 3 component is a compile-time error" | MODEL | Driveline.Types | `stage3 c → div c = 1`; matches 16:91 ("output is KinematicState") only if stage 3 ⇔ KinematicState output (15:42) | TODO |
+| P11-07 | 11:16 | "Stage 3 … k_div = 1. A rate clause on a Stage 3 component is a compile-time error" | MODEL | Driveline.Types | stage 3 ⇔ output KinematicState (00:41); a valid stage-3 declaration has k_div = 1 and runs every tick, and one with a rate clause is invalid | PROVED: Driveline.Types.stage3_runs_every_tick |
 | P15-01 | 15:16-22 | signature source table | MODEL | Driveline.Manifest | `sigSource : Kind → Source` is total | TODO |
 | P15-02 | 15:24 | "signature from its declaration is OneToOne, reads no Tier 3 deck" | MODEL | Driveline.Manifest | `declSig → card = OneToOne ∧ decks = []` | TODO |
 | P15-03 | 15:24 | "Every input port of a Mode B declaration must be a SliceBuffer" | DECIDE | Driveline.Types | `modeB → ∀ p, isSliceBuffer p.ty` | TODO |
@@ -226,19 +226,19 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | P15-13 | 15:54 | "passes every parameter … in SI units, including defaults … f64 → type = 0" | MODEL | Driveline.Manifest | `encode` total over all params; tag injective (rest cut off by the tool) | TODO |
 | P16-01 | 16:16 | "dimension over meters, kilograms, and seconds … rad/s and Hz same dimension" | INT | Driveline.Units | Dim := ℤ×ℤ×ℤ additive group; mul = +, div = -; rad/s and Hz same dimension | PROVED: Driveline.Units.dim_mul_div_rad_s_Hz |
 | P16-02 | 16:17 | Force N, Torque N·m, Pressure Pa, AngularVelocity 1/s | DECIDE | Driveline.Units | NamedQty.dim agrees with the unit text: N=(1,1,-2), N*m=(2,1,-2), Pa=(-1,1,-2); AngularVelocity = Frequency = Hz | PROVED: Driveline.Units.named_dims |
-| P16-03 | 16:18 | "Time: signed 64-bit count of nanoseconds … dimension s" | INT | Driveline.Types | `Time := Int64`; `dim Time = (0,0,1)` | TODO |
-| P16-04 | 16:20 | "SliceBuffer<S,N> … 1 ≤ N ≤ 64 … TargetTrack is not" | DECIDE | Driveline.Types | `wfType` decidable | TODO |
-| P16-05 | 16:27 | "T, Lon<T>, Lat<T> converts to Override<T> … Chain<A,B> converts to Chain<A,B'>" | MODEL | Driveline.Types | `conv` is a preorder; chain conversion is covariant in B | TODO |
-| P16-06 | 16:33 | "Time literal … outside [-2^63, 2^63-1] ns is a compile-time error" | INT | Driveline.Types | exact ℚ→ℤ conversion, range test | TODO |
-| P16-07 | 16:36 | "IntLit … above 2^63-1 is a compile-time error" | INT | Driveline.Types | `lit ≤ 2^63-1` | TODO |
-| P16-08 | 16:43 | "A Time and a quantity of dimension s is a compile-time error" | DECIDE | Driveline.Types | `¬ typeOf (Time + Qty s)` | TODO |
-| P16-09 | 16:43 | "Time*Int, Int*Time, Time/Int are Time" | DECIDE | Driveline.Types | typing rules | TODO |
-| P16-10 | 16:44 | "/ on Int or Time truncates toward zero … zero divisor or overflow → ERR_NUMERIC" | INT | Driveline.Types | `Int.tdiv`; overflow iff result ∉ Int64 range (incl. `minInt / -1`) | TODO |
-| P16-11 | 16:45 | "When a Time meets a quantity of dimension s, the Time converts to seconds" | MODEL | Driveline.Types | comparisons allow Time vs s; arithmetic does not (P16-08) | TODO |
-| P16-12 | 16:47 | "== and != also accept Int, Bool, String, and enum" | DECIDE | Driveline.Types | typing rules | TODO |
-| P16-14 | 16:91 | "required_tier must be 0, 1, or 2 … library component has no rate clause" | DECIDE | Driveline.Types | as in P15-07 | TODO |
-| P16-15 | 16:99 | "exactly one map … timestep a Time above zero … seed from 0 to 2^63-1" | DECIDE | Driveline.Types | world-statement multiplicities | TODO |
-| P16-16 | 16:102-103 | vehicle_spec / object_spec key rules | DECIDE | Driveline.Types | `tier2 → tier1`, `tier3 → tier1`; object dims > 0 | TODO |
+| P16-03 | 16:18 | "Time: signed 64-bit count of nanoseconds … dimension s" | INT | Driveline.Types | `Time := Int64`; `dim Time = (0,0,1)` | PROVED: Driveline.Types.time_type |
+| P16-04 | 16:20 | "SliceBuffer<S,N> … 1 ≤ N ≤ 64 … TargetTrack is not" | DECIDE | Driveline.Types | `wfType` decidable | PROVED: Driveline.Types.sliceBuf_wf |
+| P16-05 | 16:27 | "T, Lon<T>, Lat<T> converts to Override<T> … Chain<A,B> converts to Chain<A,B'>" | MODEL | Driveline.Types | exactly the 16:26-27 rules: T→Lon/Lat<T> iff T ≠ ActuatorControlFrame; T, Lon<T>, Lat<T> → Override<T>; `Conv (Chain a b) c ↔ ∃ b', c = Chain a b' ∧ Conv b b' ∧ ¬partial b'`; no Override<T>→T or partial→T conversion. (The spec claims no preorder or covariance.) | PROVED: Driveline.Types.conv_rules |
+| P16-06 | 16:33 | "Time literal … outside [-2^63, 2^63-1] ns is a compile-time error" | INT | Driveline.Types | exact ℚ→ℤ conversion, range test | PROVED: Driveline.Types.timeLitNs_spec |
+| P16-07 | 16:36 | "IntLit … above 2^63-1 is a compile-time error" | INT | Driveline.Types | `lit ≤ 2^63-1` | PROVED: Driveline.Types.intLit_ok_iff |
+| P16-08 | 16:43 | "A Time and a quantity of dimension s is a compile-time error" | DECIDE | Driveline.Types | `¬ typeOf (Time + Qty s)` | PROVED: Driveline.Types.time_plus_s |
+| P16-09 | 16:43 | "Time*Int, Int*Time, Time/Int are Time" | DECIDE | Driveline.Types | typing rules | PROVED: Driveline.Types.time_mul_div |
+| P16-10 | 16:44 | "/ on Int or Time truncates toward zero … zero divisor or overflow → ERR_NUMERIC" | INT | Driveline.Types | `Int.tdiv`; overflow iff result ∉ Int64 range (incl. `minInt / -1`) | PROVED: Driveline.Types.tDiv_spec |
+| P16-11 | 16:45 | "When a Time meets a quantity of dimension s, the Time converts to seconds" | MODEL | Driveline.Types | comparisons allow Time vs s; arithmetic does not (P16-08) | PROVED: Driveline.Types.cmp_time_s |
+| P16-12 | 16:47 | "== and != also accept Int, Bool, String, and enum" | DECIDE | Driveline.Types | typing rules | PROVED: Driveline.Types.eq_same_type |
+| P16-14 | 16:91 | "required_tier must be 0, 1, or 2 … library component has no rate clause" | DECIDE | Driveline.Types | as in P15-07 | PROVED: Driveline.Types.decl_tier_lib_rate |
+| P16-15 | 16:99 | "exactly one map … timestep a Time above zero … seed from 0 to 2^63-1" | DECIDE | Driveline.Types | world-statement multiplicities | PROVED: Driveline.Types.world_rules |
+| P16-16 | 16:102-103 | vehicle_spec / object_spec key rules | DECIDE | Driveline.Types | `tier2 → tier1`, `tier3 → tier1`; object dims > 0 | PROVED: Driveline.Types.spec_rules |
 | PH-01 | H:12 | 'DL_ABI_VERSION_0_20 0x00001400U' | DECIDE | Driveline.Units | 0x1400 = 0*2^16 + 20*2^8 | PROVED: Driveline.Units.abi_word |
 | PH-02 | H:14-23 | status enum | DECIDE | Driveline.Units | Diagnostics.Code.toInt injective; OK is the only 0; warnings > 0; errors < 0 | PROVED: Driveline.Units.status_codes |
 
