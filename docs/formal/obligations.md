@@ -211,19 +211,19 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | P02-03 | 02:15 | 'Overflow in Time arithmetic is DL_STATUS_ERR_NUMERIC' | INT | Driveline.Units | tAdd/tSub/tMul a b = ok (exact result) if it is in [-2^63, 2^63-1], else error ERR_NUMERIC | PROVED: Driveline.Units.time_overflow_numeric |
 | P03-09 | 03:31 | 'holds when abs(a-b) <= 1e-6 * max(abs a, abs b, 1)' | REAL | Driveline.Units | over ℝ: approxEq reflexive, symmetric, implied by equality, not transitive (0, 1e-6, 2e-6). NaN/inf unreachable: tier values are constant expressions (16:100) and a non-finite one is a compile-time error (16:44) | PROVED: Driveline.Units.approxEq_refl_symm_not_trans |
 | P11-07 | 11:16 | "Stage 3 … k_div = 1. A rate clause on a Stage 3 component is a compile-time error" | MODEL | Driveline.Types | stage 3 ⇔ output KinematicState (00:41); a valid stage-3 declaration has k_div = 1 and runs every tick, and one with a rate clause is invalid | PROVED: Driveline.Types.stage3_runs_every_tick |
-| P15-01 | 15:16-22 | signature source table | MODEL | Driveline.Manifest | `sigSource : Kind → Source` is total | TODO |
-| P15-02 | 15:24 | "signature from its declaration is OneToOne, reads no Tier 3 deck" | MODEL | Driveline.Manifest | `declSig → card = OneToOne ∧ decks = []` | TODO |
-| P15-03 | 15:24 | "Every input port of a Mode B declaration must be a SliceBuffer" | DECIDE | Driveline.Types | `modeB → ∀ p, isSliceBuffer p.ty` | TODO |
-| P15-04 | 15:26 | "declared ports, output type, required_tier must equal the manifest's" | DECIDE | Driveline.Manifest | equality check is decidable | TODO |
-| P15-05 | 15:40 | "abi_version must equal the runtime's" | DECIDE | Driveline.Manifest | string equality | TODO |
-| P15-06 | 15:42 | "stage 1, 2, 3 … must agree with output" | DECIDE | Driveline.Manifest | `stageOf output = stage` | TODO |
-| P15-07 | 15:44 | "required_tier 0, 1, or 2" | DECIDE | Driveline.Manifest | `tier ∈ {0,1,2}` | TODO |
-| P15-08 | 15:45 | "entity … only in a Stage 3 manifest … object requires required_tier 0" | DECIDE | Driveline.Manifest | `entity? ≠ none → stage=3`; `entity=object → tier=0` | TODO |
-| P15-09 | 15:48 | "unit '1' for i64, Bool, enum, 's' for Time" | DECIDE | Driveline.Manifest | `unitOk ty u` decidable | TODO |
-| P15-10 | 15:48 | "null default makes the parameter mandatory" | MODEL | Driveline.Manifest | `mandatory p ↔ p.default = none` | TODO |
-| P15-11 | 15:49 | "An entry must include the field's baseline modes" | DECIDE | Driveline.Manifest | `baseline f ⊆ modes f`; a missing entry means all modes | TODO |
-| P15-12 | 15:54 | "unknown name, missing mandatory, unit whose dimension differs" | DECIDE | Driveline.Manifest | call-site check over a finite map | TODO |
-| P15-13 | 15:54 | "passes every parameter … in SI units, including defaults … f64 → type = 0" | MODEL | Driveline.Manifest | `encode` total over all params; tag injective (rest cut off by the tool) | TODO |
+| P15-01 | 15:16-22 | signature source table | MODEL | Driveline.Manifest | `sigSource : Kind → Source` is total | PROVED: Driveline.Manifest.sigSource_table |
+| P15-02 | 15:24 | "signature from its declaration is OneToOne, reads no Tier 3 deck" | MODEL | Driveline.Manifest | `declSig → card = OneToOne ∧ decks = []` | PROVED: Driveline.Manifest.declSig_oneToOne_no_deck |
+| P15-03 | 15:24 | "Every input port of a Mode B declaration must be a SliceBuffer" | DECIDE | Driveline.Manifest | `modeB → ∀ p, isSliceBuffer p.ty` | PROVED: Driveline.Manifest.modeB_inputs_slice |
+| P15-04 | 15:26 | "declared ports, output type, required_tier must equal the manifest's" | DECIDE | Driveline.Manifest | equality check is decidable | PROVED: Driveline.Manifest.modeA_match_decidable |
+| P15-05 | 15:40 | "abi_version must equal the runtime's" | DECIDE | Driveline.Manifest | string equality | PROVED: Driveline.Manifest.abi_version_eq |
+| P15-06 | 15:42 | "stage 1, 2, 3 … must agree with output" | DECIDE | Driveline.Manifest | `stageOf output = stage` | PROVED: Driveline.Manifest.stage_agrees_output |
+| P15-07 | 15:44 | "required_tier 0, 1, or 2" | DECIDE | Driveline.Manifest | `tier ∈ {0,1,2}` | PROVED: Driveline.Manifest.manifest_tier |
+| P15-08 | 15:45 | "entity … only in a Stage 3 manifest … object requires required_tier 0" | DECIDE | Driveline.Manifest | `entity? ≠ none → stage=3`; `entity=object → tier=0` | PROVED: Driveline.Manifest.entity_rules |
+| P15-09 | 15:48 | "unit '1' for i64, Bool, enum, 's' for Time" | DECIDE | Driveline.Manifest | `unitOk ty u` decidable | PROVED: Driveline.Manifest.unit_rules |
+| P15-10 | 15:48 | "null default makes the parameter mandatory" | MODEL | Driveline.Manifest | `mandatory p ↔ p.default = none` | PROVED: Driveline.Manifest.mandatory_iff_null |
+| P15-11 | 15:49 | "An entry must include the field's baseline modes" | DECIDE | Driveline.Manifest | `baseline f ⊆ modes f`; a missing entry means all modes | PROVED: Driveline.Manifest.baseline_modes_required |
+| P15-12 | 15:54 | "unknown name, missing mandatory, unit whose dimension differs" | DECIDE | Driveline.Manifest | call-site check over a finite map | PROVED: Driveline.Manifest.call_site_errors |
+| P15-13 | 15:54 | "passes every parameter … in SI units, including defaults … f64 → type = 0" | MODEL | Driveline.Manifest | `encode` total over all params; tag 0 iff f64; round trip given the declared type; names ≤ 55 bytes (09:21) | PROVED: Driveline.Manifest.params_round_trip |
 | P16-01 | 16:16 | "dimension over meters, kilograms, and seconds … rad/s and Hz same dimension" | INT | Driveline.Units | Dim := ℤ×ℤ×ℤ additive group; mul = +, div = -; rad/s and Hz same dimension | PROVED: Driveline.Units.dim_mul_div_rad_s_Hz |
 | P16-02 | 16:17 | Force N, Torque N·m, Pressure Pa, AngularVelocity 1/s | DECIDE | Driveline.Units | NamedQty.dim agrees with the unit text: N=(1,1,-2), N*m=(2,1,-2), Pa=(-1,1,-2); AngularVelocity = Frequency = Hz | PROVED: Driveline.Units.named_dims |
 | P16-03 | 16:18 | "Time: signed 64-bit count of nanoseconds … dimension s" | INT | Driveline.Types | `Time := Int64`; `dim Time = (0,0,1)` | PROVED: Driveline.Types.time_type |
