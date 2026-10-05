@@ -246,23 +246,29 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 
 | ID | Spec | Quote | Class | Lean module | Statement | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| P07-01 | 07:15 | 'exactly its struct's size, or 16 + count · entry_size bytes' | INT | Driveline.Abi | payload length formula | TODO |
-| P07-04 | 07:19 | 'newest first. Each entry is a uint64_t t_ns followed by the slice struct' | INT | Driveline.Abi | entry_size = 8 + sizeof(slice) (header is EXTERNAL) | TODO |
-| P07-05 | 07:21 | 'a port named output, own_state, or dl_init_context is a compile-time error' | DECIDE | Driveline.Abi | name check | TODO |
-| P07-06 | 07:25 | 'IntentFrame is intent-frame' | DECIDE | Driveline.Abi | kebab examples by `decide`; injective on CamelCase identifiers | TODO |
-| P07-07 | 07:35 | 'conversion ... factor 1 and offset 0' | DECIDE | Driveline.Abi | unit check | TODO |
-| P09-02 | 09:20 | '(major << 16) pipe (minor << 8)' | INT | Driveline.Abi | major<2^16, minor<2^8 ⇒ fits UInt32, injective, low byte 0 | TODO |
-| P09-03 | 09:20 | 'Before version 1.0 ... only if their versions are equal' | DECIDE | Driveline.Abi | compat = eq | TODO |
-| P09-05 | 09:21 | 'bytes after the null ... are zero ... byte comparisons ... deterministic' | DECIDE | Driveline.Abi | zeroed tail ⇒ (bytes equal ↔ strings equal) | TODO |
-| P09-06 | 09:23 | 'actor_count entries, output_stride bytes apart' | INT | Driveline.Abi | entries don't overlap ⇔ stride ≥ sizeof(T) (unstated) | TODO |
-| P09-07 | 09:24 | 'timestamp_ns is the tick time t ... KinematicState ... t + Δt_base ... also t + dt_step_ns' | INT | Driveline.Abi | k_div=1 (§11, EXTERNAL) ⇒ dt_step = Δt_base | TODO |
-| P09-08 | 09:25 | 'dt_step_ns is k_div · Δt_base_ns' | INT | Driveline.Abi | definition | TODO |
-| P09-09 | 09:26 | 'own_states[i] ... at tick time t' | INT | Driveline.Abi | previous physics stamp (t−Δt)+Δt = t, agrees with P09-07 | TODO |
-| P09-10 | 09:31 | 'each s of a road lies in exactly one lane section' | REAL | Driveline.Abi | sorted starts from 0 ⇒ half-open intervals plus closed last one partition [0, len] | TODO |
-| P09-11 | 09:33 | 'world_to_frenet succeeds for every finite (X, Y)' | DECIDE | Driveline.Abi | lexicographic tie-break is a linear order; totality needs a nonempty map | TODO |
-| P09-12 | 09:35 | 'curvature is κ/(1 − κ d) ... negated when sampling toward decreasing s' | REAL | Driveline.Abi | same lemma as P06-01; d_offset sign flip keeps the side | TODO |
-| P09-13 | 09:36 | 'writes at most max_successors ... out_num_successors to the total' | INT | Driveline.Abi | written = min(max, total) | TODO |
-| P02-12 | 02:22 | 'lane 0 in a callback argument is DL_STATUS_ERR_INVALID_ARG' | DECIDE | Driveline.Tracks | validLane l <-> l != 0; callback l=0 returns -1 | TODO |
+| P07-01 | 07:15 | 'exactly its struct's size, or 16 + count · entry_size bytes' | INT | Driveline.Abi | payload length formula | PROVED: Driveline.Abi.buffer_length |
+| P07-04 | 07:19 | 'newest first. Each entry is a uint64_t t_ns followed by the slice struct' | INT | Driveline.Abi | entry_size = 8 + sizeof(slice) (header is EXTERNAL) | PROVED: Driveline.Abi.slice_payload_layout |
+| P07-05 | 07:21 | 'a port named output, own_state, or dl_init_context is a compile-time error' | DECIDE | Driveline.Abi | name check | PROVED: Driveline.Abi.reserved_rejected |
+| P07-06 | 07:25 | 'IntentFrame is intent-frame' | DECIDE | Driveline.Abi | kebab examples by `decide`; injective on CamelCase identifiers | PROVED: Driveline.Abi.mime_subtype_rule |
+| P07-07 | 07:35 | 'conversion ... factor 1 and offset 0' | DECIDE | Driveline.Abi | unit check | PROVED: Driveline.Abi.unitOk_toBase |
+| P09-02 | 09:20 | '(major << 16) pipe (minor << 8)' | INT | Driveline.Abi | major<2^16, minor<2^8 ⇒ fits UInt32, injective, low byte 0 | REFUTED: Driveline.Abi.refute_encode_injective |
+| P09-03 | 09:20 | 'Before version 1.0 ... only if their versions are equal' | DECIDE | Driveline.Abi | compat = eq | REFUTED: Driveline.Abi.refute_compatible |
+| P09-05 | 09:21 | 'bytes after the null ... are zero ... byte comparisons ... deterministic' | DECIDE | Driveline.Abi | zeroed tail ⇒ (bytes equal ↔ strings equal) | PROVED: Driveline.Abi.wf_eq_iff |
+| P09-06 | 09:23 | 'actor_count entries, output_stride bytes apart' | INT | Driveline.Abi | entries don't overlap ⇔ stride ≥ sizeof(T) (unstated) | REFUTED: Driveline.Abi.refute_outputs_disjoint |
+| P09-07 | 09:24 | 'timestamp_ns is the tick time t ... KinematicState ... t + Δt_base ... also t + dt_step_ns' | INT | Driveline.Abi | k_div=1 (§11, EXTERNAL) ⇒ dt_step = Δt_base | PROVED: Driveline.Abi.physics_stamp |
+| P09-08 | 09:25 | 'dt_step_ns is k_div · Δt_base_ns' | INT | Driveline.Abi | definition | PROVED: Driveline.Abi.stepDt_eq |
+| P09-09 | 09:26 | 'own_states[i] ... at tick time t' | INT | Driveline.Abi | previous physics stamp (t−Δt)+Δt = t, agrees with P09-07 | PROVED: Driveline.Abi.own_state_stamp |
+| P09-10 | 09:31 | 'each s of a road lies in exactly one lane section' | REAL | Driveline.Abi | sorted starts from 0 ⇒ half-open intervals plus closed last one partition [0, len] | PROVED: Driveline.Abi.lane_section_partition |
+| P09-11 | 09:33 | 'world_to_frenet succeeds for every finite (X, Y)' | DECIDE | Driveline.Abi | lexicographic tie-break is a linear order; totality needs a nonempty map | PROVED: Driveline.Abi.choice_unique |
+| P09-12 | 09:35 | 'curvature is κ/(1 − κ d) ... negated when sampling toward decreasing s' | REAL | Driveline.Abi | same lemma as P06-01; d_offset sign flip keeps the side | PROVED: Driveline.Abi.offsetCurv_reverse |
+| P09-13 | 09:36 | 'writes at most max_successors ... out_num_successors to the total' | INT | Driveline.Abi | written = min(max, total) | PROVED: Driveline.Abi.topo_written_length |
+| P02-12 | 02:22 | 'lane 0 in a callback argument is DL_STATUS_ERR_INVALID_ARG' | DECIDE | Driveline.Abi | validLane l <-> l != 0; callback l=0 returns -1 | PROVED: Driveline.Abi.lane_zero_invalid |
+| P09-15 | 09:21 | 'A road ID longer than 63 bytes ... a component parameter name longer than 55 bytes ... is a compile-time error' | DECIDE | Driveline.Abi | fits char[64] ↔ len ≤ 63; fits char[56] ↔ len ≤ 55 | PROVED: Driveline.Abi.name_limits |
+| P09-16 | 09:33 | 'road_id compared by bytes' | INT | Driveline.Abi | zero-padded char[64] byte order = content order, proper prefix first | PROVED: Driveline.Abi.pad_lt_iff |
+| P09-17 | 09:24 | 'The component's values for these two fields are ignored' | INT | Driveline.Abi | finalize depends only on the frame body | PROVED: Driveline.Abi.finalize_ignores |
+| P09-18 | H:162-163 | 'entries + ((head + capacity - k) % capacity) * entry_size' | INT | Driveline.Abi | every valid entry lies inside capacity · entry_size bytes | PROVED: Driveline.Abi.entry_in_bounds |
+| P09-19 | H:163 | '((head + capacity - k) % capacity)' in uint32_t | INT | Driveline.Abi | uint32 slot is exact for capacity ≤ 64 (04:19); wraps for capacity > 2^31 (refute_slot32) | PROVED: Driveline.Abi.slot32_eq |
+| P09-20 | 07:17 | 'Every fmi3Binary value uses little-endian byte order' | INT | Driveline.Abi | le32 round trip | PROVED: Driveline.Abi.de32_le32 |
 
 ### WP08 Splice, init contexts, tier change, discrete parts (§6.2, §10.4)
 

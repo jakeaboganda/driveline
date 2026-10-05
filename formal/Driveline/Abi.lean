@@ -725,4 +725,24 @@ theorem unitOk_rad {u : FmiUnit} {dim : BaseUnit → ℤ} (h : unitOk u dim) (k 
     unitOk { u with exps := Function.update u.exps .rad k } dim :=
   ⟨h.1, h.2.1, fun b hb => by simp [Function.update_of_ne hb, h.2.2 b hb]⟩
 
+/-! ## Ledger bundles -/
+
+/-- P07-04: "count entries, newest first. Each entry is a `uint64_t t_ns` followed by the
+slice struct" (07-fmu-packaging.md:19): `entry_length` and `payload_newest_first`. -/
+theorem slice_payload_layout :
+    (∀ (tNs : ℕ) (slice : Bytes), (serializeEntry tNs slice).length = 8 + slice.length) ∧
+    ∀ (h : SliceHeader) (head : ℕ) (ring : ℕ → Bytes) (k : ℕ), k < h.count →
+      (payloadEntries h head ring)[k]? = some (ring (slot head h.capacity k)) :=
+  ⟨entry_length, fun h head ring _ hk => payload_newest_first h head ring hk⟩
+
+/-- P07-06: "`IntentFrame` is `intent-frame`" (07-fmu-packaging.md:25): the spec's
+examples hold and the rule is injective on ASCII CamelCase type names
+(`kebab_examples`, `kebab_injective`). -/
+theorem mime_subtype_rule :
+    (kebab "IntentFrame".toList = "intent-frame".toList ∧
+      kebab "KinematicControlFrame".toList = "kinematic-control-frame".toList ∧
+      kebab "RadarSlice".toList = "radar-slice".toList) ∧
+    ∀ {a b : List Char}, CamelCase a → CamelCase b → kebab a = kebab b → a = b :=
+  ⟨kebab_examples, kebab_injective⟩
+
 end Driveline.Abi
