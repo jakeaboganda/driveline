@@ -46,26 +46,26 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | P05-05 | 05:32 | 'numbered from 1 in the order shown' | DECIDE | Driveline.Frames | index lemma for each enum | TODO |
 | P05-06 | 05:32 | baseline modes list; 'every mode of gear_mode' | DECIDE | Driveline.Frames | isBaseline; Pass 1 step 5 frames use only baseline modes (needs a §6 model) | TODO |
 | P05-07 | 05:32 | 'SPATIOTEMPORAL_TRAJECTORY couples the two motion groups' | DECIDE | Driveline.Frames | under STT, uses f fld = false for every non-trajectory LON/LAT field | TODO |
-| P05-08 | 05:34 | 'A Lon<T> frame states the LON group and has every other group NONE' | DECIDE | Driveline.Validity | validLon f <-> lon != NONE and lon != STT and all other groups NONE | TODO |
-| P05-09 | 05:34 | 'A Lat<T> frame states LAT, and for IntentFrame also SIGNAL' | DECIDE | Driveline.Validity | same shape as validLon | TODO |
-| P05-10 | 05:34 | 'An Override<T> frame may have any group NONE. Every other frame has no NONE group.' | DECIDE | Driveline.Validity | validFull f -> validOverride f | TODO |
-| P05-11 | 05:34,40 | 'a full frame ... reaches a Lon<T> or Lat<T> port ... valid only if ... it does not use SPATIOTEMPORAL_TRAJECTORY' | DECIDE | Driveline.Validity | validFull f and not usesSTT f -> validLon (toLon f) and validLat (toLat f) | TODO |
-| P05-12 | 05:36 | 'The value +INFINITY means no bound' | DECIDE | Driveline.Validity | bound predicate accepts +inf | TODO |
-| P05-14 | 05:38 | 'sets every field that the frame's modes do not use ... to zero' | DECIDE | Driveline.Validity | zero is idempotent; valid f -> valid (zero f); zero keeps used fields | TODO |
+| P05-08 | 05:34 | 'A Lon<T> frame states the LON group and has every other group NONE' | DECIDE | Driveline.Validity | validLon f <-> lon != NONE and lon != STT and all other groups NONE | PROVED: Driveline.Validity.lon_frame_groups |
+| P05-09 | 05:34 | 'A Lat<T> frame states LAT, and for IntentFrame also SIGNAL' | DECIDE | Driveline.Validity | same shape as validLon | PROVED: Driveline.Validity.lat_frame_groups |
+| P05-10 | 05:34 | 'An Override<T> frame may have any group NONE. Every other frame has no NONE group.' | DECIDE | Driveline.Validity | validFull f -> validOverride f | PROVED: Driveline.Validity.full_is_override |
+| P05-11 | 05:34,40 | 'a full frame ... reaches a Lon<T> or Lat<T> port ... valid only if ... it does not use SPATIOTEMPORAL_TRAJECTORY' | DECIDE | Driveline.Validity | validFull f and not usesSTT f -> validLon (toLon f) and validLat (toLat f) | PROVED: Driveline.Validity.port_conversion |
+| P05-12 | 05:36 | 'The value +INFINITY means no bound' | DECIDE | Driveline.Validity | bound predicate accepts +inf | PROVED: Driveline.Validity.infinity_no_bound |
+| P05-14 | 05:38 | 'sets every field that the frame's modes do not use ... to zero' | DECIDE | Driveline.Validity | zero is idempotent; valid f -> valid (zero f); zero keeps used fields | PROVED: Driveline.Validity.zeroing |
 | P05-15 | 05:40 | 'delivers ... without further change, except ...' | MODEL | Driveline.Frames | deliver is id except for the listed transforms | TODO |
-| P05-17 | 05:66-70 | 'valid if and only if every rule below holds' | DECIDE | Driveline.Validity | validIntent (map : RoadOracle) f is Decidable given the oracle | TODO |
-| P05-18 | 05:68 | 'lon_mode is STT if and only if lat_mode is ... 1 to 64 ... strictly increase ... v_k >= 0 ... (-pi, pi]' | DECIDE | Driveline.Validity | StrictMono on Fin n of t_ns (Int64) | TODO |
-| P05-20 | 05:70 | 'gap_target_actor_id is not 0 ... not negative' | DECIDE | Driveline.Validity | not (x < 0) vs 0 <= x | TODO |
+| P05-17 | 05:66-70 | 'valid if and only if every rule below holds' | DECIDE | Driveline.Validity | validIntent (map : RoadOracle) f is Decidable given the oracle | PROVED: Driveline.Validity.intent_valid_iff |
+| P05-18 | 05:68 | 'lon_mode is STT if and only if lat_mode is ... 1 to 64 ... strictly increase ... v_k >= 0 ... (-pi, pi]' | DECIDE | Driveline.Validity | StrictMono on Fin n of t_ns (Int64) | PROVED: Driveline.Validity.stt_trajectory_rule |
+| P05-20 | 05:70 | 'gap_target_actor_id is not 0 ... not negative' | DECIDE | Driveline.Validity | not (x < 0) vs 0 <= x | PROVED: Driveline.Validity.gap_rule |
 | P05-26 | 05:80 | GAP_PROFILE fallback to VELOCITY_TARGET; g = rel_x | MODEL | Driveline.Frames | effectiveLonMode | TODO |
-| P05-27 | 05:82 | 'returns DL_STATUS_ERR_UNSUPPORTED_MODE ... NONE is never checked' | MODEL | Driveline.Validity | supported m NONE = true | TODO |
-| P05-29 | 05:98 | KCF valid: 'bounds under ACCEL and ANGLE are above zero' | DECIDE | Driveline.Validity | NaN rejected, +inf accepted | TODO |
-| P05-30 | 05:114 | ACF valid; 'manual_gear_index is from 0 to num_gears' | DECIDE | Driveline.Validity | - | TODO |
-| P05-31 | 05:119 | yaw, roll in (-pi, pi]; pitch in (-pi/2, pi/2) | DECIDE | Driveline.Validity | - | TODO |
+| P05-27 | 05:82 | 'returns DL_STATUS_ERR_UNSUPPORTED_MODE ... NONE is never checked' | MODEL | Driveline.Validity | supported m NONE = true | PROVED: Driveline.Validity.unsupported_mode_check |
+| P05-29 | 05:98 | KCF valid: 'bounds under ACCEL and ANGLE are above zero' | DECIDE | Driveline.Validity | NaN rejected, +inf accepted | PROVED: Driveline.Validity.kinematic_bounds_above_zero |
+| P05-30 | 05:114 | ACF valid; 'manual_gear_index is from 0 to num_gears' | DECIDE | Driveline.Validity | - | PROVED: Driveline.Validity.actuator_ranges |
+| P05-31 | 05:119 | yaw, roll in (-pi, pi]; pitch in (-pi/2, pi/2) | DECIDE | Driveline.Validity | - | PROVED: Driveline.Validity.kinematic_state_angles |
 | P10-06 | 10:24 | 'the two branches can never write the same field' | DECIDE | Driveline.Merge | the groups' field sets are disjoint once STT is excluded | TODO |
 | P10-07 | 10:25 | 'It states every group ... never uses SPATIOTEMPORAL_TRAJECTORY' | DECIDE | Driveline.Merge | - | TODO |
 | P10-08 | 10:25 | 'Two valid partial frames always merge into a valid full frame' | DECIDE | Driveline.Merge | forall m a b, validLon m a -> validLat m b -> validFull m (merge a b); zero (merge a b) = merge (zero a) (zero b) | TODO |
 | P10-09 | 10:25 | merged timestamp rules | MODEL | Driveline.Merge | - | TODO |
-| P10-11 | 10:27 | 'a full frame of type T is also a valid override' | DECIDE | Driveline.Validity | same as P05-10 | TODO |
+| P10-11 | 10:27 | 'a full frame of type T is also a valid override' | DECIDE | Driveline.Validity | same as P05-10 | DUP: P05-10 |
 | P10-12 | 10:27 | Arbiter coupled-motion rule | MODEL | Driveline.Arbiter | arbiterOK p s base out; theorem: valid p, valid s and valid base give valid out | TODO |
 | P10-13 | 10:27 | baseline 'v_ref = max(own.v_lon, 0)' and 'd_ref = own.frenet_d' | MODEL | Driveline.Arbiter | - | TODO |
 

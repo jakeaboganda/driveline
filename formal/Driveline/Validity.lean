@@ -49,9 +49,9 @@ theorem trajOK_congr {n : Nat} {t t' : Fin 64 → TrajPoint}
   constructor <;> rintro ⟨h1, h2, h3, h4⟩ <;>
     refine ⟨h1, h2, fun i hi => ?_, fun i j hij hj => ?_⟩
   · rw [← h i hi]; exact h3 i hi
-  · rw [← h i (Nat.lt_trans hij hj), ← h j hj]; exact h4 i j hij hj
+  · dsimp only; rw [← h i (Nat.lt_trans hij hj), ← h j hj]; exact h4 i j hij hj
   · rw [h i hi]; exact h3 i hi
-  · rw [h i (Nat.lt_trans hij hj), h j hj]; exact h4 i j hij hj
+  · dsimp only; rw [h i (Nat.lt_trans hij hj), h j hj]; exact h4 i j hij hj
 
 theorem pathOK_congr {n : Nat} {p p' : Fin 64 → Waypoint}
     (h : ∀ i : Fin 64, i.val < n → p i = p' i) : pathOK n p ↔ pathOK n p' := by
@@ -108,23 +108,25 @@ theorem valid_congr {f g : IntentFrame} (map : RoadMap) (d : Decl)
     refine and_congr Iff.rfl (imp_congr_right fun h => ?_)
     have hn : f.uses .numTrajPoints = true := uses_of_lon (by rw [h]; rfl)
     have htr : f.uses .trajectory = true := uses_of_lon (by rw [h]; rfl)
-    rw [show f.numTrajPoints = g.numTrajPoints from hu _ hn]
-    rw [show f.numTrajPoints = g.numTrajPoints from hu _ hn] at htr
-    exact trajOK_congr (hu _ htr)
+    have e : f.numTrajPoints = g.numTrajPoints := hu _ hn
+    have ht' : ∀ i : Fin 64, i.val < f.numTrajPoints → f.trajectory i = g.trajectory i :=
+      hu _ htr
+    rw [← e]
+    exact trajOK_congr ht'
   have hlane : f.laneRule map ↔ g.laneRule map := by
     unfold laneRule
     rw [← ht]
     refine imp_congr_right fun h => ?_
-    rw [show f.targetRoadId = g.targetRoadId from hu _ (uses_of_lat (by rw [h]; rfl)),
-      show f.targetLaneId = g.targetLaneId from hu _ (uses_of_lat (by rw [h]; rfl))]
+    rw [show f.targetRoadId = g.targetRoadId from hu .targetRoadId (uses_of_lat (by rw [h]; rfl)),
+      show f.targetLaneId = g.targetLaneId from hu .targetLaneId (uses_of_lat (by rw [h]; rfl))]
   have hpoly : f.polylineRule ↔ g.polylineRule := by
     unfold polylineRule
     rw [← ht]
     refine imp_congr_right fun h => ?_
     have hp : f.uses .pathPoints = true := uses_of_lat (by rw [h]; rfl)
-    have e : f.numWaypoints = g.numWaypoints := hu _ (uses_of_lat (by rw [h]; rfl))
-    have hp' := hu _ hp
-    rw [e] at hp' ⊢
+    have e : f.numWaypoints = g.numWaypoints := hu .numWaypoints (uses_of_lat (by rw [h]; rfl))
+    have hp' : ∀ i : Fin 64, i.val < f.numWaypoints → f.pathPoints i = g.pathPoints i := hu _ hp
+    rw [← e]
     exact pathOK_congr hp'
   have hgap : f.gapRule ↔ g.gapRule := by
     unfold gapRule
@@ -132,7 +134,7 @@ theorem valid_congr {f g : IntentFrame} (map : RoadMap) (d : Decl)
     refine and_congr (imp_congr_right fun h => ?_) (and_congr (imp_congr_right fun h => ?_)
       (and_congr (imp_congr_right fun h => ?_) (imp_congr_right fun h => ?_)))
     · rw [show f.gapTargetActorId = g.gapTargetActorId from
-        hu _ (uses_of_lon (by rw [h]; rfl))]
+        hu .gapTargetActorId (uses_of_lon (by rw [h]; rfl))]
     · rw [show f.vRef = g.vRef from hu _ h]
     · rw [show f.timeGapRef = g.timeGapRef from hu _ h]
     · rw [show f.distanceGapMin = g.distanceGapMin from hu _ h]
@@ -295,7 +297,7 @@ theorem full_is_override :
   refine ⟨fun _ _ ⟨_, h⟩ => ⟨Or.inl rfl, h⟩, fun _ _ => ?_, fun _ ⟨_, h⟩ => ⟨Or.inl rfl, h⟩,
     fun _ => ⟨Or.inl rfl, nofun, nofun⟩, fun _ _ ⟨_, h⟩ => ⟨Or.inl rfl, h⟩,
     fun _ _ => ⟨Or.inl rfl, nofun, nofun, nofun⟩⟩
-  exact ⟨Or.inl rfl, ⟨Iff.rfl.trans ⟨nofun, nofun⟩, nofun⟩, nofun, nofun, nofun, nofun, nofun,
+  exact ⟨Or.inl rfl, ⟨⟨nofun, nofun⟩, nofun⟩, nofun, nofun, nofun, nofun, nofun,
     nofun⟩
 
 /-- P05-11. 'A full frame that a step produces and that reaches a `Lon<T>` or
@@ -316,26 +318,30 @@ theorem port_conversion :
     constructor
     · refine (IntentFrame.zero_valid_iff _ _ _).mpr ⟨(IntentFrame.pOR_lon _).mpr
         ⟨h1, hl, rfl, rfl⟩, ⟨⟨fun h => absurd h hl, nofun⟩, fun h => absurd h hl⟩,
-        nofun, nofun, IntentFrame.gapRule_mono id (fun fld h => ?_) rfl rfl rfl rfl hgap⟩
+        nofun, nofun, IntentFrame.gapRule_mono (f := f) id (fun fld h => ?_) rfl rfl rfl rfl hgap⟩
       simp only [IntentFrame.uses, LatMode.none_uses, Bool.or_false] at h
       exact IntentFrame.uses_of_lon h
     · refine (IntentFrame.zero_valid_iff _ _ _).mpr ⟨(IntentFrame.pOR_lat _).mpr
         ⟨h2, ht, h3, rfl⟩, ⟨⟨nofun, fun h => absurd h ht⟩, nofun⟩, hlane, hpoly,
-        IntentFrame.gapRule_mono nofun (fun fld h => ?_) rfl rfl rfl rfl hgap⟩
+        IntentFrame.gapRule_mono (f := f) (by intro h; cases h) (fun fld h => ?_) rfl rfl rfl rfl
+        hgap⟩
       simp only [IntentFrame.uses, LonMode.none_uses, Bool.false_or] at h
       exact IntentFrame.uses_of_lat h
-  · obtain ⟨hp, ha, _⟩ := hv
+  · obtain ⟨hp, ha, hs⟩ := hv
     obtain ⟨h1, h2⟩ := (KinematicControlFrame.pOR_full f).mp hp
     exact ⟨(KinematicControlFrame.zero_valid_iff _ _).mpr
         ⟨(KinematicControlFrame.pOR_lon _).mpr ⟨h1, rfl⟩, ha, nofun⟩,
       (KinematicControlFrame.zero_valid_iff _ _).mpr
-        ⟨(KinematicControlFrame.pOR_lat _).mpr ⟨h2, rfl⟩, nofun, hv.2.2⟩⟩
+        ⟨(KinematicControlFrame.pOR_lat _).mpr ⟨h2, rfl⟩, nofun, hs⟩⟩
   · refine ⟨{ IntentFrame.blank ⟨0, 0⟩ with
       lon := .stt, lat := .stt, signal := .off, numTrajPoints := 1 }, ?_, fun h => ?_⟩
     · refine ⟨(IntentFrame.pOR_full _).mpr ⟨nofun, nofun, nofun⟩,
-        ⟨Iff.rfl.trans ⟨fun _ => rfl, fun _ => rfl⟩, fun _ => ⟨le_refl 1, by decide,
+        ⟨⟨fun _ => rfl, fun _ => rfl⟩, fun _ => ⟨le_refl 1, by decide,
           fun _ _ => ⟨le_refl 0, F64.zero_le_zero, F64.inIoc_zero_pi⟩,
-          fun i j hij hj => absurd (Nat.lt_of_le_of_lt (Nat.zero_le i.val) hij) (by omega)⟩⟩,
+          fun i j hij hj => by
+            change j.val < 1 at hj
+            have : i.val < j.val := hij
+            omega⟩⟩,
         nofun, nofun, nofun, nofun, nofun, nofun⟩
     · exact ((IntentFrame.pOR_lon _).mp
         ((IntentFrame.zero_valid_iff _ _ _).mp h).1).2.1 rfl
@@ -420,7 +426,7 @@ theorem stt_trajectory_rule :
         StrictMono fun i : Fin n => (t (Fin.castLE hn i)).toInt)) ∧
     (∀ (map : RoadMap) (d : Decl) (f : IntentFrame), f.valid map d →
       (f.lon = .stt ↔ f.lat = .stt)) := by
-  refine ⟨fun n hn t => ⟨⟨timesIncrease_of_adjacent hn, fun h k hk => ?_⟩, ⟨fun h a b hab => ?_,
+  refine ⟨fun n hn t => ⟨⟨timesIncrease_of_adjacent (t := fun i => (t i).toInt) hn, fun h k hk => ?_⟩, ⟨fun h a b hab => ?_,
     fun h i j hij hj => ?_⟩⟩, fun _ _ _ hv => hv.2.1.1⟩
   · exact h ⟨k, by omega⟩ ⟨k + 1, by omega⟩ (Nat.lt_succ_self k) hk
   · exact h _ _ hab (by simp)
