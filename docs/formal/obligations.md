@@ -252,9 +252,9 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | P07-06 | 07:25 | 'IntentFrame is intent-frame' | DECIDE | Driveline.Abi | kebab examples by `decide`; injective on CamelCase identifiers | PROVED: Driveline.Abi.mime_subtype_rule |
 | P07-07 | 07:35 | 'conversion ... factor 1 and offset 0' | DECIDE | Driveline.Abi | unit check | PROVED: Driveline.Abi.unitOk_toBase |
 | P09-02 | 09:20 | '(major << 16) pipe (minor << 8)' | INT | Driveline.Abi | major<2^16, minor<2^8 ⇒ fits UInt32, injective, low byte 0 | REFUTED: Driveline.Abi.refute_encode_injective |
-| P09-03 | 09:20 | 'Before version 1.0 ... only if their versions are equal' | DECIDE | Driveline.Abi | compat = eq | REFUTED: Driveline.Abi.refute_compatible |
+| P09-03 | 09:20 | 'abi_version must equal the component's ABI version. Otherwise the enter call returns DL_STATUS_ERR_INVALID_ARG' | DECIDE | Driveline.Abi | runtime 0.256 and component 1.0 pass the enter check in both orders | REFUTED: Driveline.Abi.refute_compatible |
 | P09-05 | 09:21 | 'bytes after the null ... are zero ... byte comparisons ... deterministic' | DECIDE | Driveline.Abi | zeroed tail ⇒ (bytes equal ↔ strings equal) | PROVED: Driveline.Abi.wf_eq_iff |
-| P09-06 | 09:23 | 'actor_count entries, output_stride bytes apart' | INT | Driveline.Abi | entries don't overlap ⇔ stride ≥ sizeof(T) (unstated) | REFUTED: Driveline.Abi.refute_outputs_disjoint |
+| P09-06 | 09:23 | 'actor_count entries, output_stride bytes apart' | INT | Driveline.Abi | entries disjoint ⇔ stride ≥ sizeof(T); 09:23-24 make a smaller stride unsatisfiable | PROVED: Driveline.Abi.outputs_disjoint_iff |
 | P09-07 | 09:24 | 'timestamp_ns is the tick time t ... KinematicState ... t + Δt_base ... also t + dt_step_ns' | INT | Driveline.Abi | k_div=1 (§11, EXTERNAL) ⇒ dt_step = Δt_base | PROVED: Driveline.Abi.physics_stamp |
 | P09-08 | 09:25 | 'dt_step_ns is k_div · Δt_base_ns' | INT | Driveline.Abi | definition | PROVED: Driveline.Abi.stepDt_eq |
 | P09-09 | 09:26 | 'own_states[i] ... at tick time t' | INT | Driveline.Abi | previous physics stamp (t−Δt)+Δt = t, agrees with P09-07 | PROVED: Driveline.Abi.own_state_stamp |

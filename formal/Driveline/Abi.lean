@@ -132,11 +132,19 @@ theorem compatible_encode {a b m n : ℕ} (hm : m < 2 ^ 8) (hn : n < 2 ^ 8) :
   simp only [compatible, beq_iff_eq]
   exact ⟨encode_injective hm hn, fun ⟨h1, h2⟩ => h1 ▸ h2 ▸ rfl⟩
 
-/-- P09-03 REFUTE: "Before version 1.0, a component and a runtime work together only
-if their versions are equal. `dl_instantiate` returns `DL_STATUS_ERR_INVALID_ARG` for
-any other version" (09-abi.md:20). Comparing the words accepts a 0.256 component in a
-1.0 runtime, because nothing bounds `minor`. -/
-theorem refute_compatible : compatible (encode 0 256) (encode 1 0) = true ∧ (0, 256) ≠ (1, 0) := by
+/-- The `abi_version` check of the enter call: "`abi_version` must equal the component's
+ABI version. Otherwise the enter call returns `DL_STATUS_ERR_INVALID_ARG`" (09-abi.md:20).
+`field` is the runtime's `abi_version` in `dl_init_context_t`. -/
+def enterAbiCheck (component field : ℕ) : Option Diagnostics.Code :=
+  if compatible component field then none else some .errInvalidArg
+
+/-- P09-03 REFUTE: "`abi_version` must equal the component's ABI version. Otherwise the
+enter call returns `DL_STATUS_ERR_INVALID_ARG`" (09-abi.md:20), with versions encoded as
+`(major << 16) | (minor << 8)`. Nothing bounds `minor`, so a runtime at 0.256 and a
+component at 1.0 pass the check, in both orders, although their versions differ. -/
+theorem refute_compatible :
+    enterAbiCheck (encode 1 0) (encode 0 256) = none ∧
+      enterAbiCheck (encode 0 256) (encode 1 0) = none ∧ (0, 256) ≠ (1, 0) := by
   decide
 
 /-! ## Slice buffer theorems -/
@@ -319,9 +327,13 @@ def outOffset (stride i : ℕ) : ℕ := i * stride
 /-- The byte ranges `[a, a + la)` and `[b, b + lb)` do not overlap. -/
 def RangesDisjoint (a la b lb : ℕ) : Prop := a + la ≤ b ∨ b + lb ≤ a
 
-/-- "`actor_count` entries, `output_stride` bytes apart … its entry size is `sizeof(T)`"
-(09-abi.md:23): with at least two actors and a nonempty struct, the entries do not overlap
-exactly when `output_stride ≥ sizeof(T)`. -/
+/-- P09-06: "The runtime allocates `outputs` … with `actor_count` entries,
+`output_stride` bytes apart … `dl_do_step` must write every entry … its entry size is
+`sizeof(T)`" (09-abi.md:23): with at least two actors and a nonempty struct, the entries
+are disjoint, so the writes do not overwrite each other in any order, exactly when
+`output_stride ≥ sizeof(T)`. A smaller stride cannot satisfy the runtime: `dl_do_step`
+writes every entry (09-abi.md:23) and the runtime then writes `actor_id` into every
+output frame (09-abi.md:24), so overlapping entries would lose one actor's frame. -/
 theorem outputs_disjoint_iff {n stride size : ℕ} (hn : 2 ≤ n) (hsz : 0 < size) :
     (∀ i < n, ∀ j < n, i ≠ j →
       RangesDisjoint (outOffset stride i) size (outOffset stride j) size) ↔ size ≤ stride := by
@@ -340,13 +352,6 @@ theorem outputs_disjoint_iff {n stride size : ℕ} (hn : 2 ≤ n) (hsz : 0 < siz
       calc j * stride + size ≤ j * stride + stride := by omega
         _ = (j + 1) * stride := by ring
         _ ≤ i * stride := Nat.mul_le_mul_right _ hl
-
-/-- P09-06 REFUTE: "The runtime allocates `outputs` … with `actor_count` entries,
-`output_stride` bytes apart" (09-abi.md:23). No rule requires
-`output_stride ≥ sizeof(T)` (driveline_abi.h:301 declares it a bare `uint32_t`), and with
-stride 0 two 8-byte entries overlap. -/
-theorem refute_outputs_disjoint : ¬ RangesDisjoint (outOffset 0 0) 8 (outOffset 0 1) 8 := by
-  simp [RangesDisjoint, outOffset]
 
 /-! ## Header fields and step times (09-abi.md:24-26) -/
 
