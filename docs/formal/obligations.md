@@ -258,7 +258,7 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | P09-07 | 09:24 | 'timestamp_ns is the tick time t ... KinematicState ... t + Δt_base ... also t + dt_step_ns' | INT | Driveline.Abi | k_div=1 (§11, EXTERNAL) ⇒ dt_step = Δt_base | PROVED: Driveline.Abi.physics_stamp |
 | P09-08 | 09:25 | 'dt_step_ns is k_div · Δt_base_ns' | INT | Driveline.Abi | definition | PROVED: Driveline.Abi.stepDt_eq |
 | P09-09 | 09:26 | 'own_states[i] ... at tick time t' | INT | Driveline.Abi | previous physics stamp (t−Δt)+Δt = t, agrees with P09-07 | PROVED: Driveline.Abi.own_state_stamp |
-| P09-10 | 09:31 | 'each s of a road lies in exactly one lane section' | REAL | Driveline.Abi | sorted starts from 0 ⇒ half-open intervals plus closed last one partition [0, len] | PROVED: Driveline.Abi.lane_section_partition |
+| P09-10 | 09:31 | 'each s of a road lies in exactly one lane section' | REAL | Driveline.Abi | sorted starts, the first at 0 ⇒ half-open intervals plus closed last one partition [0, len] | PROVED: Driveline.Abi.lane_section_partition |
 | P09-11 | 09:33 | 'world_to_frenet succeeds for every finite (X, Y)' | DECIDE | Driveline.Abi | a least lane exists: tie-breaks among containing lanes, else nearest centerline then tie-breaks; nonempty map from 06:72 | PROVED: Driveline.Abi.choice_exists |
 | P09-12 | 09:35 | 'curvature is κ/(1 − κ d) ... negated when sampling toward decreasing s' | REAL | Driveline.Abi | same lemma as P06-01; d_offset sign flip keeps the side | PROVED: Driveline.Abi.offsetCurv_reverse |
 | P09-13 | 09:36 | 'writes at most max_successors ... out_num_successors to the total' | INT | Driveline.Abi | written = min(max, total) | PROVED: Driveline.Abi.topo_written_length |
@@ -486,6 +486,8 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | P08-08 | 08:20 | test vector, 'about 25% short' | CHECKED | Driveline.SteadyState | rational interval check; I derived L≈2.8, l_r≈1.547; 0.01331/0.01786 ⇒ 25.5% short; δ_ss−δ_KS = α_f−α_r = 0.00455 matches | CHECKED |
 | P09-01 | 09:12 | 'Their layout is identical on 32-bit and 64-bit targets' | EXTERNAL | — | C compiler and header; needs a static_assert harness | OUT: external |
 | P09-04 | 09:21 | 'road ID longer than 63 bytes ... longer than 55 bytes' | EXTERNAL | Driveline.Abi | header char[64]/char[56] | OUT: external |
+| P09-22 | 09:31 | 'A lane section covers [s_start, s_next)' | EXTERNAL | Driveline.Abi | the first lane section starts at s = 0 (OpenDRIVE) | OUT: external |
+| P09-23 | 09:35 | 'the curvature is κ / (1 − κ d)' | PROSE | Driveline.Abi | spec gap: 09:35 defines no result when kappa*d >= 1 | OUT: prose |
 | P10-02 | 10:19 | 'results must equal those of M OneToOne instances' | EXTERNAL | — | - | OUT: external |
 | P10-04 | 10:22 | 'array literal with exactly M elements' | CHECKED | Driveline.Splice | - | CHECKED |
 | P10-05 | 10:23 | 'output validation rejects one that is not' | CHECKED | Driveline.Validity | - | CHECKED |

@@ -440,12 +440,13 @@ theorem covers_exists : ∀ (starts : List α) (len lo s : α), starts.head? = s
       simpa using h2
 
 /-- P09-10: "A lane section covers [s_start, s_next), and the last one also covers the
-road's end, so each s of a road lies in exactly one lane section" (09-abi.md:31). The
-first section starts the road (`h0`) and the sections are in order (`hs`). -/
-theorem lane_section_partition (starts : List α) (len lo s : α)
-    (h0 : starts.head? = some lo) (hs : starts.Pairwise (· ≤ ·))
-    (hs0 : lo ≤ s) (hs1 : s ≤ len) : ∃! j, covers starts len j s := by
-  obtain ⟨j, hj⟩ := covers_exists starts len lo s h0 hs hs0 hs1
+road's end, so each s of a road lies in exactly one lane section" (09-abi.md:31): every
+`s ∈ [0, len]`. The sections are in order (`hs`), and the first starts at `s = 0` (`h0`),
+an OpenDRIVE rule (ledger P09-22). -/
+theorem lane_section_partition [Zero α] (starts : List α) (len s : α)
+    (h0 : starts.head? = some 0) (hs : starts.Pairwise (· ≤ ·))
+    (hs0 : 0 ≤ s) (hs1 : s ≤ len) : ∃! j, covers starts len j s := by
+  obtain ⟨j, hj⟩ := covers_exists starts len 0 s h0 hs hs0 hs1
   have key : ∀ i i', covers starts len i s → covers starts len i' s → ¬ i < i' := by
     rintro i i' ⟨hi, -, hi2⟩ ⟨hi', hi'1, -⟩ hlt
     have hn : i + 1 < starts.length := by omega
@@ -558,7 +559,8 @@ noncomputable def offsetCurv (κ d : ℝ) : ℝ := κ / (1 - κ * d)
 
 /-- P09-12: "the curvature is κ / (1 − κ d) for centerline curvature κ and offset d, both
 relative to increasing s, negated when sampling toward decreasing s" (09-abi.md:35):
-reversing the direction negates κ and d, and the formula negates. -/
+reversing the direction negates κ and d, and the formula negates. The spec defines no
+result when `κ d ≥ 1`, where Lean's `x / 0 = 0` hides the pole (ledger P09-23). -/
 theorem offsetCurv_reverse (κ d : ℝ) : offsetCurv (-κ) (-d) = -offsetCurv κ d := by
   simp [offsetCurv, neg_div]
 
