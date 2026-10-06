@@ -116,3 +116,14 @@ The rotation is shown to be the intrinsic Z-Y'-X'' sequence and to lie in SO(3).
 Spec defect found (queued for the spec-fix pass):
 
 * **P05-35** `05-checkpoints.md:124`. "`β_cg = arctan(l_r/L · tan δ) ≠ 0` for `v_lon ≠ 0`" is false for straight-ahead steering, which a straight-lane spawn reaches (`Driveline.Kinematics.ks_betaCg_ne_zero_false`). The intended reading, "need not be 0", is proved for `tan δ ≠ 0` (P05-46).
+
+## WP10 Steady state and axle loads (§6.2, §8)
+
+Modules `SteadyState` (the `KS` and `ST` solutions, feasibility, the understeer approximation, the steady-circle accelerations) and `AxleLoad` (static axle loads, the facing test, per-wheel loads). 11 rows proved, 4 refuted, 1 duplicate; P03-40 (the solve reads Tier 1, never deck values) stays open.
+
+Spec defects found (queued for the spec-fix pass):
+
+* **P08-03, P06-23** `08-steady-state.md:16-18`, `06-lifecycle.md:84`. §8 divides by the wheelbase `L`, and §3.1 accepts `l_f + l_r` within `10⁻⁶` of `L`. The axle forces then sum to `m a_y (l_f + l_r)/L` rather than `m a_y`, and `DynamicSingleTrack` is not balanced at the first step even with the exact `δ_ss`. `tools/check.py`'s `1e-9` "derivatives vanish" check passes only because the Sedan values sum exactly in binary64; with an accepted `L` scaled by `1 + 10⁻⁶` the residuals are about `10⁻⁶`. Same root cause as P02-09.
+* **P06-23** `06-lifecycle.md:84`. "Balanced at the first step if the upstream steering command reproduces `δ_ss`, that is, if the re-trim reports no `DL_STATUS_WARN_TRIM_MISMATCH`." The trim check passes within `10⁻³` rad, where the front lateral force is off by about `C_αf · 10⁻³` (`Driveline.SteadyState.dst_not_balanced`).
+* **P06-07** `06-lifecycle.md:76`. "An uphill road moves load to the rear axle" needs `h_cg > 0`, and §3 and §16 set no range for Tier 1 values (`Driveline.AxleLoad.uphill_no_transfer`). Same root cause as P03-12: vehicle parameters have no sign or positivity rules.
+* **P06-03** `06-lifecycle.md:73`. Confirms the WP08 finding P06-04: with `ψ̇₀ = v₀ κ₀` the rear axle does not follow the lane when `v_lat ≠ 0` (`Driveline.SteadyState.rear_path_not_followed`).
