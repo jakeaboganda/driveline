@@ -388,7 +388,7 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | P17-02 | 17:24 | "Where zones overlap, the later statement wins" | DECIDE | Driveline.Sensors | mu(road,s) is the mu of the last zone in the list with s0≤s<s1, else the default (foldl lemma) | PROVED: Driveline.Sensors.mu_later_zone_wins |
 | P17-03 | 17:34 | "the zone or default value at the lane that world_to_frenet returns" | MODEL | Driveline.Sensors | μ(X,Y) := zoneField ∘ w2f, w2f a parameter; Some iff w2f hits, then the last covering zone's μ or the default | PROVED: Driveline.Sensors.world_mu_zone_spec |
 | P17-08 | 17:38 | "history must be a constant from 1 to 64" | DECIDE | Driveline.Sensors | range check | PROVED: Driveline.Sensors.history_ok_iff |
-| P17-09 | 17:48 | "bearing ... lies within ±fov/2" | REAL | Driveline.Sensors | atan2 ∈ (−π,π], so fov=2π detects every target in range | PROVED: Driveline.Sensors.full_fov_detects |
+| P17-09 | 17:48 | "bearing ... lies within ±fov/2" | REAL | Driveline.Sensors | atan2 ∈ (−π,π], so fov=2π detects every target whose relPos is in range | PROVED: Driveline.Sensors.full_fov_detects |
 | P17-10 | 17:48 | "rel_vx gains ψ̇ y and rel_vy loses ψ̇ x" | REAL | Driveline.Sensors | HasDerivAt: d/dt Rᵀ(p_T−p_S) = Rᵀ(v_T−v_S) − ψ̇ẑ×rel | PROVED: Driveline.Sensors.rel_vel_hasDerivAt |
 | P17-11 | 17:48 | "keep a constant gap on a curve therefore have zero relative velocity" | REAL | Driveline.Sensors | rel constant in the sensor frame → rel_v=0 → ttc=+∞ (from P17-10) | PROVED: Driveline.Sensors.constant_gap_zero_rel_vel |
 | P17-12 | 17:48 | "v_P = v_ra + ψ̇ ẑ × r_P" | REAL | Driveline.Sensors | rigid-body velocity lemma | PROVED: Driveline.Sensors.rigid_point_velocity |
@@ -397,9 +397,10 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | P17-15 | 17:54 | "nearest ... by range and then smaller target_actor_id" | DECIDE | Driveline.Sensors | lexicographic argmin is unique when ids are distinct and satisfies the filter | PROVED: Driveline.Sensors.primary_spec |
 | P17-16 | 17:54 | "primary_rcs is 10 dBsm ... and 0 otherwise" | DECIDE | Driveline.Sensors | definitional | PROVED: Driveline.Sensors.primary_rcs_spec |
 | P17-17 | 17:58 | "smallest positive rel_x, then the smaller target_actor_id" | DECIDE | Driveline.Sensors | lead is unique; lead_ttc = ttcLon of the lead track (rel_x, rel_vx, target L_bbox, x_front), +∞ if none | PROVED: Driveline.Sensors.lead_ttc_spec |
-| P17-18 | 17:58 | "out_left_lane_id ... if σ = +1" | DECIDE | Driveline.Sensors | the left/right swap under σ is an involution | PROVED: Driveline.Sensors.lane_side_swap |
+| P17-18 | 17:58 | "out_left_lane_id ... if σ = +1" | DECIDE | Driveline.Sensors | laneFree = 1 ↔ the σ-direction neighbor exists and no track on its (road, lane) has abs rel_x ≤ 20; the left/right swap under σ is an involution | PROVED: Driveline.Sensors.lane_free_spec |
 | P17-19 | 17:56 | "mu_mean is their mean" | REAL | Driveline.Sensors | min ≤ mean ≤ max | PROVED: Driveline.Sensors.mu_mean_bounds |
 | P17-60 | 17:56 | "fl at (L, +t/2), fr at (L, −t/2), rl at (0, +t/2), and rr at (0, −t/2)" | MODEL | Driveline.Sensors | corner μ = μ at pos + rot ψ offset; t = track_width if present, else 0.85·W_bbox | PROVED: Driveline.Sensors.surface_contact_points |
+| P17-61 | 17:48 | "rel_x, rel_y, and rel_z are the reference point in the sensor frame" | MODEL | Driveline.Sensors | relPos = (Rᵀ(ψ_E)(refPoint − sensorOrigin), z_T − (z_E + z_mount)); rotating back gives the World offset; range3 is the 3-D distance | PROVED: Driveline.Sensors.rel_pos_spec |
 | P05-43 | 05:80 | 'g is that track's rel_x' | MODEL | Driveline.Sensors | measured gap = rel_x of the track with target_actor_id = gap_target_actor_id from latest() of the first such port | PROVED: Driveline.Sensors.measured_gap_spec |
 
 ### WP13 Standard components (§17.3–17.5)

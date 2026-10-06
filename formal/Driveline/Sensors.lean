@@ -82,13 +82,27 @@ noncomputable def rotT (ψ : ℝ) (v : ℝ × ℝ) : ℝ × ℝ :=
 def crossZ (ω : ℝ) (r : ℝ × ℝ) : ℝ × ℝ := (-(ω * r.2), ω * r.1)
 
 noncomputable def range3 (p : ℝ × ℝ × ℝ) : ℝ := √(p.1 ^ 2 + p.2.1 ^ 2 + p.2.2 ^ 2)
-/-- Detection test (17:48) with `Angles.atan2`, where atan2(0, 0) = 0. -/
-def detected (rng fov : ℝ) (p : ℝ × ℝ × ℝ) : Prop := range3 p ≤ rng ∧ |atan2 p.2.1 p.1| ≤ fov / 2
+/-- Range and bearing test (17:48) on a sensor-frame point, with `Angles.atan2`, where
+atan2(0, 0) = 0. -/
+def inView (rng fov : ℝ) (p : ℝ × ℝ × ℝ) : Prop := range3 p ≤ rng ∧ |atan2 p.2.1 p.1| ≤ fov / 2
 
 noncomputable def refPoint (t : Tier0) (pos : ℝ × ℝ) (ψ : ℝ) : ℝ × ℝ :=
   pos + ((t.wheelbase + t.overhang_front - t.overhang_rear) / 2) • (cos ψ, sin ψ)
 noncomputable def sensorOrigin (t : Tier0) (m : Mount) (pos : ℝ × ℝ) (ψ : ℝ) : ℝ × ℝ :=
   pos + rot ψ ((mountPos t m).1, (mountPos t m).2.1)
+
+/-- (rel_x, rel_y, rel_z) (17:48): the target's reference point in the ego's sensor frame, with
+origin at the mount and the heading frame's axes, untilted by roll and pitch (17:40). `posT`,
+`ψT`, `zT` are the target's rear-axle `pos`, yaw and `pos_z`; `posE`, `ψE`, `zE` the ego's. -/
+noncomputable def relPos (tT tE : Tier0) (m : Mount) (posT : ℝ × ℝ) (ψT zT : ℝ) (posE : ℝ × ℝ)
+    (ψE zE : ℝ) : ℝ × ℝ × ℝ :=
+  let r := rotT ψE (refPoint tT posT ψT - sensorOrigin tE m posE ψE)
+  (r.1, r.2, zT - (zE + (mountPos tE m).2.2))
+
+/-- Detection (17:48): the target's `relPos` is within `range` and ±fov/2. -/
+def detected (rng fov : ℝ) (tT tE : Tier0) (m : Mount) (posT : ℝ × ℝ) (ψT zT : ℝ)
+    (posE : ℝ × ℝ) (ψE zE : ℝ) : Prop :=
+  inView rng fov (relPos tT tE m posT ψT zT posE ψE zE)
 
 /-- (rel_vx, rel_vy): Rᵀ(v_T − v_S) − ψ̇ ẑ × (rel_x, rel_y). -/
 noncomputable def relVel (ψ ω : ℝ) (vT vS rel : ℝ × ℝ) : ℝ × ℝ := rotT ψ (vT - vS) - crossZ ω rel
@@ -360,8 +374,12 @@ theorem history_ok_iff (N : ℤ) : historyOk N = true ↔ 1 ≤ N ∧ N ≤ 64 :
 /-- P17-09 (17-standard-library.md:48): a target is detected if within `range` and "its bearing
 atan2(y, x), with atan2(0, 0) = 0, in the sensor frame lies within ±fov/2";
 `SurroundVisualSensor`: "`fov` is 2π" (17:53). -/
-theorem full_fov_detects (rng : ℝ) (p : ℝ × ℝ × ℝ) :
-    atan2 p.2.1 p.1 ∈ Set.Ioc (-π) π ∧ atan2 0 0 = 0 ∧ (detected rng (2 * π) p ↔ range3 p ≤ rng) := by
+theorem full_fov_detects (rng : ℝ) (tT tE : Tier0) (m : Mount) (posT : ℝ × ℝ) (ψT zT : ℝ)
+    (posE : ℝ × ℝ) (ψE zE : ℝ) :
+    let p := relPos tT tE m posT ψT zT posE ψE zE
+    atan2 p.2.1 p.1 ∈ Set.Ioc (-π) π ∧ atan2 0 0 = 0 ∧
+      (detected rng (2 * π) tT tE m posT ψT zT posE ψE zE ↔ range3 p ≤ rng) := by
+  intro p
   have hm := atan2_mem p.2.1 p.1
   refine ⟨hm, atan2_zero_left le_rfl, ⟨fun h => h.1, fun h => ⟨h, ?_⟩⟩⟩
   rw [abs_le]
@@ -477,7 +495,7 @@ theorem lead_ttc_spec (road : RoadId) (lane : ℤ) (l : List Track) (len : ℕ �
       leadTtc (trackTtc len xF) (lead road lane l) = ttcLon p.rel_x p.rel_vx (len p.id) xF) :=
   lead_spec road lane l (trackTtc len xF) hid
 
-/-- P17-18 (17-standard-library.md:58): "That lane is `out_left_lane_id` of
+/-- The σ swap of 17:58 (P17-18). "That lane is `out_left_lane_id` of
 `query_lane_topology` at the actor's `(road_id, lane_id, s)` if σ = +1, and `out_right_lane_id`
 if σ = −1 ... A neighbor whose direction sign differs from σ counts as absent.
 `right_lane_free` works the same way on the other side". -/
@@ -487,6 +505,60 @@ theorem lane_side_swap (σ : Dir) (t : Topo) (road : RoadId) (l : List Track) :
   refine ⟨by cases σ <;> rfl, by cases σ <;> rfl, by cases σ <;> rfl, fun n hn => ?_⟩
   have : sideLane σ (some n) = none := by simp [sideLane, Option.filter, hn]
   simp [laneFree, this]
+
+/-- P17-18 (17-standard-library.md:58): "`left_lane_free` is 1 if the lane to the actor's left
+in its driving direction exists and has no track whose `road_id` and `lane_id` are that lane's
+and whose |`rel_x`| ≤ 20 m. That lane is `out_left_lane_id` of `query_lane_topology` at the
+actor's `(road_id, lane_id, s)` if σ = +1, and `out_right_lane_id` if σ = −1 ... A neighbor
+whose direction sign differs from σ counts as absent. `right_lane_free` works the same way on
+the other side". `left_lane_free` is `laneFree road σ (leftOut σ t) l`, `right_lane_free` is
+`laneFree road σ (rightOut σ t) l`, with `road` the actor's `road_id`. -/
+theorem lane_free_spec (σ : Dir) (t : Topo) (road : RoadId) (o : Option Neighbor)
+    (l : List Track) :
+    (laneFree road σ o l = 1 ↔ ∃ n, o = some n ∧ n.dir = σ ∧
+      ∀ x ∈ l, ¬(x.road_id = road ∧ x.lane_id = n.lane ∧ |x.rel_x| ≤ 20)) ∧
+    σ.flip.flip = σ ∧ rightOut σ t = leftOut σ.flip t ∧ leftOut σ t = rightOut σ.flip t := by
+  refine ⟨?_, (lane_side_swap σ t road l).1, (lane_side_swap σ t road l).2.1,
+    (lane_side_swap σ t road l).2.2.1⟩
+  unfold laneFree
+  cases o with
+  | none => simp [sideLane]
+  | some n =>
+    by_cases hd : n.dir = σ
+    · have : sideLane σ (some n) = some n := by simp [sideLane, Option.filter, hd]
+      simp only [this]
+      split_ifs with h
+      · simp only [false_iff, not_exists, not_and]
+        rintro n' hn' - hall
+        cases hn'
+        obtain ⟨x, hx, hx'⟩ := h
+        exact hall x hx hx'.1 hx'.2.1 hx'.2.2
+      · simp only [true_iff]
+        exact ⟨n, rfl, hd, fun x hx hx' => h ⟨x, hx, hx'⟩⟩
+    · have : sideLane σ (some n) = none := by simp [sideLane, Option.filter, hd]
+      simp [this, hd]
+
+/-- P17-61 (17-standard-library.md:48): "`rel_x`, `rel_y`, and `rel_z` are the reference point in
+the sensor frame"; the reference point is "`pos` + ½(L + o_f − o_r)(cos ψ, sin ψ, 0) with its
+Tier 0 geometry, at height `pos_z`"; the sensor frame "has the heading frame's axes and its
+origin at the mount point ... Roll and pitch never tilt it" (17:40); "within `range` of the
+sensor origin" is `range3` of it. -/
+theorem rel_pos_spec (tT tE : Tier0) (m : Mount) (posT : ℝ × ℝ) (ψT zT : ℝ) (posE : ℝ × ℝ)
+    (ψE zE : ℝ) :
+    let p := relPos tT tE m posT ψT zT posE ψE zE
+    let d := refPoint tT posT ψT - sensorOrigin tE m posE ψE
+    rot ψE (p.1, p.2.1) = d ∧ p.2.2 = zT - (zE + (mountPos tE m).2.2) ∧
+      range3 p = √(d.1 ^ 2 + d.2 ^ 2 + (zT - (zE + (mountPos tE m).2.2)) ^ 2) := by
+  intro p d
+  refine ⟨?_, rfl, ?_⟩
+  · ext
+    · simp only [p, relPos, rot, rotT]
+      linear_combination d.1 * sin_sq_add_cos_sq ψE
+    · simp only [p, relPos, rot, rotT]
+      linear_combination d.2 * sin_sq_add_cos_sq ψE
+  · simp only [range3, p, relPos, rotT]
+    congr 1
+    linear_combination (d.1 ^ 2 + d.2 ^ 2) * sin_sq_add_cos_sq ψE
 
 /-- P17-19 (17-standard-library.md:56): "`mu_fl` through `mu_rr` are μ at the four contact
 points ... `mu_mean` is their mean". -/
