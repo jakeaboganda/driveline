@@ -106,3 +106,13 @@ Spec defects found (queued for the spec-fix pass):
 * **P06-21** `06-lifecycle.md:84`. "Five fields change." At most five change; below 1 m/s, none do.
 * **P06-19, P06-22** `06-lifecycle.md:84`. `γ` is defined as 0 at `v_lon = 0`, so demoting a state with `v_lon = 0` and `v_lat ≠ 0` drops the lateral speed without keeping the path.
 * **P06-32** `06-lifecycle.md:88`. "A component whose input and output types are equal ... gets its own last output." For `Lon<T> → Lon<T>` the latched frame is the merged frame at its `+`, which matches its own output only in the stated group.
+
+## WP09 Angles and rigid-body kinematics (§2, §5.3)
+
+Module `Kinematics`, with additions to `Angles` (the ISO 8855 rotation and the body x axis), `Tracks` (lane reference strings, driving direction, road grade and bank), and `SliceBuffer` (angle interpolation). 24 rows proved, 1 refuted.
+
+The rotation is shown to be the intrinsic Z-Y'-X'' sequence and to lie in SO(3). `a_lon` and `a_lat` are proved to be the heading-frame components of the derivative of the world velocity (`HasDerivAt`), not just restated. Review added the §2 pitch relation: a vehicle facing its lane's driving direction on a road of grade `θ_road` has ISO pitch `−θ_road` (`Driveline.Angles.pitch_of_road_grade`, P02-40), and the bank sign (P02-41, which takes the OpenDRIVE superelevation as an angle in `(−π/2, π/2)`, recorded as P02-42 `OUT: external`). The odometer is proved never to decrease under any monotone rounding.
+
+Spec defect found (queued for the spec-fix pass):
+
+* **P05-35** `05-checkpoints.md:124`. "`β_cg = arctan(l_r/L · tan δ) ≠ 0` for `v_lon ≠ 0`" is false for straight-ahead steering, which a straight-lane spawn reaches (`Driveline.Kinematics.ks_betaCg_ne_zero_false`). The intended reading, "need not be 0", is proved for `tan δ ≠ 0` (P05-46).
