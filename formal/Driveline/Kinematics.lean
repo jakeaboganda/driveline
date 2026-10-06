@@ -50,11 +50,12 @@ def trajTarget {α : Type} (time : α → ℤ) (between : α → α → ℤ → 
     else trajTarget time between (q :: rest) t
 
 /-- 05-checkpoints.md:141: the sum of √(ΔX·ΔX + ΔY·ΔY) over consecutive committed
-positions, 0 at spawn. -/
-def odometer (X Y : ℕ → ℝ) : ℕ → ℝ
+positions, evaluated left to right, 0 at spawn. `rnd` is the binary64 rounding of each
+operation; only its monotonicity is used. -/
+def odometer (rnd : ℝ → ℝ) (X Y : ℕ → ℝ) : ℕ → ℝ
   | 0 => 0
-  | k + 1 => odometer X Y k +
-      √((X (k + 1) - X k) * (X (k + 1) - X k) + (Y (k + 1) - Y k) * (Y (k + 1) - Y k))
+  | k + 1 => rnd (odometer rnd X Y k +
+      rnd √((X (k + 1) - X k) * (X (k + 1) - X k) + (Y (k + 1) - Y k) * (Y (k + 1) - Y k)))
 
 /-! ## Helper lemmas -/
 
@@ -101,8 +102,11 @@ theorem trajTarget_spec {α : Type} (time : α → ℤ) (between : α → α →
     (∀ p rest t, t ≤ time p → trajTarget time between (p :: rest) t = some p) ∧
       (∀ ps pn t, ((ps ++ [pn]).map time).IsChain (· < ·) → time pn ≤ t →
         trajTarget time between (ps ++ [pn]) t = some pn) ∧
-      (∀ p t, trajTarget time between [p] t = some p) := by
-  refine ⟨fun p rest t h => ?_, fun ps pn t hc ht => ?_, fun _ _ => rfl⟩
+      (∀ p t, trajTarget time between [p] t = some p) ∧
+      (∀ l₁ p q l₂ t, ((l₁ ++ p :: q :: l₂).map time).IsChain (· < ·) → time p < t →
+        t < time q → trajTarget time between (l₁ ++ p :: q :: l₂) t = some (between p q t)) := by
+  refine ⟨fun p rest t h => ?_, fun ps pn t hc ht => ?_, fun _ _ => rfl,
+    fun l₁ p q l₂ t hc hpt htq => ?_⟩
   · cases rest with
     | nil => rfl
     | cons q rest => simp [trajTarget, h]
@@ -122,6 +126,24 @@ theorem trajTarget_spec {α : Type} (time : α → ℤ) (between : α → α →
           rcases List.mem_append.mp (show pn ∈ ps ++ [pn] by simp) with h | h
           · exact not_lt.mpr ((h2.1 pn (by simp)).le.trans ht)
           · exact not_lt.mpr ((h2.1 pn (by simp)).le.trans ht)
+        simp only [List.cons_append, trajTarget, ha, hb, ↓reduceIte]
+        exact ih hpw.2
+  · have hp : (l₁ ++ p :: q :: l₂).Pairwise (fun a b => time a < time b) :=
+      List.pairwise_map.mp (List.isChain_iff_pairwise.mp hc)
+    clear hc
+    induction l₁ with
+    | nil => simp [trajTarget, not_le.mpr hpt, htq]
+    | cons a l₁ ih =>
+      have hpw := List.pairwise_cons.mp hp
+      have ha : ¬ t ≤ time a := not_le.mpr ((hpw.1 p (by simp)).trans hpt)
+      cases l₁ with
+      | nil =>
+        simp only [List.nil_append, List.cons_append, trajTarget, ha, not_lt.mpr hpt.le,
+          ↓reduceIte]
+        exact ih hpw.2
+      | cons b l₁ =>
+        have hb : ¬ t < time b :=
+          not_lt.mpr ((List.pairwise_cons.mp hpw.2).1 p (by simp) |>.le.trans hpt.le)
         simp only [List.cons_append, trajTarget, ha, hb, ↓reduceIte]
         exact ih hpw.2
 
@@ -212,9 +234,29 @@ theorem ks_betaCg_ne_zero_false : betaCg 1.5 1 0 (ksYawRate 2.7 1 0) = 0 := by
   simp only [betaCg, ksYawRate, vyCg, tan_zero, mul_zero, add_zero, abs_one]
   exact atan2_zero_left zero_le_one
 
+/-- P05-46: “with Tier 1 populated, CG sideslip is β_cg = arctan(l_r/L tan δ) ≠ 0 for
+v_lon ≠ 0” (05-checkpoints.md:124), for l_r ≠ 0, L ≠ 0 and tan δ ≠ 0. -/
+theorem ks_betaCg_ne_zero (lr L δ vLon : ℝ) (hlr : lr ≠ 0) (hL : L ≠ 0) (hδ : tan δ ≠ 0)
+    (hv : vLon ≠ 0) : betaCg lr vLon 0 (ksYawRate L vLon δ) ≠ 0 := by
+  rw [ks_betaCg lr L δ vLon hv, ← arctan_zero]
+  exact fun h => mul_ne_zero (div_ne_zero hlr hL) hδ (arctan_injective h)
+
+/-- P05-47: “If the actor's `vehicle_spec` or `object_spec` has no Tier 1, the CG position is
+unknown and every producer reports β_cg = 0” (05-checkpoints.md:122). -/
+theorem betaReported_none (vLon vLat r : ℝ) : betaReported none vLon vLat r = 0 := rfl
+
 /-- P05-38: “the sum of the horizontal distances √(ΔX·ΔX + ΔY·ΔY) between consecutive
-committed positions … and 0 at spawn. It never decreases” (05-checkpoints.md:141). -/
-theorem odometer_monotone (X Y : ℕ → ℝ) : Monotone (odometer X Y) ∧ odometer X Y 0 = 0 :=
-  ⟨monotone_nat_of_le_succ fun k => le_add_of_nonneg_right (Real.sqrt_nonneg _), rfl⟩
+committed positions, evaluated left to right … and 0 at spawn. It never decreases”
+(05-checkpoints.md:141). `rnd` is monotone, and every accumulator value is representable:
+`rnd` leaves it unchanged. -/
+theorem odometer_monotone (rnd : ℝ → ℝ) (X Y : ℕ → ℝ) (hm : Monotone rnd)
+    (hrep : ∀ k, rnd (odometer rnd X Y k) = odometer rnd X Y k) :
+    Monotone (odometer rnd X Y) ∧ odometer rnd X Y 0 = 0 := by
+  have h0 : rnd 0 = 0 := hrep 0
+  refine ⟨monotone_nat_of_le_succ fun k => ?_, rfl⟩
+  have hinc : 0 ≤ rnd √((X (k + 1) - X k) * (X (k + 1) - X k) +
+      (Y (k + 1) - Y k) * (Y (k + 1) - Y k)) := h0 ▸ hm (Real.sqrt_nonneg _)
+  calc odometer rnd X Y k = rnd (odometer rnd X Y k) := (hrep k).symm
+    _ ≤ odometer rnd X Y (k + 1) := hm (le_add_of_nonneg_right hinc)
 
 end Driveline.Kinematics

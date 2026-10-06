@@ -775,7 +775,8 @@ theorem roadGrade_sign (m : ElevMap) (q : GradeQuery) {D : ℝ}
   · simp [hpos, hneg, habs, abs_neg]
 
 /-- P02-16: “An actor that drives against its lane, such as in reverse, still gets these
-lane-relative signs” (02-conventions.md:27). The yaw and vLon fields are free. -/
+lane-relative signs” (02-conventions.md:27). The clause holds by design: `roadGrade` does
+not read the query's `yaw` or `vLon`, so two queries that differ only in them agree. -/
 theorem roadGrade_lane_relative (m : ElevMap) (q₁ q₂ : GradeQuery)
     (hr : q₁.roadId = q₂.roadId) (hl : q₁.laneId = q₂.laneId) (hs : q₁.s = q₂.s) :
     roadGrade m q₁ = roadGrade m q₂ := by
