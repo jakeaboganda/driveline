@@ -152,6 +152,31 @@ def ActuatorControlFrame.convert (base f : ActuatorControlFrame) : ActuatorContr
   if f2.gear = .none ∨ f2.gear.isBaseline then f2 else
     { f2 with gear := base.gear, manualGearIndex := base.manualGearIndex }
 
+/-- 06:88 'A latched frame taken from a Lon<T> or Lat<T> edge that reaches no + has each NONE
+group replaced by that group of the committed baseline frame, and keeps its timestamp_ns'. -/
+def IntentFrame.fillNone (base f : IntentFrame) : IntentFrame :=
+  let f1 := if f.lon = .none then f.withLonFrom base else f
+  let f2 := if f1.lat = .none then f1.withLatFrom base else f1
+  if f2.signal = .none then { f2 with signal := base.signal } else f2
+
+/-- 06:88 the `NONE` fill of a `KinematicControlFrame`. -/
+def KinematicControlFrame.fillNone (base f : KinematicControlFrame) : KinematicControlFrame :=
+  let f1 := if f.accel = .none then
+    { f with accel := base.accel, aLonCmd := base.aLonCmd, jerkLonCmd := base.jerkLonCmd } else f
+  if f1.steer = .none then
+    { f1 with steer := base.steer, steerAngleCmd := base.steerAngleCmd,
+              steerRateCmd := base.steerRateCmd } else f1
+
+/-- 06:88 the `NONE` fill of an `ActuatorControlFrame`. -/
+def ActuatorControlFrame.fillNone (base f : ActuatorControlFrame) : ActuatorControlFrame :=
+  let f1 := if f.pedal = .none then
+    { f with pedal := base.pedal, throttle := base.throttle, brake := base.brake } else f
+  let f2 := if f1.wheel = .none then
+    { f1 with wheel := base.wheel, steeringWheelNorm := base.steeringWheelNorm,
+              steeringTorqueNm := base.steeringTorqueNm } else f1
+  if f2.gear = .none then
+    { f2 with gear := base.gear, manualGearIndex := base.manualGearIndex } else f2
+
 /-- 06:88 the latched frame of a type: the last frame that left the component, else the
 last frame that reached its input. -/
 def latched {F : Type} (lastOut lastIn : Option F) : Option F := lastOut <|> lastIn
@@ -402,6 +427,191 @@ theorem baseline_reverse_gear (c : Chassis) (t : UInt64) (δmax : ℝ) :
       (committedBaselineKcf c t).header = ⟨c.actorId.toUInt64, t⟩ ∧
       (committedBaselineAcf c t δmax).header = ⟨c.actorId.toUInt64, t⟩ :=
   ⟨fun h => if_pos h, rfl, rfl, rfl, rfl, rfl⟩
+
+-- The mode of each group after `convert` and `fillNone`, group by group.
+section groupwise
+variable (base f : Driveline.IntentFrame) (kb k : KinematicControlFrame)
+  (ab a : ActuatorControlFrame)
+
+theorem IntentFrame.convert_lon : (IntentFrame.convert base f).lon =
+    if f.lon = .none ∨ f.lon.isBaseline then f.lon else base.lon := by
+  unfold IntentFrame.convert
+  by_cases h1 : f.lon = .none <;> by_cases h2 : f.lat = .none <;>
+    by_cases h3 : f.signal = .none <;> by_cases h4 : f.lon.isBaseline <;>
+    by_cases h5 : f.lat.isBaseline <;> by_cases h6 : f.signal.isBaseline <;>
+    simp_all [IntentFrame.withLonFrom, IntentFrame.withLatFrom]
+theorem IntentFrame.convert_lat : (IntentFrame.convert base f).lat =
+    if f.lat = .none ∨ f.lat.isBaseline then f.lat else base.lat := by
+  unfold IntentFrame.convert
+  by_cases h1 : f.lon = .none <;> by_cases h2 : f.lat = .none <;>
+    by_cases h3 : f.signal = .none <;> by_cases h4 : f.lon.isBaseline <;>
+    by_cases h5 : f.lat.isBaseline <;> by_cases h6 : f.signal.isBaseline <;>
+    simp_all [IntentFrame.withLonFrom, IntentFrame.withLatFrom]
+theorem IntentFrame.convert_signal : (IntentFrame.convert base f).signal =
+    if f.signal = .none ∨ f.signal.isBaseline then f.signal else base.signal := by
+  unfold IntentFrame.convert
+  by_cases h1 : f.lon = .none <;> by_cases h2 : f.lat = .none <;>
+    by_cases h3 : f.signal = .none <;> by_cases h4 : f.lon.isBaseline <;>
+    by_cases h5 : f.lat.isBaseline <;> by_cases h6 : f.signal.isBaseline <;>
+    simp_all [IntentFrame.withLonFrom, IntentFrame.withLatFrom]
+theorem IntentFrame.convert_header : (IntentFrame.convert base f).header = f.header := by
+  unfold IntentFrame.convert
+  by_cases h1 : f.lon = .none <;> by_cases h2 : f.lat = .none <;>
+    by_cases h3 : f.signal = .none <;> by_cases h4 : f.lon.isBaseline <;>
+    by_cases h5 : f.lat.isBaseline <;> by_cases h6 : f.signal.isBaseline <;>
+    simp_all [IntentFrame.withLonFrom, IntentFrame.withLatFrom]
+theorem IntentFrame.fill_lon : (IntentFrame.fillNone base f).lon =
+    if f.lon = .none then base.lon else f.lon := by
+  unfold IntentFrame.fillNone
+  by_cases h1 : f.lon = .none <;> by_cases h2 : f.lat = .none <;>
+    by_cases h3 : f.signal = .none <;> by_cases h4 : f.lon.isBaseline <;>
+    by_cases h5 : f.lat.isBaseline <;> by_cases h6 : f.signal.isBaseline <;>
+    simp_all [IntentFrame.withLonFrom, IntentFrame.withLatFrom]
+theorem IntentFrame.fill_lat : (IntentFrame.fillNone base f).lat =
+    if f.lat = .none then base.lat else f.lat := by
+  unfold IntentFrame.fillNone
+  by_cases h1 : f.lon = .none <;> by_cases h2 : f.lat = .none <;>
+    by_cases h3 : f.signal = .none <;> by_cases h4 : f.lon.isBaseline <;>
+    by_cases h5 : f.lat.isBaseline <;> by_cases h6 : f.signal.isBaseline <;>
+    simp_all [IntentFrame.withLonFrom, IntentFrame.withLatFrom]
+theorem IntentFrame.fill_signal : (IntentFrame.fillNone base f).signal =
+    if f.signal = .none then base.signal else f.signal := by
+  unfold IntentFrame.fillNone
+  by_cases h1 : f.lon = .none <;> by_cases h2 : f.lat = .none <;>
+    by_cases h3 : f.signal = .none <;> by_cases h4 : f.lon.isBaseline <;>
+    by_cases h5 : f.lat.isBaseline <;> by_cases h6 : f.signal.isBaseline <;>
+    simp_all [IntentFrame.withLonFrom, IntentFrame.withLatFrom]
+theorem IntentFrame.fill_header : (IntentFrame.fillNone base f).header = f.header := by
+  unfold IntentFrame.fillNone
+  by_cases h1 : f.lon = .none <;> by_cases h2 : f.lat = .none <;>
+    by_cases h3 : f.signal = .none <;> by_cases h4 : f.lon.isBaseline <;>
+    by_cases h5 : f.lat.isBaseline <;> by_cases h6 : f.signal.isBaseline <;>
+    simp_all [IntentFrame.withLonFrom, IntentFrame.withLatFrom]
+
+theorem KinematicControlFrame.convert_accel : (KinematicControlFrame.convert kb k).accel =
+    if k.accel = .none ∨ k.accel.isBaseline then k.accel else kb.accel := by
+  unfold KinematicControlFrame.convert
+  by_cases h1 : k.accel = .none <;> by_cases h2 : k.steer = .none <;>
+    by_cases h4 : k.accel.isBaseline <;> by_cases h5 : k.steer.isBaseline <;> simp_all
+theorem KinematicControlFrame.convert_steer : (KinematicControlFrame.convert kb k).steer =
+    if k.steer = .none ∨ k.steer.isBaseline then k.steer else kb.steer := by
+  unfold KinematicControlFrame.convert
+  by_cases h1 : k.accel = .none <;> by_cases h2 : k.steer = .none <;>
+    by_cases h4 : k.accel.isBaseline <;> by_cases h5 : k.steer.isBaseline <;> simp_all
+theorem KinematicControlFrame.convert_header :
+    (KinematicControlFrame.convert kb k).header = k.header := by
+  unfold KinematicControlFrame.convert
+  by_cases h1 : k.accel = .none <;> by_cases h2 : k.steer = .none <;>
+    by_cases h4 : k.accel.isBaseline <;> by_cases h5 : k.steer.isBaseline <;> simp_all
+theorem KinematicControlFrame.fill_accel : (KinematicControlFrame.fillNone kb k).accel =
+    if k.accel = .none then kb.accel else k.accel := by
+  unfold KinematicControlFrame.fillNone
+  by_cases h1 : k.accel = .none <;> by_cases h2 : k.steer = .none <;>
+    by_cases h4 : k.accel.isBaseline <;> by_cases h5 : k.steer.isBaseline <;> simp_all
+theorem KinematicControlFrame.fill_steer : (KinematicControlFrame.fillNone kb k).steer =
+    if k.steer = .none then kb.steer else k.steer := by
+  unfold KinematicControlFrame.fillNone
+  by_cases h1 : k.accel = .none <;> by_cases h2 : k.steer = .none <;>
+    by_cases h4 : k.accel.isBaseline <;> by_cases h5 : k.steer.isBaseline <;> simp_all
+theorem KinematicControlFrame.fill_header :
+    (KinematicControlFrame.fillNone kb k).header = k.header := by
+  unfold KinematicControlFrame.fillNone
+  by_cases h1 : k.accel = .none <;> by_cases h2 : k.steer = .none <;>
+    by_cases h4 : k.accel.isBaseline <;> by_cases h5 : k.steer.isBaseline <;> simp_all
+
+theorem ActuatorControlFrame.convert_pedal : (ActuatorControlFrame.convert ab a).pedal =
+    if a.pedal = .none ∨ a.pedal.isBaseline then a.pedal else ab.pedal := by
+  unfold ActuatorControlFrame.convert
+  by_cases h1 : a.pedal = .none <;> by_cases h2 : a.wheel = .none <;>
+    by_cases h3 : a.gear = .none <;> by_cases h4 : a.pedal.isBaseline <;>
+    by_cases h5 : a.wheel.isBaseline <;> by_cases h6 : a.gear.isBaseline <;> simp_all
+theorem ActuatorControlFrame.convert_wheel : (ActuatorControlFrame.convert ab a).wheel =
+    if a.wheel = .none ∨ a.wheel.isBaseline then a.wheel else ab.wheel := by
+  unfold ActuatorControlFrame.convert
+  by_cases h1 : a.pedal = .none <;> by_cases h2 : a.wheel = .none <;>
+    by_cases h3 : a.gear = .none <;> by_cases h4 : a.pedal.isBaseline <;>
+    by_cases h5 : a.wheel.isBaseline <;> by_cases h6 : a.gear.isBaseline <;> simp_all
+theorem ActuatorControlFrame.convert_gear : (ActuatorControlFrame.convert ab a).gear =
+    if a.gear = .none ∨ a.gear.isBaseline then a.gear else ab.gear := by
+  unfold ActuatorControlFrame.convert
+  by_cases h1 : a.pedal = .none <;> by_cases h2 : a.wheel = .none <;>
+    by_cases h3 : a.gear = .none <;> by_cases h4 : a.pedal.isBaseline <;>
+    by_cases h5 : a.wheel.isBaseline <;> by_cases h6 : a.gear.isBaseline <;> simp_all
+theorem ActuatorControlFrame.convert_header :
+    (ActuatorControlFrame.convert ab a).header = a.header := by
+  unfold ActuatorControlFrame.convert
+  by_cases h1 : a.pedal = .none <;> by_cases h2 : a.wheel = .none <;>
+    by_cases h3 : a.gear = .none <;> by_cases h4 : a.pedal.isBaseline <;>
+    by_cases h5 : a.wheel.isBaseline <;> by_cases h6 : a.gear.isBaseline <;> simp_all
+theorem ActuatorControlFrame.fill_pedal : (ActuatorControlFrame.fillNone ab a).pedal =
+    if a.pedal = .none then ab.pedal else a.pedal := by
+  unfold ActuatorControlFrame.fillNone
+  by_cases h1 : a.pedal = .none <;> by_cases h2 : a.wheel = .none <;>
+    by_cases h3 : a.gear = .none <;> by_cases h4 : a.pedal.isBaseline <;>
+    by_cases h5 : a.wheel.isBaseline <;> by_cases h6 : a.gear.isBaseline <;> simp_all
+theorem ActuatorControlFrame.fill_wheel : (ActuatorControlFrame.fillNone ab a).wheel =
+    if a.wheel = .none then ab.wheel else a.wheel := by
+  unfold ActuatorControlFrame.fillNone
+  by_cases h1 : a.pedal = .none <;> by_cases h2 : a.wheel = .none <;>
+    by_cases h3 : a.gear = .none <;> by_cases h4 : a.pedal.isBaseline <;>
+    by_cases h5 : a.wheel.isBaseline <;> by_cases h6 : a.gear.isBaseline <;> simp_all
+theorem ActuatorControlFrame.fill_gear : (ActuatorControlFrame.fillNone ab a).gear =
+    if a.gear = .none then ab.gear else a.gear := by
+  unfold ActuatorControlFrame.fillNone
+  by_cases h1 : a.pedal = .none <;> by_cases h2 : a.wheel = .none <;>
+    by_cases h3 : a.gear = .none <;> by_cases h4 : a.pedal.isBaseline <;>
+    by_cases h5 : a.wheel.isBaseline <;> by_cases h6 : a.gear.isBaseline <;> simp_all
+theorem ActuatorControlFrame.fill_header :
+    (ActuatorControlFrame.fillNone ab a).header = a.header := by
+  unfold ActuatorControlFrame.fillNone
+  by_cases h1 : a.pedal = .none <;> by_cases h2 : a.wheel = .none <;>
+    by_cases h3 : a.gear = .none <;> by_cases h4 : a.pedal.isBaseline <;>
+    by_cases h5 : a.wheel.isBaseline <;> by_cases h6 : a.gear.isBaseline <;> simp_all
+
+end groupwise
+
+/-- P06-41. 06:88 'At t > 0, the runtime first replaces each group of a latched frame of any
+type that is not in its baseline mode, and is not NONE, with that group of the committed
+baseline frame' ... 'A latched frame taken from a Lon<T> or Lat<T> edge that reaches no + has
+each NONE group replaced by that group of the committed baseline frame, and keeps its
+timestamp_ns'. Converted and then filled, such a frame has every group in its baseline mode,
+so no NONE group, and keeps its header. -/
+theorem fill_convert_baseline {map : RoadMap} (o : OwnView map) (t : UInt64)
+    (f : Driveline.IntentFrame) (c : Chassis) (k : KinematicControlFrame) (δmax : ℝ)
+    (b : ActuatorControlFrame) :
+    let I := IntentFrame.committedBaseline o t
+    let F := IntentFrame.fillNone I (IntentFrame.convert I f)
+    let KB := committedBaselineKcf c t
+    let K := KinematicControlFrame.fillNone KB (KinematicControlFrame.convert KB k)
+    let AB := committedBaselineAcf c t δmax
+    let B := ActuatorControlFrame.fillNone AB (ActuatorControlFrame.convert AB b)
+    F.lon.isBaseline ∧ F.lat.isBaseline ∧ F.signal.isBaseline ∧ F.header = f.header ∧
+      K.accel.isBaseline ∧ K.steer.isBaseline ∧ K.header = k.header ∧
+      B.pedal.isBaseline ∧ B.wheel.isBaseline ∧ B.gear.isBaseline ∧ B.header = b.header := by
+  intro I F KB K AB B
+  have hg : (baselineGear c.vLon).isBaseline = true := by
+    unfold baselineGear; split_ifs <;> rfl
+  simp only [F, K, B, IntentFrame.fill_lon, IntentFrame.fill_lat, IntentFrame.fill_signal,
+    IntentFrame.fill_header, IntentFrame.convert_lon, IntentFrame.convert_lat,
+    IntentFrame.convert_signal, IntentFrame.convert_header, KinematicControlFrame.fill_accel,
+    KinematicControlFrame.fill_steer, KinematicControlFrame.fill_header,
+    KinematicControlFrame.convert_accel, KinematicControlFrame.convert_steer,
+    KinematicControlFrame.convert_header, ActuatorControlFrame.fill_pedal,
+    ActuatorControlFrame.fill_wheel, ActuatorControlFrame.fill_gear,
+    ActuatorControlFrame.fill_header, ActuatorControlFrame.convert_pedal,
+    ActuatorControlFrame.convert_wheel, ActuatorControlFrame.convert_gear,
+    ActuatorControlFrame.convert_header]
+  refine ⟨?_, ?_, ?_, trivial, ?_, ?_, trivial, ?_, ?_, ?_, trivial⟩
+  · generalize f.lon = m; cases m <;> rfl
+  · generalize f.lat = m; cases m <;> rfl
+  · generalize f.signal = m; cases m <;> rfl
+  · generalize k.accel = m; cases m <;> rfl
+  · generalize k.steer = m; cases m <;> rfl
+  · generalize b.pedal = m; cases m <;> rfl
+  · generalize b.wheel = m; cases m <;> rfl
+  · have e : AB.gear = baselineGear c.vLon := rfl
+    rw [e]; generalize baselineGear c.vLon = g at hg
+    cases g <;> cases hm : b.gear <;> simp_all [GearMode.isBaseline]
 
 /-- P06-32. 06:88 'For a re-trim, the latched frame of each type is the last frame of that
 type that left the component, or, if none left it, the last frame of that type that reached
