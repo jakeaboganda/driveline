@@ -429,12 +429,12 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | P17-37 | 17:108 | "reaches a_cmd at once when the bound is +INFINITY" | REAL | Driveline.Std.KinematicBicycle | jerk=+∞ → a' = a_cmd | PROVED: Driveline.Std.accel_no_jerk_bound |
 | P17-38 | 17:111 | "ψ̇ = (v/L) tan δ" | MODEL | Driveline.Std.KinematicBicycle | Euler step by definition; well-defined iff abs δ < π/2 | PROVED: Driveline.Std.ks_euler |
 | P17-39 | 17:112 | "a_lat = vψ̇" | REAL | Driveline.Std.KinematicBicycle | definitional | PROVED: Driveline.Std.ks_alat |
-| P17-40 | 17:115 | "F_yi = clamp(C_αi α_i, ±μ_i max(0, F_zi))" | REAL | Driveline.Std.DynamicSingleTrack | μ_i≥0 → abs F_yi ≤ μ_i·max(0, F_zi) | TODO |
-| P17-41 | 17:116 | "This small-angle model matches §8" | REAL | Driveline.Std.DynamicSingleTrack | a=0 ∧ the §8 steady state → v̇y = ṙ = v̇x = 0 (see issue 3) | TODO |
-| P17-42 | 17:117 | "Δt < 2abs(Re λ)/abs(λ)²" | REAL | Driveline.Std.DynamicSingleTrack | abs(1+λh) < 1 ↔ Re λ < 0 ∧ h < −2Re λ/abs(λ)² | TODO |
-| P17-44 | 17:117 | "the friction limit is the same in both regimes" | REAL | Driveline.Std.DynamicSingleTrack | both regimes use v̇ = clamp(a, ±μ̄g) | TODO |
-| P17-45 | 17:117 | "the reset leaves both slip angles at 0" | REAL | Driveline.Std.DynamicSingleTrack | v_y = l_r·r ∧ r = v·tanδ/L ∧ abs δ < π/2 → α_f = α_r = 0 | TODO |
-| P17-46 | 17:117 | "a_lon = v̇_x − v_lat r" | REAL | Driveline.Std.DynamicSingleTrack | round trip with the init formula a = a_lon + v_lat·ψ̇ | TODO |
+| P17-40 | 17:115 | "F_yi = clamp(C_αi α_i, ±μ_i max(0, F_zi))" | REAL | Driveline.Std.DynamicSingleTrack | μ_i≥0 → abs F_yi ≤ μ_i·max(0, F_zi) | PROVED: Driveline.Std.tire_force_bound |
+| P17-41 | 17:117 | "This small-angle model matches §8" | REAL | Driveline.Std.DynamicSingleTrack | a=0 at the §8 state (v_y = v_lat,ra + l_r ψ̇, δ = δ_ss) gives v̇x = 0, but with l_f + l_r only within 03:31 tolerance of L, ṙ ≠ 0 with tire forces under the friction bound (P06-23 counterexample on clamped tires) | REFUTED: Driveline.Std.dst_ss_not_steady |
+| P17-42 | 17:117 | "Δt < 2abs(Re λ)/abs(λ)²" | REAL | Driveline.Std.DynamicSingleTrack | abs(1+λh) < 1 ↔ Re λ < 0 ∧ h < −2Re λ/abs(λ)² | PROVED: Driveline.Std.euler_stability |
+| P17-44 | 17:117 | "the friction limit is the same in both regimes" | REAL | Driveline.Std.DynamicSingleTrack | both regimes use v̇ = clamp(a, ±μ̄g) | PROVED: Driveline.Std.friction_both_regimes |
+| P17-45 | 17:117 | "the reset leaves both slip angles at 0" | REAL | Driveline.Std.DynamicSingleTrack | v_y = l_r·r ∧ r = v·tanδ/L ∧ abs δ < π/2 → α_f = α_r = 0 | REFUTED: Driveline.Std.reset_front_slip_nonzero |
+| P17-46 | 17:117 | "a_lon = v̇_x − v_lat r" | REAL | Driveline.Std.DynamicSingleTrack | round trip with the init formula a = a_lon + v_lat·ψ̇ | PROVED: Driveline.Std.alon_round_trip |
 | P17-47 | 17:120-121 | "v_t = min(v_ref, v_max, ...)", "v' = max(0, ...)" | REAL | Driveline.Std.ObjectPhysics | invariant 0 ≤ v ≤ v_max; abs(v'−v) ≤ a_max·Δt | PROVED: Driveline.Std.walker_speed_inv |
 | P17-48 | 17:122,124 | "clamp(w(ψ_d − ψ), ±max_turn_rate Δt)" | REAL | Driveline.Std.ObjectPhysics | w(c)=c on (−π,π] → abs yaw_rate ≤ max_turn_rate | PROVED: Driveline.Std.walker_yaw_rate |
 | P17-49 | 17:120 | "square root of +INFINITY is +INFINITY" | REAL | Driveline.Std.ObjectPhysics | ENNReal sqrt lemma | PROVED: Driveline.Std.stop_infinity |
