@@ -351,7 +351,7 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 
 | ID | Spec | Quote | Class | Lean module | Statement | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| P06-03 | 06:73 | 'sets psi_dot_0 = v_0 kappa_0' | REAL | Driveline.SteadyState | path curvature of the rear axle = ψ̇/‖(v,v_lat)‖ = κ0 ⇔ v_lat = 0 (see Suspected issue 1) | REFUTED: Driveline.SteadyState.rear_path_not_followed |
+| P06-03 | 06:73 | 'so the rear-axle velocity is tangent to the lane and the actor follows it' | REAL | Driveline.SteadyState | path curvature of the rear axle = ψ̇/‖(v,v_lat)‖ = κ0 ⇔ v_lat = 0 (see Suspected issue 1) | REFUTED: Driveline.SteadyState.rear_path_not_followed |
 | P06-06 | 06:75 | 'F_z,f = m g cosθ cosφ l_r/L − m g sinθ h_cg/L ...' | REAL | Driveline.AxleLoad | L = l_f + l_r ⇒ F_zf + F_zr = m g cosθ cosφ | PROVED: Driveline.AxleLoad.fz_sum_iff |
 | P06-07 | 06:76 | 'an uphill road (θ_road > 0) moves load to the rear axle' | REAL | Driveline.AxleLoad | the spec states no h_cg range: h_cg = 0, θ = 1/10 leaves F_zr, F_zf at their level shares; with h_cg > 0 the load moves rear (`uphill_moves_load_rear`) | REFUTED: Driveline.AxleLoad.uphill_no_transfer |
 | P06-08 | 06:74 | 'both are negated when the actor's yaw differs ... by more than π/2' | REAL | Driveline.AxleLoad | negating θ swaps the transfer term; the heading test uses the angle difference wrapped to [0,π] | PROVED: Driveline.AxleLoad.against_lane_swaps_transfer |
@@ -362,10 +362,10 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | P06-37 | 06:96 | 'δ_ss − δ_KS ≈ K_us v_lon psi_dot' | REAL | Driveline.SteadyState | δ_ss−δ_KS = (α_f−α_r) + O(ε²) and α_f−α_r = K_us·a_y exactly | PROVED: Driveline.SteadyState.size_of_change |
 | P08-01 | 08:12 | 'a_y = v psi_dot' | REAL | Driveline.SteadyState | definition | DUP: P06-13 |
 | P08-02 | 08:14 | 'δ_KS = arctan(L psi_dot / v)' | REAL | Driveline.SteadyState | inverts ψ̇ = v tanδ/L on (−π/2, π/2) | PROVED: Driveline.SteadyState.deltaKS_inverts |
-| P08-03 | 08:18 | 'axle forces sum to m a_y and the yaw moment l_f F_yf − l_r F_yr is zero' | REAL | Driveline.SteadyState | L=l_f+l_r ⇒ both (`field_simp; ring`) | REFUTED: Driveline.SteadyState.axle_sum_ne |
-| P08-04 | 08:17 | 'v_lat,ra = −v tan α_r, δ_ss = α_f + arctan(...)' | REAL | Driveline.SteadyState | v>0 ⇒ slip formulas reproduce α_f and α_r | PROVED: Driveline.SteadyState.st_slip_reproduced |
+| P08-03 | 08:18 | 'axle forces sum to m a_y and the yaw moment l_f F_yf − l_r F_yr is zero' | REAL | Driveline.SteadyState | the yaw-moment clause holds (`axle_balance`); the 'sum to m a_y' clause is refuted: with l_f + l_r only within 03:31 tolerance of L the forces miss m a_y at a feasible ST state | REFUTED: Driveline.SteadyState.axle_sum_ne |
+| P08-04 | 08:17 | 'v_lat,ra = −v tan α_r, δ_ss = α_f + arctan(...)' | REAL | Driveline.SteadyState | v ≥ 1 ⇒ the §17 slip formulas at v_y = v_lat,ra + l_r ψ̇ give α_r' = arctan(tan α_r) and α_f' = α_f + arctan((v_lat,ra + L ψ̇)/v) − arctan((v_lat,ra + (l_f + l_r) ψ̇)/v) | PROVED: Driveline.SteadyState.st_slip_reproduced |
 | P08-05 | 08:17 | 'β_cg = arctan((v_lat,ra + l_r psi_dot)/v)' | REAL | Driveline.SteadyState | CG lateral velocity = v_lat,ra + l_r ψ̇ | PROVED: Driveline.SteadyState.betaCG_is_cg_slip |
-| P08-07 | 08:19 | 'infeasible if abs δ_ss > δ_max, or if abs a_y > μ g' | MODEL | Driveline.SteadyState | decidable predicate; g constant | PROVED: Driveline.SteadyState.infeasible_iff |
+| P08-07 | 08:19 | 'infeasible if abs δ_ss > δ_max, or if abs a_y > μ g' | MODEL | Driveline.SteadyState | predicate on the solved δ (`solve` takes the §6.2 input at v < 1: arctan(L κ0) at cold init with v = 0, the kept front_wheel_angle at a promotion or demotion) and a_y; g constant | PROVED: Driveline.SteadyState.infeasible_iff |
 | P03-40 | 03:35 | 'Never Overridden: ... the Tier 1 values that the steady-state solve of §8 uses' | MODEL | Driveline.SteadyState | the steady-state solve reads spec.tier1, never deck values, under OVERRIDE_TIER1_2 | TODO |
 
 ### WP11 Contact test (§11)

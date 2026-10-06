@@ -23,13 +23,15 @@ noncomputable def Fzr (p : Params) (θ φ : ℝ) : ℝ :=
   p.m * gStd * cos θ * cos φ * p.lf / p.L + p.m * gStd * sin θ * p.hcg / p.L
 
 /-- 06:74 'the actor's yaw differs from its lane's driving direction by more than π/2',
-with the difference of headings wrapped to (−π, π] (02:17). -/
-def facesAgainst (ψ ψlane : ℝ) : Prop := π / 2 < |Angles.wrap (ψ - ψlane)|
+with the difference of headings wrapped to (−π, π] (02:17). The lane's driving direction
+is ψ_travel of 06:73: '`psi_lane` for σ = +1 and `psi_lane` + π, wrapped to (−π, π], for
+σ = −1'. -/
+def facesAgainst (ψ ψtravel : ℝ) : Prop := π / 2 < |Angles.wrap (ψ - ψtravel)|
 
 /-- 06:74 'θ_road and φ_road are taken relative to the actor's heading: both are negated
 when the actor's yaw differs from its lane's driving direction by more than π/2' -/
-noncomputable def relGrade (ψ ψlane θ φ : ℝ) : ℝ × ℝ := by
-  classical exact if facesAgainst ψ ψlane then (-θ, -φ) else (θ, φ)
+noncomputable def relGrade (ψ ψtravel θ φ : ℝ) : ℝ × ℝ := by
+  classical exact if facesAgainst ψ ψtravel then (-θ, -φ) else (θ, φ)
 
 /-- 06:77 '`wheels[0..3]` in the header's order: `normal_load_fz` is half of the axle
 load', with the header order 0:FL, 1:FR, 2:RL, 3:RR (abi/driveline_abi.h:273). -/
@@ -106,18 +108,18 @@ theorem uphill_no_transfer : ∃ s : VehicleSpec.VSpec, s.WF ∧ ∃ t1 ∈ s.ti
 negated when the actor's yaw differs from its lane's driving direction by more than π/2':
 the wrapped difference has magnitude in [0, π], the test is symmetric in the two
 headings, and facing against the lane swaps the sign of the transfer term. -/
-theorem against_lane_swaps_transfer (p : Params) (ψ ψlane θ φ : ℝ) :
-    |Angles.wrap (ψ - ψlane)| ∈ Set.Icc 0 π ∧
-    (facesAgainst ψ ψlane ↔ facesAgainst ψlane ψ) ∧
-    (facesAgainst ψ ψlane →
-      Fzf p (relGrade ψ ψlane θ φ).1 (relGrade ψ ψlane θ φ).2 =
+theorem against_lane_swaps_transfer (p : Params) (ψ ψtravel θ φ : ℝ) :
+    |Angles.wrap (ψ - ψtravel)| ∈ Set.Icc 0 π ∧
+    (facesAgainst ψ ψtravel ↔ facesAgainst ψtravel ψ) ∧
+    (facesAgainst ψ ψtravel →
+      Fzf p (relGrade ψ ψtravel θ φ).1 (relGrade ψ ψtravel θ φ).2 =
         p.m * gStd * cos θ * cos φ * p.lr / p.L + p.m * gStd * sin θ * p.hcg / p.L ∧
-      Fzr p (relGrade ψ ψlane θ φ).1 (relGrade ψ ψlane θ φ).2 =
+      Fzr p (relGrade ψ ψtravel θ φ).1 (relGrade ψ ψtravel θ φ).2 =
         p.m * gStd * cos θ * cos φ * p.lf / p.L - p.m * gStd * sin θ * p.hcg / p.L) := by
-  obtain ⟨h1, h2⟩ := Angles.wrap_mem (ψ - ψlane)
+  obtain ⟨h1, h2⟩ := Angles.wrap_mem (ψ - ψtravel)
   refine ⟨⟨abs_nonneg _, abs_le.mpr ⟨by linarith, h2⟩⟩, ?_, ?_⟩
   · simp only [facesAgainst]
-    rw [show ψlane - ψ = -(ψ - ψlane) by ring, abs_wrap_neg]
+    rw [show ψtravel - ψ = -(ψ - ψtravel) by ring, abs_wrap_neg]
   · intro h
     simp only [relGrade, h, ite_true, Fzf, Fzr, cos_neg, sin_neg]
     constructor <;> ring

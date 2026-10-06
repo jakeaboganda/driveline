@@ -66,10 +66,23 @@ structure SS where
   vLat : ℝ
   delta : ℝ
 
-/-- §8 tier dispatch for v ≠ 0. The v = 0 cases (arctan(L κ0), or the kept
-front_wheel_angle) are inputs from §6.2 and are not modeled. -/
-noncomputable def solve (t : Tier) (p : Params) (v r : ℝ) : SS :=
-  if t = .ks ∨ v < 1 then ⟨0, deltaKS p.L v r⟩ else ⟨vLatRa p v r, deltaSS p v r⟩
+/-- The two callers of the §8 solve (08:14): cold init, with the spawn curvature κ_0 of
+§6.2, and a promotion or demotion, with the committed `front_wheel_angle`. -/
+inductive Phase
+  | cold (κ0 : ℝ)
+  | window (δkept : ℝ)
+
+/-- 08:14 'δ_ss = δ_KS = arctan(L psi_dot / v) for v ≠ 0. When v = 0 ... cold init uses
+δ_ss = arctan(L κ0) with the spawn curvature of §6.2, and a promotion or demotion at any
+v < 1.0 m/s keeps the committed front_wheel_angle instead of the formula' -/
+noncomputable def deltaLow (L v r : ℝ) : Phase → ℝ
+  | .cold κ0 => if v = 0 then arctan (L * κ0) else deltaKS L v r
+  | .window δkept => if v < 1 then δkept else deltaKS L v r
+
+/-- §8 tier dispatch (08:14-17): the kinematic solution for `KS` and for every tier at
+v < 1 m/s, and the linear-tire `ST` solution otherwise. -/
+noncomputable def solve (t : Tier) (p : Params) (ph : Phase) (v r : ℝ) : SS :=
+  if t = .ks ∨ v < 1 then ⟨0, deltaLow p.L v r ph⟩ else ⟨vLatRa p v r, deltaSS p v r⟩
 
 /-- 08:19 'infeasible if |δ_ss| > δ_max, or if |a_y| > μ g' -/
 def infeasible (p : Params) (μ δ ay : ℝ) : Prop := p.δmax < |δ| ∨ μ * gStd < |ay|
@@ -331,9 +344,9 @@ theorem betaCG_is_cg_slip (p : Params) (v r ψ : ℝ) (hv : 1 ≤ v) :
 
 /-- P08-07 08:19 'A steady state is infeasible if |δ_ss| > δ_max, or if |a_y| > μ g with
 g = 9.80665 m/s^2' -/
-theorem infeasible_iff (p : Params) (μ v r : ℝ) (t : Tier) :
-    infeasible p μ (solve t p v r).delta (aY v r) ↔
-      p.δmax < |(solve t p v r).delta| ∨ 9.80665 * μ < |v * r| := by
+theorem infeasible_iff (p : Params) (μ v r : ℝ) (t : Tier) (ph : Phase) :
+    infeasible p μ (solve t p ph v r).delta (aY v r) ↔
+      p.δmax < |(solve t p ph v r).delta| ∨ 9.80665 * μ < |v * r| := by
   simp only [infeasible, gStd, aY, mul_comm μ]
 
 /-! ## §6.2 rows -/
