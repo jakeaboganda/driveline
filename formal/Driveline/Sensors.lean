@@ -110,6 +110,10 @@ noncomputable def relVel (ψ ω : ℝ) (vT vS rel : ℝ × ℝ) : ℝ × ℝ := 
 noncomputable def ttcLon (x vx Lt xF : ℝ) : EReal :=
   if 0 < x ∧ vx < 0 then ((max 0 (x - Lt / 2 - xF) / (-vx) : ℝ) : EReal) else ⊤
 
+/-- Point at angle θ on the circle of radius R about c, and its velocity at angular rate ω. -/
+noncomputable def arcPt (c : ℝ × ℝ) (R θ : ℝ) : ℝ × ℝ := (c.1 + R * cos θ, c.2 + R * sin θ)
+noncomputable def arcVel (R ω θ : ℝ) : ℝ × ℝ := (-(R * ω * sin θ), R * ω * cos θ)
+
 /-! ## Primary and lead targets (17:54, 17:58) -/
 
 def primaryEligible (W : ℝ) (x : Track) : Prop := 0 < x.rel_x ∧ |x.rel_y| ≤ W / 2 + 1/2
@@ -415,6 +419,46 @@ theorem constant_gap_zero_rel_vel {pT pS : ℝ → ℝ × ℝ} {ψ : ℝ → ℝ
   have hz : relVel (ψ t) ω vT vS c = 0 := by rw [← hct]; exact hd.unique h0
   refine ⟨hz, ?_⟩
   rw [hz]
+  simp [ttcLon]
+
+theorem hasDerivAt_arcPt (c : ℝ × ℝ) (R θ0 ω t : ℝ) :
+    HasDerivAt (fun τ => arcPt c R (θ0 + ω * τ)) (arcVel R ω (θ0 + ω * t)) t := by
+  have hθ : HasDerivAt (fun τ => θ0 + ω * τ) ω t := by
+    simpa using ((hasDerivAt_id t).const_mul ω).const_add θ0
+  have hx := (hθ.cos.const_mul R).const_add c.1
+  have hy := (hθ.sin.const_mul R).const_add c.2
+  convert hx.prodMk hy using 1
+  all_goals (ext <;> simp [arcPt, arcVel] <;> ring)
+
+/-- Instance for the P17-62 spec note: two points on one circle of radius R at the same angular
+rate ω (equal speed |R ω|), angle gap Δ, sensor yaw tangent to the circle (θ + π/2). Their
+sensor-frame offset is the constant (R sin Δ, R(1 − cos Δ)), so the relative velocity is 0. -/
+theorem arc_equal_speed_zero_rel_vel (c : ℝ × ℝ) (R θ0 ω Δ t Lt xF : ℝ) :
+    (∀ τ, rotT (θ0 + ω * τ + π / 2) (arcPt c R (θ0 + Δ + ω * τ) - arcPt c R (θ0 + ω * τ)) =
+      (R * sin Δ, R * (1 - cos Δ))) ∧
+    relVel (θ0 + ω * t + π / 2) ω (arcVel R ω (θ0 + Δ + ω * t)) (arcVel R ω (θ0 + ω * t))
+      (R * sin Δ, R * (1 - cos Δ)) = 0 ∧
+    ttcLon (R * sin Δ) 0 Lt xF = ⊤ := by
+  have hc : ∀ τ, rotT (θ0 + ω * τ + π / 2) (arcPt c R (θ0 + Δ + ω * τ) - arcPt c R (θ0 + ω * τ)) =
+      (R * sin Δ, R * (1 - cos Δ)) := by
+    intro τ
+    have e : θ0 + Δ + ω * τ = (θ0 + ω * τ) + Δ := by ring
+    rw [e]
+    set a := θ0 + ω * τ
+    ext
+    · simp only [rotT, arcPt, Prod.fst_sub, Prod.snd_sub, cos_pi_div_two, sin_pi_div_two,
+        cos_add, sin_add]
+      linear_combination (R * sin Δ) * sin_sq_add_cos_sq a
+    · simp only [rotT, arcPt, Prod.fst_sub, Prod.snd_sub, cos_pi_div_two, sin_pi_div_two,
+        cos_add, sin_add]
+      linear_combination (R * (1 - cos Δ)) * sin_sq_add_cos_sq a
+  have hψ : HasDerivAt (fun τ => θ0 + ω * τ + π / 2) ω t := by
+    simpa using (((hasDerivAt_id t).const_mul ω).const_add θ0).add_const (π / 2)
+  have hT : HasDerivAt (fun τ => arcPt c R (θ0 + Δ + ω * τ)) (arcVel R ω (θ0 + Δ + ω * t)) t :=
+    hasDerivAt_arcPt c R (θ0 + Δ) ω t
+  have h := constant_gap_zero_rel_vel hT (hasDerivAt_arcPt c R θ0 ω t) hψ
+    (Filter.Eventually.of_forall hc) Lt xF
+  refine ⟨hc, h.1, ?_⟩
   simp [ttcLon]
 
 /-- P17-12 (17-standard-library.md:48): "v_P = v_ra + ψ̇ ẑ × r_P, with r_P the point's offset

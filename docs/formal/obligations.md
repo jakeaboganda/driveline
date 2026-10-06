@@ -401,6 +401,7 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | P17-19 | 17:56 | "mu_mean is their mean" | REAL | Driveline.Sensors | min ≤ mean ≤ max | PROVED: Driveline.Sensors.mu_mean_bounds |
 | P17-60 | 17:56 | "fl at (L, +t/2), fr at (L, −t/2), rl at (0, +t/2), and rr at (0, −t/2)" | MODEL | Driveline.Sensors | corner μ = μ at pos + rot ψ offset; t = track_width if present, else 0.85·W_bbox | PROVED: Driveline.Sensors.surface_contact_points |
 | P17-61 | 17:48 | "rel_x, rel_y, and rel_z are the reference point in the sensor frame" | MODEL | Driveline.Sensors | relPos = (Rᵀ(ψ_E)(refPoint − sensorOrigin), z_T − (z_E + z_mount)); rotating back gives the World offset; range3 is the 3-D distance | PROVED: Driveline.Sensors.rel_pos_spec |
+| P17-62 | 17:48 | "Two actors that keep a constant gap on a curve therefore have zero relative velocity" | MODEL | Driveline.Sensors | spec note: 17:48 "constant gap on a curve" gives zero relative velocity only for a constant sensor-frame offset (e.g. constant curvature), not for a constant along-road gap on varying curvature; constant-curvature instance: Driveline.Sensors.arc_equal_speed_zero_rel_vel | OUT: prose |
 | P05-43 | 05:80 | 'g is that track's rel_x' | MODEL | Driveline.Sensors | measured gap = rel_x of the track with target_actor_id = gap_target_actor_id from latest() of the first such port | PROVED: Driveline.Sensors.measured_gap_spec |
 
 ### WP13 Standard components (§17.3–17.5)
