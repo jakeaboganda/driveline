@@ -351,21 +351,21 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 
 | ID | Spec | Quote | Class | Lean module | Statement | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| P06-03 | 06:73 | 'sets psi_dot_0 = v_0 kappa_0' | REAL | Driveline.SteadyState | path curvature of the rear axle = ψ̇/‖(v,v_lat)‖ = κ0 ⇔ v_lat = 0 (see Suspected issue 1) | TODO |
+| P06-03 | 06:73 | 'sets psi_dot_0 = v_0 kappa_0' | REAL | Driveline.SteadyState | path curvature of the rear axle = ψ̇/‖(v,v_lat)‖ = κ0 ⇔ v_lat = 0 (see Suspected issue 1) | REFUTED: Driveline.SteadyState.rear_path_not_followed |
 | P06-06 | 06:75 | 'F_z,f = m g cosθ cosφ l_r/L − m g sinθ h_cg/L ...' | REAL | Driveline.AxleLoad | L = l_f + l_r ⇒ F_zf + F_zr = m g cosθ cosφ | TODO |
 | P06-07 | 06:76 | 'an uphill road (θ_road > 0) moves load to the rear axle' | REAL | Driveline.AxleLoad | m,g,h_cg>0, θ∈(0,π/2) ⇒ F_zr > m g cosθ cosφ l_f/L and F_zf decreases | TODO |
 | P06-08 | 06:74 | 'both are negated when the actor's yaw differs ... by more than π/2' | REAL | Driveline.AxleLoad | negating θ swaps the transfer term; the heading test uses the angle difference wrapped to [0,π] | TODO |
 | P06-09 | 06:77 | 'normal_load_fz is half of the axle load' | REAL | Driveline.AxleLoad | sum over the 4 wheels = m g cosθ cosφ | TODO |
-| P06-12 | 06:78 | 'a_lon = −v_lat,ra psi_dot_0' | REAL | Driveline.SteadyState | v̇_lon = a_lon + v_lat ψ̇ = 0 (`ring`) | TODO |
-| P06-13 | 06:78 | 'a_lat = v_0 psi_dot_0 (the rear-axle acceleration on the steady circle)' | REAL | Driveline.SteadyState | body-y acceleration v̇_lat + vψ̇ with v̇_lat = 0 | TODO |
-| P06-23 | 06:84 | 'lateral force and yaw moment ... balanced at the first step if the upstream steering command reproduces δ_ss' | REAL | Driveline.SteadyState | follows from P08-03 + P08-04 | TODO |
-| P06-37 | 06:96 | 'δ_ss − δ_KS ≈ K_us v_lon psi_dot' | REAL | Driveline.SteadyState | δ_ss−δ_KS = (α_f−α_r) + O(ε²) and α_f−α_r = K_us·a_y exactly | TODO |
-| P08-01 | 08:12 | 'a_y = v psi_dot' | REAL | Driveline.SteadyState | definition | TODO |
-| P08-02 | 08:14 | 'δ_KS = arctan(L psi_dot / v)' | REAL | Driveline.SteadyState | inverts ψ̇ = v tanδ/L on (−π/2, π/2) | TODO |
-| P08-03 | 08:18 | 'axle forces sum to m a_y and the yaw moment l_f F_yf − l_r F_yr is zero' | REAL | Driveline.SteadyState | L=l_f+l_r ⇒ both (`field_simp; ring`) | TODO |
-| P08-04 | 08:17 | 'v_lat,ra = −v tan α_r, δ_ss = α_f + arctan(...)' | REAL | Driveline.SteadyState | v>0 ⇒ slip formulas reproduce α_f and α_r | TODO |
-| P08-05 | 08:17 | 'β_cg = arctan((v_lat,ra + l_r psi_dot)/v)' | REAL | Driveline.SteadyState | CG lateral velocity = v_lat,ra + l_r ψ̇ | TODO |
-| P08-07 | 08:19 | 'infeasible if abs δ_ss > δ_max, or if abs a_y > μ g' | MODEL | Driveline.SteadyState | decidable predicate; g constant | TODO |
+| P06-12 | 06:78 | 'a_lon = −v_lat,ra psi_dot_0' | REAL | Driveline.SteadyState | v̇_lon = a_lon + v_lat ψ̇ = 0 (`ring`) | PROVED: Driveline.SteadyState.steady_circle_a_lon |
+| P06-13 | 06:78 | 'a_lat = v_0 psi_dot_0 (the rear-axle acceleration on the steady circle)' | REAL | Driveline.SteadyState | body-y acceleration v̇_lat + vψ̇ with v̇_lat = 0 | PROVED: Driveline.SteadyState.steady_circle_a_lat |
+| P06-23 | 06:84 | 'lateral force and yaw moment ... balanced at the first step if the upstream steering command reproduces δ_ss' | REAL | Driveline.SteadyState | follows from P08-03 + P08-04 | REFUTED: Driveline.SteadyState.dst_not_balanced |
+| P06-37 | 06:96 | 'δ_ss − δ_KS ≈ K_us v_lon psi_dot' | REAL | Driveline.SteadyState | δ_ss−δ_KS = (α_f−α_r) + O(ε²) and α_f−α_r = K_us·a_y exactly | PROVED: Driveline.SteadyState.size_of_change |
+| P08-01 | 08:12 | 'a_y = v psi_dot' | REAL | Driveline.SteadyState | definition | DUP: P06-13 |
+| P08-02 | 08:14 | 'δ_KS = arctan(L psi_dot / v)' | REAL | Driveline.SteadyState | inverts ψ̇ = v tanδ/L on (−π/2, π/2) | PROVED: Driveline.SteadyState.deltaKS_inverts |
+| P08-03 | 08:18 | 'axle forces sum to m a_y and the yaw moment l_f F_yf − l_r F_yr is zero' | REAL | Driveline.SteadyState | L=l_f+l_r ⇒ both (`field_simp; ring`) | REFUTED: Driveline.SteadyState.axle_sum_ne |
+| P08-04 | 08:17 | 'v_lat,ra = −v tan α_r, δ_ss = α_f + arctan(...)' | REAL | Driveline.SteadyState | v>0 ⇒ slip formulas reproduce α_f and α_r | PROVED: Driveline.SteadyState.st_slip_reproduced |
+| P08-05 | 08:17 | 'β_cg = arctan((v_lat,ra + l_r psi_dot)/v)' | REAL | Driveline.SteadyState | CG lateral velocity = v_lat,ra + l_r ψ̇ | PROVED: Driveline.SteadyState.betaCG_is_cg_slip |
+| P08-07 | 08:19 | 'infeasible if abs δ_ss > δ_max, or if abs a_y > μ g' | MODEL | Driveline.SteadyState | decidable predicate; g constant | PROVED: Driveline.SteadyState.infeasible_iff |
 | P03-40 | 03:35 | 'Never Overridden: ... the Tier 1 values that the steady-state solve of §8 uses' | MODEL | Driveline.SteadyState | the steady-state solve reads spec.tier1, never deck values, under OVERRIDE_TIER1_2 | TODO |
 
 ### WP11 Contact test (§11)
