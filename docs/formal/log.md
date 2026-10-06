@@ -135,3 +135,13 @@ Module `Contact`. 9 rows proved, including P11-40 from WP05: the run model's col
 The central theorem is `Driveline.Contact.footprintContact_iff_inter`: the §11 separating-axis test over the four edge normals holds exactly when the two closed footprints intersect, so "touching counts" is exact. It is proved with Helly's theorem over the four slabs. The test is symmetric in the two actors, exactly, even in binary64, because the axis set and the projections do not depend on argument order. Rotation invariance holds over ℝ only; the binary64 clause is `OUT: external`.
 
 No spec defect found in WP11.
+
+## WP12 Sensors (§17.2)
+
+Module `Sensors`: the friction field and zones, mounts, the detection reference point and field of view, relative position and velocity, `ttc_lon`, the primary target, the lead track, free lanes under the driving direction, the surface contact points, and the measured gap for `GAP_PROFILE`. 17 rows proved.
+
+`rel_vx` and `rel_vy` are proved to be the time derivatives of the sensor-frame position (`Driveline.Sensors.rel_vel_hasDerivAt`), including the `ψ̇ ẑ × (x, y)` terms. Review tied each generic result to the spec's own quantities (`lead_ttc` is `ttc_lon` of the lead track; μ is the zone field) and added the contact points with the `0.85 W_bbox` fallback, the `left_lane_free` characterization, and relative position with height.
+
+Spec note (queued for the spec-fix pass):
+
+* **P17-62** `17-standard-library.md:48`. "Two actors that keep a constant gap on a curve therefore have zero relative velocity." That holds for a constant sensor-frame offset, which two actors on one circular arc at equal speed have (`Driveline.Sensors.arc_equal_speed_zero_rel_vel`). It does not hold for a constant along-road gap where the curvature changes.
