@@ -54,6 +54,10 @@ def worldMu (w2f : ℝ → ℝ → ℝ → RoadId → Option FrenetHit) (field :
     (X Y psi : ℝ) (hint : RoadId) : Option ℝ :=
   (w2f X Y psi hint).map fun h => field h.road h.lane h.s
 
+/-- The zone-or-default field (17:24-25) at a lane: a zone covers every lane of its road. -/
+noncomputable def zoneField (dflt : ℝ) (zs : List Zone) : RoadId → ℤ → ℝ → ℝ :=
+  fun r _ s => zoneMu dflt zs r s
+
 def historyOk (N : ℤ) : Bool := decide (1 ≤ N ∧ N ≤ 64)
 
 /-! ## Mounts and detection (17:40-48) -/
@@ -110,7 +114,12 @@ def IsLead (road : RoadId) (lane : ℤ) (l : List Track) (p : Track) : Prop :=
   p ∈ l ∧ leadEligible road lane p ∧ ∀ q ∈ l, leadEligible road lane q → q ≠ p → leadLt p q
 noncomputable def lead (road : RoadId) (lane : ℤ) (l : List Track) : Option Track :=
   ((l.filter fun x => decide (leadEligible road lane x)).mergeSort leadLe).head?
-/-- `ttc` is the EReal ttc_lon of a track (`Track.ttc_lon` is ℝ). -/
+/-- `ttc_lon` of a track (17:48) as an EReal (`Track.ttc_lon` is ℝ): `len` is L_bbox of the
+target actor by id, `xF` the ego's x_front. -/
+noncomputable def trackTtc (len : ℕ → ℝ) (xF : ℝ) (p : Track) : EReal :=
+  ttcLon p.rel_x p.rel_vx (len p.id) xF
+
+/-- `ttc` is the EReal ttc_lon of a track; 17:58 uses `trackTtc`. -/
 noncomputable def leadTtc (ttc : Track → EReal) : Option Track → EReal
   | some p => ttc p
   | none => ⊤
@@ -135,6 +144,24 @@ noncomputable def laneFree (road : RoadId) (σ : Dir) (o : Option Neighbor) (l :
   | some n => if ∃ x ∈ l, x.road_id = road ∧ x.lane_id = n.lane ∧ |x.rel_x| ≤ 20 then 0 else 1
 
 noncomputable def muMean (fl fr rl rr : ℝ) : ℝ := (fl + fr + rl + rr) / 4
+
+/-! ## Surface contact points (17:56) -/
+
+/-- t of one axle: its Tier 2 `track_width_f` or `track_width_r` if present, else 0.85 W_bbox. -/
+noncomputable def trackW (t : Tier0) (tw : Option ℝ) : ℝ := tw.getD (17 / 20 * t.bbox_width)
+
+/-- fl (L, +t/2), fr (L, −t/2), rl (0, +t/2), rr (0, −t/2) in the heading frame. -/
+noncomputable def contactPoints (t : Tier0) (twF twR : Option ℝ) :
+    (ℝ × ℝ) × (ℝ × ℝ) × (ℝ × ℝ) × (ℝ × ℝ) :=
+  ((t.wheelbase, trackW t twF / 2), (t.wheelbase, -(trackW t twF / 2)),
+   (0, trackW t twR / 2), (0, -(trackW t twR / 2)))
+
+/-- (mu_fl, mu_fr, mu_rl, mu_rr): the World field `mu` at each contact point, placed by the
+rear-axle origin `pos` and yaw ψ. -/
+noncomputable def cornerMu {α : Type} (mu : ℝ × ℝ → α) (t : Tier0) (twF twR : Option ℝ)
+    (pos : ℝ × ℝ) (ψ : ℝ) : α × α × α × α :=
+  let c := contactPoints t twF twR
+  (mu (pos + rot ψ c.1), mu (pos + rot ψ c.2.1), mu (pos + rot ψ c.2.2.1), mu (pos + rot ψ c.2.2.2))
 
 /-! ## Measured gap (05:80) -/
 
@@ -305,7 +332,7 @@ theorem mu_later_zone_wins (dflt : ℝ) (zs : List Zone) (road : RoadId) (s : �
     zoneMu dflt zs road s = ((zs.filter (Zone.covers road s)).getLast?.map Zone.mu).getD dflt :=
   lastWins_eq _ _ _ _
 
-/-- P17-03 (17-standard-library.md:34): μ(X,Y) is "the zone or default value at the lane that
+/-- `worldMu` for any lane field; 17:34 uses `zoneField` (P17-03). μ(X,Y) is "the zone or default value at the lane that
 `world_to_frenet` returns for (X, Y), called with the actor's yaw as `psi` and its current
 `road_id` as `hint_road_id`". -/
 theorem world_mu_spec (w2f : ℝ → ℝ → ℝ → RoadId → Option FrenetHit) (field : RoadId → ℤ → ℝ → ℝ)
@@ -313,6 +340,18 @@ theorem world_mu_spec (w2f : ℝ → ℝ → ℝ → RoadId → Option FrenetHit
     ((worldMu w2f field X Y psi hint).isSome ↔ (w2f X Y psi hint).isSome) ∧
     ∀ h, w2f X Y psi hint = some h → worldMu w2f field X Y psi hint = some (field h.road h.lane h.s) := by
   refine ⟨by simp [worldMu], fun h hh => by simp [worldMu, hh]⟩
+
+/-- P17-03 (17-standard-library.md:34): μ(X,Y) is "the zone or default value at the lane that
+`world_to_frenet` returns for (X, Y), called with the actor's yaw as `psi` and its current
+`road_id` as `hint_road_id`", with the zone or default value of 17:24-25. -/
+theorem world_mu_zone_spec (w2f : ℝ → ℝ → ℝ → RoadId → Option FrenetHit) (dflt : ℝ)
+    (zs : List Zone) (X Y psi : ℝ) (hint : RoadId) :
+    ((worldMu w2f (zoneField dflt zs) X Y psi hint).isSome ↔ (w2f X Y psi hint).isSome) ∧
+    ∀ h, w2f X Y psi hint = some h → worldMu w2f (zoneField dflt zs) X Y psi hint =
+      some (((zs.filter (Zone.covers h.road h.s)).getLast?.map Zone.mu).getD dflt) := by
+  refine ⟨(world_mu_spec w2f _ X Y psi hint).1, fun h hh => ?_⟩
+  rw [(world_mu_spec w2f _ X Y psi hint).2 h hh]
+  simp only [zoneField, mu_later_zone_wins]
 
 /-- P17-08 (17-standard-library.md:38): "`history` must be a constant from 1 to 64". -/
 theorem history_ok_iff (N : ℤ) : historyOk N = true ↔ 1 ≤ N ∧ N ≤ 64 := by
@@ -413,10 +452,7 @@ theorem primary_rcs_spec (W : ℝ) (l : List Track) :
     simp only [hn, ↓reduceIte]
     simp [hs]
 
-/-- P17-17 (17-standard-library.md:58): "`lead_ttc` is the `ttc_lon` of the lead track, which is
-the track with the smallest positive `rel_x`, then the smaller `target_actor_id`, whose
-`road_id` and `lane_id` equal the actor's. It is `+INFINITY` if there is none". Ids are
-distinct by 05:47. -/
+/-- Lead selection with any per-track `ttc`; 17:58 uses `trackTtc` (P17-17). -/
 theorem lead_spec (road : RoadId) (lane : ℤ) (l : List Track) (ttc : Track → EReal)
     (hid : (l.map Track.id).Nodup) :
     (∀ p, lead road lane l = some p ↔ IsLead road lane l p) ∧
@@ -426,6 +462,20 @@ theorem lead_spec (road : RoadId) (lane : ℤ) (l : List Track) (ttc : Track →
   have h := argmin_spec (lt := leadLt) (leadEligible road lane) l leadLe_trans leadLe_total
     leadLe_lt leadLt_asymm hid
   exact ⟨h.1, h.2, fun hn => by rw [hn]; rfl, fun p hp => by rw [hp]; rfl⟩
+
+/-- P17-17 (17-standard-library.md:58): "`lead_ttc` is the `ttc_lon` of the lead track, which is
+the track with the smallest positive `rel_x`, then the smaller `target_actor_id`, whose
+`road_id` and `lane_id` equal the actor's. It is `+INFINITY` if there is none". `ttc_lon` is
+that of 17:48 with the target's L_bbox `len p.id` and the ego's x_front `xF`. Ids are distinct
+by 05:47. -/
+theorem lead_ttc_spec (road : RoadId) (lane : ℤ) (l : List Track) (len : ℕ → ℝ) (xF : ℝ)
+    (hid : (l.map Track.id).Nodup) :
+    (∀ p, lead road lane l = some p ↔ IsLead road lane l p) ∧
+    (lead road lane l = none ↔ ∀ q ∈ l, ¬ leadEligible road lane q) ∧
+    (lead road lane l = none → leadTtc (trackTtc len xF) (lead road lane l) = ⊤) ∧
+    (∀ p, lead road lane l = some p →
+      leadTtc (trackTtc len xF) (lead road lane l) = ttcLon p.rel_x p.rel_vx (len p.id) xF) :=
+  lead_spec road lane l (trackTtc len xF) hid
 
 /-- P17-18 (17-standard-library.md:58): "That lane is `out_left_lane_id` of
 `query_lane_topology` at the actor's `(road_id, lane_id, s)` if σ = +1, and `out_right_lane_id`
@@ -452,6 +502,19 @@ theorem mu_mean_bounds (a b c d : ℝ) :
     have := le_max_left a b; have := le_max_right a b
     have := le_max_left c d; have := le_max_right c d
     linarith
+
+/-- P17-60 (17-standard-library.md:56): "`mu_fl` through `mu_rr` are μ at the four contact
+points: `fl` at (L, +t/2), `fr` at (L, −t/2), `rl` at (0, +t/2), and `rr` at (0, −t/2) in the
+heading frame, with t the Tier 2 track width of that axle (`track_width_f` or `track_width_r`)
+if present, else 0.85 W_bbox". `mu` is μ at a World point (17:34), `pos` the rear-axle origin. -/
+theorem surface_contact_points {α : Type} (mu : ℝ × ℝ → α) (t : Tier0) (twF twR : Option ℝ)
+    (pos : ℝ × ℝ) (ψ : ℝ) :
+    cornerMu mu t twF twR pos ψ =
+      (mu (pos + rot ψ (t.wheelbase, trackW t twF / 2)),
+       mu (pos + rot ψ (t.wheelbase, -(trackW t twF / 2))),
+       mu (pos + rot ψ (0, trackW t twR / 2)), mu (pos + rot ψ (0, -(trackW t twR / 2)))) ∧
+    (∀ w, trackW t (some w) = w) ∧ trackW t none = 17 / 20 * t.bbox_width :=
+  ⟨rfl, fun _ => rfl, rfl⟩
 
 /-- P05-43 (05-checkpoints.md:80): "It reads the measured gap g from the `latest()` sample of
 its first declared such port, from the track whose `target_actor_id` equals
