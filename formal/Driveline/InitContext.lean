@@ -111,6 +111,22 @@ def baseAcf (h : Header) (δ δmax : ℝ) (g : GearMode) : ActuatorControlFrame 
   steeringWheelNorm := .fin (wheelNorm δ δmax)
   steeringTorqueNm := 0
 
+/-- 06:88 the committed baseline gear: 'if v_lon < 0, gear_mode = REVERSE', else the
+Pass 1 `DRIVE` (06:78). -/
+def baselineGear (vLon : ℝ) : GearMode := if vLon < 0 then .reverse else .drive
+
+/-- 06:88 the committed baseline `KinematicControlFrame`: the Pass 1 step 5 frame built from
+the committed state `c`, stamped with the next tick's time `t`, with 'a_lon_cmd equal to the
+committed v_dot_lon = a_lon + v_lat psi_dot' and 'delta_ss = front_wheel_angle'. -/
+def committedBaselineKcf (c : Chassis) (t : UInt64) : KinematicControlFrame :=
+  baseKcf ⟨c.actorId.toUInt64, t⟩ (vdot c) c.fwa
+
+/-- 06:88 the committed baseline `ActuatorControlFrame`: the Pass 1 step 5 frame built from
+the committed state `c`, stamped with `t`, with 'delta_ss = front_wheel_angle' and, 'if
+v_lon < 0, gear_mode = REVERSE'. -/
+def committedBaselineAcf (c : Chassis) (t : UInt64) (δmax : ℝ) : ActuatorControlFrame :=
+  baseAcf ⟨c.actorId.toUInt64, t⟩ c.fwa δmax (baselineGear c.vLon)
+
 /-- 06:88 the conversion at `t > 0`: each group that is neither baseline nor `NONE` is
 replaced by that group, mode and fields, of the committed baseline frame `base`. -/
 def IntentFrame.convert (base f : IntentFrame) : IntentFrame :=
@@ -353,11 +369,10 @@ is not in its baseline mode, and is not NONE, with that group of the committed b
 frame' ... 'A converted frame keeps its timestamp_ns'. After conversion every group of each
 frame type is baseline or NONE, and the header is kept. -/
 theorem convert_modes {map : RoadMap} (o : OwnView map) (t : UInt64) (f : Driveline.IntentFrame)
-    (hk : Header) (a δ : ℝ) (k : KinematicControlFrame) (ha : Header) (δmax : ℝ) (g : GearMode)
-    (b : ActuatorControlFrame) :
+    (c : Chassis) (k : KinematicControlFrame) (δmax : ℝ) (b : ActuatorControlFrame) :
     let F := IntentFrame.convert (IntentFrame.committedBaseline o t) f
-    let K := KinematicControlFrame.convert (baseKcf hk a δ) k
-    let B := ActuatorControlFrame.convert (baseAcf ha δ δmax g) b
+    let K := KinematicControlFrame.convert (committedBaselineKcf c t) k
+    let B := ActuatorControlFrame.convert (committedBaselineAcf c t δmax) b
     (F.lon = .none ∨ F.lon.isBaseline) ∧ (F.lat = .none ∨ F.lat.isBaseline) ∧
       (F.signal = .none ∨ F.signal.isBaseline) ∧ F.header = f.header ∧
       (K.accel = .none ∨ K.accel.isBaseline) ∧ (K.steer = .none ∨ K.steer.isBaseline) ∧
@@ -365,14 +380,28 @@ theorem convert_modes {map : RoadMap} (o : OwnView map) (t : UInt64) (f : Drivel
       (B.pedal = .none ∨ B.pedal.isBaseline) ∧ (B.wheel = .none ∨ B.wheel.isBaseline) ∧
       (B.gear = .none ∨ B.gear.isBaseline) ∧ B.header = b.header := by
   intro F K B
-  have hg : g = .none ∨ g.isBaseline = true := by cases g <;> simp [GearMode.isBaseline]
+  have hg : (baselineGear c.vLon).isBaseline = true := by
+    unfold baselineGear; split_ifs <;> rfl
   simp only [F, K, B, IntentFrame.convert, KinematicControlFrame.convert,
-    ActuatorControlFrame.convert]
+    ActuatorControlFrame.convert, committedBaselineKcf, committedBaselineAcf]
   refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
     split_ifs <;> simp_all [IntentFrame.withLonFrom, IntentFrame.withLatFrom,
       IntentFrame.committedBaseline, baseKcf, baseAcf, GearMode.isBaseline, LonMode.isBaseline,
       LatMode.isBaseline, TurnSignal.isBaseline, AccelMode.isBaseline, SteerMode.isBaseline,
       PedalMode.isBaseline, WheelMode.isBaseline, hg]
+
+/-- P06-40. 06:88 'The committed baseline frame of a type is the frame that the rules of
+Pass 1 step 5 build from the committed state, stamped with the next tick's time t, with
+a_lon_cmd equal to the committed v_dot_lon = a_lon + v_lat psi_dot ... delta_ss =
+front_wheel_angle ... and, if v_lon < 0, gear_mode = REVERSE'. -/
+theorem baseline_reverse_gear (c : Chassis) (t : UInt64) (δmax : ℝ) :
+    (c.vLon < 0 → (committedBaselineAcf c t δmax).gear = .reverse) ∧
+      (committedBaselineKcf c t).aLonCmd = .fin (c.aLon + c.vLat * c.psiDot) ∧
+      (committedBaselineKcf c t).steerAngleCmd = .fin c.fwa ∧
+      (committedBaselineAcf c t δmax).steeringWheelNorm = .fin (wheelNorm c.fwa δmax) ∧
+      (committedBaselineKcf c t).header = ⟨c.actorId.toUInt64, t⟩ ∧
+      (committedBaselineAcf c t δmax).header = ⟨c.actorId.toUInt64, t⟩ :=
+  ⟨fun h => if_pos h, rfl, rfl, rfl, rfl, rfl⟩
 
 /-- P06-32. 06:88 'For a re-trim, the latched frame of each type is the last frame of that
 type that left the component, or, if none left it, the last frame of that type that reached
