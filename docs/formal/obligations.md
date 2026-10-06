@@ -352,10 +352,10 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | ID | Spec | Quote | Class | Lean module | Statement | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | P06-03 | 06:73 | 'sets psi_dot_0 = v_0 kappa_0' | REAL | Driveline.SteadyState | path curvature of the rear axle = ψ̇/‖(v,v_lat)‖ = κ0 ⇔ v_lat = 0 (see Suspected issue 1) | REFUTED: Driveline.SteadyState.rear_path_not_followed |
-| P06-06 | 06:75 | 'F_z,f = m g cosθ cosφ l_r/L − m g sinθ h_cg/L ...' | REAL | Driveline.AxleLoad | L = l_f + l_r ⇒ F_zf + F_zr = m g cosθ cosφ | TODO |
-| P06-07 | 06:76 | 'an uphill road (θ_road > 0) moves load to the rear axle' | REAL | Driveline.AxleLoad | m,g,h_cg>0, θ∈(0,π/2) ⇒ F_zr > m g cosθ cosφ l_f/L and F_zf decreases | TODO |
-| P06-08 | 06:74 | 'both are negated when the actor's yaw differs ... by more than π/2' | REAL | Driveline.AxleLoad | negating θ swaps the transfer term; the heading test uses the angle difference wrapped to [0,π] | TODO |
-| P06-09 | 06:77 | 'normal_load_fz is half of the axle load' | REAL | Driveline.AxleLoad | sum over the 4 wheels = m g cosθ cosφ | TODO |
+| P06-06 | 06:75 | 'F_z,f = m g cosθ cosφ l_r/L − m g sinθ h_cg/L ...' | REAL | Driveline.AxleLoad | L = l_f + l_r ⇒ F_zf + F_zr = m g cosθ cosφ | PROVED: Driveline.AxleLoad.fz_sum_iff |
+| P06-07 | 06:76 | 'an uphill road (θ_road > 0) moves load to the rear axle' | REAL | Driveline.AxleLoad | m,g,h_cg>0, θ∈(0,π/2) ⇒ F_zr > m g cosθ cosφ l_f/L and F_zf decreases | PROVED: Driveline.AxleLoad.uphill_moves_load_rear |
+| P06-08 | 06:74 | 'both are negated when the actor's yaw differs ... by more than π/2' | REAL | Driveline.AxleLoad | negating θ swaps the transfer term; the heading test uses the angle difference wrapped to [0,π] | PROVED: Driveline.AxleLoad.against_lane_swaps_transfer |
+| P06-09 | 06:77 | 'normal_load_fz is half of the axle load' | REAL | Driveline.AxleLoad | sum over the 4 wheels = m g cosθ cosφ | PROVED: Driveline.AxleLoad.wheel_loads_sum |
 | P06-12 | 06:78 | 'a_lon = −v_lat,ra psi_dot_0' | REAL | Driveline.SteadyState | v̇_lon = a_lon + v_lat ψ̇ = 0 (`ring`) | PROVED: Driveline.SteadyState.steady_circle_a_lon |
 | P06-13 | 06:78 | 'a_lat = v_0 psi_dot_0 (the rear-axle acceleration on the steady circle)' | REAL | Driveline.SteadyState | body-y acceleration v̇_lat + vψ̇ with v̇_lat = 0 | PROVED: Driveline.SteadyState.steady_circle_a_lat |
 | P06-23 | 06:84 | 'lateral force and yaw moment ... balanced at the first step if the upstream steering command reproduces δ_ss' | REAL | Driveline.SteadyState | follows from P08-03 + P08-04 | REFUTED: Driveline.SteadyState.dst_not_balanced |
