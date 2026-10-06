@@ -145,3 +145,15 @@ Module `Sensors`: the friction field and zones, mounts, the detection reference 
 Spec note (queued for the spec-fix pass):
 
 * **P17-62** `17-standard-library.md:48`. "Two actors that keep a constant gap on a curve therefore have zero relative velocity." That holds for a constant sensor-frame offset, which two actors on one circular arc at equal speed have (`Driveline.Sensors.arc_equal_speed_zero_rel_vel`). It does not hold for a constant along-road gap where the curvature changes.
+
+## WP13 Standard components (§17.3–17.5)
+
+Modules under `Std/`: `Controllers` (`clamp`, `follow_route`, the pincer intent, PID with its rebase, `JerkLimiter`, Stanley, nearest-point search, `BrakeOverrideArbiter`), `Drivetrain` (gear selection, the drive and low-speed equations, steering), `KinematicBicycle`, `ObjectPhysics` (the walker), and `DynamicSingleTrack`. 23 rows proved, 7 refuted, 1 duplicate (P17-41 of P06-23).
+
+Spec defects found (queued for the spec-fix pass):
+
+* **P17-36** `17-standard-library.md:107`. "Under `RATE`, `δ ← δ + clamp(δ̇_cmd, ±δ̇_max) Δt`. Then `|δ| ≤ δ_max`." The second sentence is a claim, and no step clamps `δ`: a held rate command passes `δ_max` (`Driveline.Std.steer_exceeds_max`). One implementation will clamp and another will not, so their states diverge. The spec should say "then clamp `δ` to `±δ_max`" if that is the intent. `tan δ` can then also reach `π/2` in the Euler step.
+* **P17-25** `17-standard-library.md:84`. Stanley "on the path ... the output is `arctan(Lκ_p)`, which is `δ_KS`" fails when `|arctan(Lκ_p)| > δ_max`, where the output saturates (`Driveline.Std.stanley_on_path_clamped`).
+* **P17-42** `17-standard-library.md:117`. "`|1 + λΔt| < 1`, that is `Δt < 2|Re λ|/|λ|²`" omits `Re λ < 0`; for an unstable eigenvalue the bound holds and the step still diverges (`Driveline.Std.euler_bound_not_stable`).
+* **P17-45, P17-41** `17-standard-library.md:117`. The low-speed reset leaves a nonzero front slip, and the `§8` state is not steady, whenever `l_f + l_r ≠ L` within the §3.1 tolerance. Same root cause as P02-09 and P08-03.
+* **P17-29, P17-35** `17-standard-library.md:89`, `:107`. A negative mass makes the low-speed hold accelerate the actor, and a negative `max_steer_rate` inverts the rate limit. Same root cause as P03-12 and P06-07: §3 sets no sign or positivity rules for vehicle parameters.
