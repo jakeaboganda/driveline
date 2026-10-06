@@ -342,6 +342,8 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | P05-36 | 05:133 | 'v_lat = -l_r psi_dot + v_y,cg' | REAL | Driveline.Kinematics | rearrangement of P05-32 | PROVED: Driveline.Kinematics.vLat_from_cg |
 | P05-37 | 05:135 | 'a_lon = vdot_lon - v_lat psi_dot and a_lat = vdot_lat + v_lon psi_dot' | REAL | Driveline.Kinematics | HasDerivAt of R(psi) v in rotating axes | PROVED: Driveline.Kinematics.accel_heading_axes |
 | P05-38 | 05:141 | odometer 'never decreases' | DECIDE | Driveline.Kinematics | round-to-nearest add is monotone; sqrt >= 0 | PROVED: Driveline.Kinematics.odometer_monotone |
+| P02-40 | 02:27 | 'a vehicle facing its lane's driving direction has ISO 8855 pitch θ = −θ_road because positive ISO pitch is nose-down, and one facing the other way has θ = +θ_road' | REAL | Driveline.Angles | eulerZYX ψ θ 0 *ᵥ e₁ = t (tangent climbing at θ_road) -> θ = -θ_road; = -t -> θ = θ_road; θ, θ_road in (-π/2, π/2) | PROVED: Driveline.Angles.pitch_of_road_grade |
+| P02-41 | 02:27 | 'φ_road is positive when the road is higher on the left than on the right, relative to that direction ... φ_road = σ · the OpenDRIVE superelevation' | REAL | Driveline.Tracks | superelevation positive when left of increasing s is higher; left of driving direction higher <-> 0 < φ_road, right higher <-> φ_road < 0 | PROVED: Driveline.Tracks.roadBank_sign |
 
 ### WP10 Steady state and axle loads (§6.2, §8)
 

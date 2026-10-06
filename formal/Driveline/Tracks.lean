@@ -618,9 +618,12 @@ def parse (s : List Char) : Option (List Char × ℤ) :=
   | (revLane, _ :: revRoad) => (decodeInt revLane.reverse).map (revRoad.reverse, ·)
   | _ => none
 
-/-- Elevation profile z(s) and traffic rule of each road. -/
+/-- Elevation profile z(s), superelevation and traffic rule of each road. The superelevation is
+a roll angle, positive when the left of the reference line direction (increasing s) is
+higher. -/
 structure ElevMap where
   elev : String → ℝ → ℝ
+  superelev : String → ℝ → ℝ
   rule : String → Rule
 
 /-- A `road_grade` query: the actor's lane and s, and its heading and velocity. -/
@@ -634,6 +637,16 @@ structure GradeQuery where
 /-- 02-conventions.md:27: θ_road = σ arctan(dz/ds). -/
 def roadGrade (m : ElevMap) (q : GradeQuery) : ℝ :=
   (sigma (m.rule q.roadId) q.laneId : ℝ) * Real.arctan (deriv (m.elev q.roadId) q.s)
+
+/-- 02-conventions.md:27: φ_road = σ · the OpenDRIVE superelevation. -/
+def roadBank (m : ElevMap) (q : GradeQuery) : ℝ :=
+  (sigma (m.rule q.roadId) q.laneId : ℝ) * m.superelev q.roadId q.s
+
+/-- Height of the road surface at s and lateral offset d, with d positive to the left in the
+reference line direction (02-conventions.md:23): the cross section is tilted by the
+superelevation about the reference line. -/
+def crossHeight (m : ElevMap) (road : String) (s d : ℝ) : ℝ :=
+  m.elev road s + d * Real.sin (m.superelev road s)
 
 theorem digitVal_digitChar {d : ℕ} (h : d < 10) : digitVal (digitChar d) = some d := by
   interval_cases d <;> decide
@@ -759,6 +772,39 @@ theorem roadGrade_lane_relative (m : ElevMap) (q₁ q₂ : GradeQuery)
     (hr : q₁.roadId = q₂.roadId) (hl : q₁.laneId = q₂.laneId) (hs : q₁.s = q₂.s) :
     roadGrade m q₁ = roadGrade m q₂ := by
   simp only [roadGrade, hr, hl, hs]
+
+/-- P02-41: “`road_bank` φ_road is positive when the road is higher on the left than on the
+right, relative to that direction … φ_road = σ · the OpenDRIVE superelevation”
+(02-conventions.md:27). The point at lateral offset σ w (w > 0) is left of the driving
+direction, the point at −σ w right of it. -/
+theorem roadBank_sign (m : ElevMap) (q : GradeQuery)
+    (hse : m.superelev q.roadId q.s ∈ Set.Ioo (-(Real.pi / 2)) (Real.pi / 2)) {w : ℝ} (hw : 0 < w) :
+    let σ := (sigma (m.rule q.roadId) q.laneId : ℝ)
+    (crossHeight m q.roadId q.s (-(σ * w)) < crossHeight m q.roadId q.s (σ * w) ↔
+        0 < roadBank m q) ∧
+      (crossHeight m q.roadId q.s (σ * w) < crossHeight m q.roadId q.s (-(σ * w)) ↔
+        roadBank m q < 0) := by
+  intro σ
+  set a := m.superelev q.roadId q.s with ha
+  have mono := Real.strictMonoOn_sin
+  have m0 : (0 : ℝ) ∈ Set.Icc (-(Real.pi / 2)) (Real.pi / 2) :=
+    ⟨by linarith [Real.pi_pos], by linarith [Real.pi_pos]⟩
+  have ma : a ∈ Set.Icc (-(Real.pi / 2)) (Real.pi / 2) := Set.Ioo_subset_Icc_self hse
+  have hpos : 0 < Real.sin a ↔ 0 < a := by
+    have := mono.lt_iff_lt m0 ma; rwa [Real.sin_zero] at this
+  have hneg : Real.sin a < 0 ↔ a < 0 := by
+    have := mono.lt_iff_lt ma m0; rwa [Real.sin_zero] at this
+  simp only [crossHeight, roadBank, ← ha]
+  rcases sigma_cases (m.rule q.roadId) q.laneId with h | h <;> simp only [σ, h]
+  · rw [one_mul, one_mul]
+    constructor
+    · rw [← hpos]; constructor <;> intro <;> nlinarith
+    · rw [← hneg]; constructor <;> intro <;> nlinarith
+  · constructor
+    · rw [show 0 < -1 * a ↔ a < 0 by constructor <;> intro <;> linarith, ← hneg]
+      constructor <;> intro <;> nlinarith
+    · rw [show -1 * a < 0 ↔ 0 < a by constructor <;> intro <;> linarith, ← hpos]
+      constructor <;> intro <;> nlinarith
 
 end Lanes
 

@@ -297,4 +297,29 @@ theorem heading_eq_body_level (ψ : ℝ) : eulerZYX ψ 0 0 = headingFrame ψ := 
   ext i j; fin_cases i <;> fin_cases j <;>
     simp [eulerZYX, headingFrame, Rz, Ry, Rx, Matrix.mul_apply, Fin.sum_univ_three]
 
+/-- The body x axis of `eulerZYX ψ θ 0`: (cos ψ cos θ, sin ψ cos θ, −sin θ). -/
+theorem body_x_axis (ψ θ : ℝ) :
+    eulerZYX ψ θ 0 *ᵥ e₁ = ![cos ψ * cos θ, sin ψ * cos θ, -sin θ] := by
+  ext i; fin_cases i <;>
+    simp [eulerZYX, Rz, Ry, Rx, e₁, Matrix.mul_apply, Matrix.mulVec, dotProduct,
+      Fin.sum_univ_three]
+
+/-- P02-40: “On an uphill road, a vehicle facing its lane's driving direction has ISO 8855
+pitch θ = −θ_road because positive ISO pitch is nose-down, and one facing the other way has
+θ = +θ_road” (02-conventions.md:27). The lane tangent in the driving direction has heading χ
+and climbs at θ_road: (cos χ cos θ_road, sin χ cos θ_road, sin θ_road). -/
+theorem pitch_of_road_grade {ψ θ χ θroad : ℝ} (hθ : θ ∈ Set.Ioo (-(π / 2)) (π / 2))
+    (hr : θroad ∈ Set.Ioo (-(π / 2)) (π / 2)) :
+    let t : Fin 3 → ℝ := ![cos χ * cos θroad, sin χ * cos θroad, sin θroad]
+    (eulerZYX ψ θ 0 *ᵥ e₁ = t → θ = -θroad) ∧ (eulerZYX ψ θ 0 *ᵥ e₁ = -t → θ = θroad) := by
+  intro t
+  have inj := Real.injOn_sin
+  have mθ : θ ∈ Set.Icc (-(π / 2)) (π / 2) := Set.Ioo_subset_Icc_self hθ
+  have mr : θroad ∈ Set.Icc (-(π / 2)) (π / 2) := Set.Ioo_subset_Icc_self hr
+  have mnr : -θroad ∈ Set.Icc (-(π / 2)) (π / 2) := ⟨by linarith [mr.2], by linarith [mr.1]⟩
+  rw [body_x_axis]
+  refine ⟨fun h => inj mθ mnr ?_, fun h => inj mθ mr ?_⟩
+  · have := congrFun h 2; simp [t] at this; rw [Real.sin_neg]; linarith
+  · have := congrFun h 2; simp [t] at this; linarith
+
 end Driveline.Angles
