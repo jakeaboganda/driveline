@@ -321,27 +321,27 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 
 | ID | Spec | Quote | Class | Lean module | Statement | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| P02-05 | 02:16 | '+X East, +Y North, +Z Up' right-handed | REAL | Driveline.Angles | e_x x e_y = e_z | TODO |
-| P02-06 | 02:17 | 'intrinsic Z-Y'-X'' (yaw -> pitch -> roll)' | REAL | Driveline.Angles | R = Rz psi * Ry theta * Rx phi; R in SO(3) (R^T R = 1, det R = 1) | TODO |
-| P02-07 | 02:17 | 'counter-clockwise positive by the right-hand rule' | REAL | Driveline.Angles | d/dpsi of Rz psi * e_x at 0 = e_y | TODO |
-| P02-08 | 02:18 | 'It equals the body frame when roll and pitch are 0' | REAL | Driveline.Angles | eulerZYX psi 0 0 = Rz psi | TODO |
-| P02-15 | 02:27 | 'theta_road = sigma arctan(dz/ds)' / 'positive when the road rises in the driving direction' | REAL | Driveline.Angles | sign theta_road = sign (sigma * dz/ds); abs theta_road < pi/2 | TODO |
-| P02-16 | 02:27 | 'An actor that drives against its lane ... still gets these lane-relative signs' | REAL | Driveline.Angles | theta_road depends only on (lane, s), not on the actor's heading/velocity | TODO |
+| P02-05 | 02:16 | '+X East, +Y North, +Z Up' right-handed | REAL | Driveline.Angles | e_x x e_y = e_z | PROVED: Driveline.Angles.world_right_handed |
+| P02-06 | 02:17 | 'intrinsic Z-Y'-X'' (yaw -> pitch -> roll)' | REAL | Driveline.Angles | R = Rz psi * Ry theta * Rx phi; R in SO(3) (R^T R = 1, det R = 1) | PROVED: Driveline.Angles.eulerZYX_intrinsic |
+| P02-07 | 02:17 | 'counter-clockwise positive by the right-hand rule' | REAL | Driveline.Angles | d/dpsi of Rz psi * e_x at 0 = e_y | PROVED: Driveline.Angles.rotations_ccw_positive |
+| P02-08 | 02:18 | 'It equals the body frame when roll and pitch are 0' | REAL | Driveline.Angles | eulerZYX psi 0 0 = Rz psi | PROVED: Driveline.Angles.heading_eq_body_level |
+| P02-15 | 02:27 | 'theta_road = sigma arctan(dz/ds)' / 'positive when the road rises in the driving direction' | REAL | Driveline.Angles | sign theta_road = sign (sigma * dz/ds); abs theta_road < pi/2 | PROVED: Driveline.Tracks.roadGrade_sign |
+| P02-16 | 02:27 | 'An actor that drives against its lane ... still gets these lane-relative signs' | REAL | Driveline.Angles | theta_road depends only on (lane, s), not on the actor's heading/velocity | PROVED: Driveline.Tracks.roadGrade_lane_relative |
 | P04-11 | 04:30 | 'ANGLE field, the difference ... is wrapped to (-pi, pi]' | REAL | Driveline.Angles | wrap x in Ioc (-pi) pi; wrap x - x in 2*pi*Z; wrap idempotent | PROVED: Driveline.Angles.wrap_spec |
 | P04-18 | 04:37 | 'A difference of exactly pi therefore turns positive' | REAL | Driveline.Angles | wrap (-pi) = pi; wrap pi = pi | PROVED: Driveline.Angles.wrap_exact_pi |
-| P02-13 | 02:25 | 'The text after the last colon is the signed lane index' | MODEL | Driveline.Tracks | parse (render r l) = some (r,l) even if r contains ':' (split on last colon) | TODO |
-| P02-14 | 02:26 | 'RHT, negative lanes drive toward increasing s ... LHT, positive lanes' | DECIDE | Driveline.Tracks | sigma rule lane = if (rule=RHT) = (lane<0) then 1 else -1, for lane != 0; sigma in {1,-1} | TODO |
-| P04-19 | 04:37 | 'v_{k+1} + alpha Delta, wrapped' | REAL | Driveline.Angles | result in (-pi, pi]; alpha = 0 gives wrap v_{k+1} (follows a shortest-arc path) | TODO |
-| P05-23 | 05:76 | 'before t_0 it is the first point ... after the last point it is the last point, held' | MODEL | Driveline.Kinematics | target interp traj t: t <= t0 gives p0; t >= tn gives pn; n = 1 gives a constant | TODO |
-| P05-25 | 05:78 | 'remaining stopping distance is stop_at_odometer - own.odometer_m' | REAL | Driveline.Kinematics | if odometer is monotone, remaining is antitone | TODO |
-| P05-28 | 05:92-93 | 'differs from the reported a_lon ... by v_lat psi_dot'; committed vdot = a_lon + v_lat psi_dot | REAL | Driveline.Kinematics | follows from P05-37 | TODO |
-| P05-32 | 05:122 | 'v_y,cg = v_lat + l_r psi_dot' | REAL | Driveline.Kinematics | planar rigid body: v_P = v_O + omega x r with r = (l_r, 0) | TODO |
-| P05-33 | 05:122-123 | beta = atan2(sgn(v_lon) v_y, abs v_lon), sgn(0) = +1, 0 at rest | REAL | Driveline.Kinematics | define with Complex.arg; beta 0 0 = 0 | TODO |
-| P05-34 | 05:123 | 'equals arctan(v_y,cg / v_lon) whenever v_lon != 0, including reverse' | REAL | Driveline.Kinematics | v != 0 -> beta = Real.arctan (vy / v); true for both signs | TODO |
-| P05-35 | 05:124 | KS: 'beta_cg = arctan(l_r/L tan delta) != 0 for v_lon != 0' | REAL | Driveline.Kinematics | the equality holds; the != 0 part needs delta != 0 and l_r != 0 | TODO |
-| P05-36 | 05:133 | 'v_lat = -l_r psi_dot + v_y,cg' | REAL | Driveline.Kinematics | rearrangement of P05-32 | TODO |
-| P05-37 | 05:135 | 'a_lon = vdot_lon - v_lat psi_dot and a_lat = vdot_lat + v_lon psi_dot' | REAL | Driveline.Kinematics | HasDerivAt of R(psi) v in rotating axes | TODO |
-| P05-38 | 05:141 | odometer 'never decreases' | DECIDE | Driveline.Kinematics | round-to-nearest add is monotone; sqrt >= 0 | TODO |
+| P02-13 | 02:25 | 'The text after the last colon is the signed lane index' | MODEL | Driveline.Tracks | parse (render r l) = some (r,l) even if r contains ':' (split on last colon) | PROVED: Driveline.Tracks.parse_render |
+| P02-14 | 02:26 | 'RHT, negative lanes drive toward increasing s ... LHT, positive lanes' | DECIDE | Driveline.Tracks | sigma rule lane = if (rule=RHT) = (lane<0) then 1 else -1, for lane != 0; sigma in {1,-1} | PROVED: Driveline.Tracks.sigma_spec |
+| P04-19 | 04:37 | 'v_{k+1} + alpha Delta, wrapped' | REAL | Driveline.Angles | result in (-pi, pi]; alpha = 0 gives wrap v_{k+1} (follows a shortest-arc path) | PROVED: Driveline.SliceBuffer.angleInterp_spec |
+| P05-23 | 05:76 | 'before t_0 it is the first point ... after the last point it is the last point, held' | MODEL | Driveline.Kinematics | target interp traj t: t <= t0 gives p0; t >= tn gives pn; n = 1 gives a constant | PROVED: Driveline.Kinematics.trajTarget_spec |
+| P05-25 | 05:78 | 'remaining stopping distance is stop_at_odometer - own.odometer_m' | REAL | Driveline.Kinematics | if odometer is monotone, remaining is antitone | PROVED: Driveline.Kinematics.remaining_antitone |
+| P05-28 | 05:92-93 | 'differs from the reported a_lon ... by v_lat psi_dot'; committed vdot = a_lon + v_lat psi_dot | REAL | Driveline.Kinematics | follows from P05-37 | PROVED: Driveline.Kinematics.vdot_sub_aLon |
+| P05-32 | 05:122 | 'v_y,cg = v_lat + l_r psi_dot' | REAL | Driveline.Kinematics | planar rigid body: v_P = v_O + omega x r with r = (l_r, 0) | PROVED: Driveline.Kinematics.cg_velocity |
+| P05-33 | 05:122-123 | beta = atan2(sgn(v_lon) v_y, abs v_lon), sgn(0) = +1, 0 at rest | REAL | Driveline.Kinematics | define with Complex.arg; beta 0 0 = 0 | PROVED: Driveline.Kinematics.betaCg_rest |
+| P05-34 | 05:123 | 'equals arctan(v_y,cg / v_lon) whenever v_lon != 0, including reverse' | REAL | Driveline.Kinematics | v != 0 -> beta = Real.arctan (vy / v); true for both signs | PROVED: Driveline.Kinematics.betaCg_eq_arctan |
+| P05-35 | 05:124 | KS: 'beta_cg = arctan(l_r/L tan delta) != 0 for v_lon != 0' | REAL | Driveline.Kinematics | the equality holds; the != 0 part needs delta != 0 and l_r != 0 | REFUTED: Driveline.Kinematics.ks_betaCg_ne_zero_false |
+| P05-36 | 05:133 | 'v_lat = -l_r psi_dot + v_y,cg' | REAL | Driveline.Kinematics | rearrangement of P05-32 | PROVED: Driveline.Kinematics.vLat_from_cg |
+| P05-37 | 05:135 | 'a_lon = vdot_lon - v_lat psi_dot and a_lat = vdot_lat + v_lon psi_dot' | REAL | Driveline.Kinematics | HasDerivAt of R(psi) v in rotating axes | PROVED: Driveline.Kinematics.accel_heading_axes |
+| P05-38 | 05:141 | odometer 'never decreases' | DECIDE | Driveline.Kinematics | round-to-nearest add is monotone; sqrt >= 0 | PROVED: Driveline.Kinematics.odometer_monotone |
 
 ### WP10 Steady state and axle loads (§6.2, §8)
 

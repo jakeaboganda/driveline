@@ -17,5 +17,6 @@ import Driveline.Types
 import Driveline.Manifest
 import Driveline.Abi
 import Driveline.InitContext
+import Driveline.Kinematics
 import Driveline.TierChange
 import Driveline.Splice

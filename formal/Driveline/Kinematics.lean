@@ -88,8 +88,8 @@ theorem atan2_of_pos {y x : ℝ} (hx : 0 < x) : atan2 y x = arctan (y / x) := by
   obtain ⟨h1, h2⟩ := abs_lt.mp habs
   rw [← Real.arctan_tan h1 h2, Real.tan_eq_sin_div_cos]
   congr 1
-  rw [← hc, ← hs]
-  field_simp
+  rw [div_eq_div_iff (Real.cos_pos_of_mem_Ioo ⟨h1, h2⟩).ne' hx.ne']
+  linear_combination (-sin (atan2 y x)) * hc + cos (atan2 y x) * hs
 
 /-! ## Theorems -/
 
@@ -99,7 +99,7 @@ point is that point, held” and “The times are not negative and strictly incr
 (05-checkpoints.md:76). -/
 theorem trajTarget_spec {α : Type} (time : α → ℤ) (between : α → α → ℤ → α) :
     (∀ p rest t, t ≤ time p → trajTarget time between (p :: rest) t = some p) ∧
-      (∀ ps pn t, ((ps ++ [pn]).map time).Chain' (· < ·) → time pn ≤ t →
+      (∀ ps pn t, ((ps ++ [pn]).map time).IsChain (· < ·) → time pn ≤ t →
         trajTarget time between (ps ++ [pn]) t = some pn) ∧
       (∀ p t, trajTarget time between [p] t = some p) := by
   refine ⟨fun p rest t h => ?_, fun ps pn t hc ht => ?_, fun _ _ => rfl⟩
@@ -107,7 +107,7 @@ theorem trajTarget_spec {α : Type} (time : α → ℤ) (between : α → α →
     | nil => rfl
     | cons q rest => simp [trajTarget, h]
   · have hp : (ps ++ [pn]).Pairwise (fun a b => time a < time b) :=
-      List.pairwise_map.mp (List.chain'_iff_pairwise.mp hc)
+      List.pairwise_map.mp (List.isChain_iff_pairwise.mp hc)
     clear hc
     induction ps with
     | nil => rfl
@@ -163,8 +163,8 @@ theorem cg_velocity {O : ℝ → Fin 2 → ℝ} {ψ : ℝ → ℝ} {t r : ℝ} {
   convert hO.add (hasDerivAt_vec2 (hψ.cos.mul_const lr) (hψ.sin.mul_const lr)) using 1
   · funext s; ext i; fin_cases i <;> simp [rot2_mulVec]
   · ext i; fin_cases i <;> simp [rot2_mulVec, vyCg]
-    · linear_combination (-V 0) * h
-    · linear_combination (-V 1) * h
+    · linear_combination V 0 * h
+    · linear_combination V 1 * h
 
 /-- P05-36: “`v_lat` … −l_r ψ̇ + v_{y,cg} for `ST`/`MB`” (05-checkpoints.md:133). `W` is the
 CG velocity. -/
@@ -194,7 +194,7 @@ theorem betaCg_eq_arctan (lr vLon vLat r : ℝ) (hv : vLon ≠ 0) :
   have hs : sgn0 vLon ≠ 0 := by unfold sgn0; split_ifs <;> norm_num
   have hs2 : sgn0 vLon * sgn0 vLon = 1 := by unfold sgn0; split_ifs <;> norm_num
   field_simp
-  linear_combination (-vyCg lr vLat r) * hs2
+  linear_combination vyCg lr vLat r * hs2
 
 /-- P05-35: “rear-axle lateral velocity is genuinely v_lat = 0, while yaw rate is
 ψ̇ = v_lon/L tan δ and … β_cg = arctan(l_r/L tan δ)” (05-checkpoints.md:124). -/
