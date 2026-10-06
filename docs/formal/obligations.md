@@ -302,18 +302,18 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | P06-34 | 06:93 | 'steering group becomes ANGLE ... A NONE steering group stays NONE ... Longitudinal fields keep their last values' | DECIDE | Driveline.TierChange | idempotent; leaves longitudinal fields unchanged | PROVED: Driveline.TierChange.kcf_steerAfter |
 | P06-35 | 06:94 | slip_angle 0 'when v_lon < 1 m/s ... or when the required_tier ... is 0' | DECIDE | Driveline.InitContext | case split | PROVED: Driveline.InitContext.warm_slip |
 | P06-36 | 06:95 | 'matches each context to its actor slot by chassis_state.actor_id ... in its actor_ids order' | DECIDE | Driveline.InitContext | Nodup actor_ids ⇒ contexts = filter, a Sublist, with injective matching; re-trim filters on tierChanged | PROVED: Driveline.InitContext.ctx_match |
-| P10-01 | 10:13,17-19 | cardinality table | MODEL | Driveline.Splice | dependency relation for each cardinality | TODO |
-| P10-03 | 10:21 | 'bind a -> chain means exactly bind [a] -> chain'; distinct; order | DECIDE | Driveline.Splice | List.Nodup | TODO |
-| P10-16 | 10:30 | 'so a partial target needs a partial replacement' | DECIDE | Driveline.Splice | spliceOK tgt rep -> isPartial tgt.out -> isPartial rep.out (suspected false) | TODO |
-| P10-17 | 10:30 | 'one target contains the other' vs 'Two splices of the same target are allowed' | DECIDE | Driveline.Splice | strict containment relation | TODO |
-| P10-18 | 10:31 | 'fires at most once ... in source order' | MODEL | Driveline.Splice | - | TODO |
-| P10-19 | 10:32 | ascending actor_id, all-or-nothing write; net change 'between 0 and 1 or 2' | MODEL | Driveline.Splice | netChange b a := (b = 0) != (a = 0) | TODO |
-| P10-20 | 10:32 | instantiate/teardown ordering | MODEL | Driveline.Splice | - | TODO |
-| P10-21 | 10:33 | 'A single splice statement does not' | MODEL | Driveline.Splice | - | TODO |
+| P10-01 | 10:13,17-19 | cardinality table | MODEL | Driveline.Splice | dependency relation for each cardinality | PROVED: Driveline.Splice.card_dependency |
+| P10-03 | 10:21 | 'bind a -> chain means exactly bind [a] -> chain'; distinct; order | DECIDE | Driveline.Splice | List.Nodup | PROVED: Driveline.Splice.bind_norm |
+| P10-16 | 10:30 | 'so a partial target needs a partial replacement' | DECIDE | Driveline.Splice | spliceOK tgt rep -> isPartial tgt.out -> isPartial rep.out (suspected false) | PROVED: Driveline.Splice.partial_target_partial_replacement |
+| P10-17 | 10:30 | 'one target contains the other' vs 'Two splices of the same target are allowed' | DECIDE | Driveline.Splice | strict containment relation | PROVED: Driveline.Splice.same_target_allowed |
+| P10-18 | 10:31 | 'fires at most once ... in source order' | MODEL | Driveline.Splice | - | PROVED: Driveline.Splice.fires_once |
+| P10-19 | 10:32 | ascending actor_id, all-or-nothing write; net change 'between 0 and 1 or 2' | MODEL | Driveline.Splice | netChange b a := (b = 0) != (a = 0) | PROVED: Driveline.Splice.window_all_or_nothing |
+| P10-20 | 10:32 | instantiate/teardown ordering | MODEL | Driveline.Splice | - | PROVED: Driveline.Splice.window_order |
+| P10-21 | 10:33 | 'A single splice statement does not' | MODEL | Driveline.Splice | - | PROVED: Driveline.Splice.net_only |
 | P05-41 | 05:32 | 'A frame that the runtime builds by the rules of Pass 1 step 5 uses only baseline modes' | MODEL | Driveline.InitContext | every Pass 1 step 5 frame has isBaseline modes | PROVED: Driveline.InitContext.built_frames_baseline |
 | P05-42 | 05:32 | 'the steering that the runtime writes after a tier change uses ANGLE' | MODEL | Driveline.TierChange | steering replacement sets steer_mode/wheel_mode ANGLE | PROVED: Driveline.TierChange.steerAfter_angle |
 | P00-40 | 00:34 | 'a static actor, which `place` creates' (17:22) | MODEL | Driveline.InitContext | an actor is static <-> place created it | PROVED: Driveline.InitContext.static_iff_place |
-| P10-40 | 10:25 | 'the runtime re-forms its merged frame in the splice window ... stamped with the next tick's time' | MODEL | Driveline.Splice | splice-window merged frame stamp = next tick time | TODO |
+| P10-40 | 10:25 | 'the runtime re-forms its merged frame in the splice window ... stamped with the next tick's time' | MODEL | Driveline.Splice | splice-window merged frame stamp = next tick time | PROVED: Driveline.Splice.reformed_stamp |
 
 ### WP09 Angles and rigid-body kinematics (§2, §5.3)
 

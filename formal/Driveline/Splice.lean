@@ -285,7 +285,7 @@ theorem window_order (stmts : List (List ℕ × List ℕ)) :
       (∀ s s' st st' x y, s < s' → stmts[s]? = some st → stmts[s']? = some st' →
         x ∈ block s st → y ∈ block s' st' → Precedes (windowOps stmts) x y) := by
   refine ⟨rfl, ?_, fun s st h => ?_, ?_⟩
-  · rw [windowOps, ← List.cons_append, List.getLast?_append]
+  · rw [windowOps, List.getLast?_append]
     simp
   · obtain ⟨A, B, hAB⟩ := windowOps_split stmts s st h
     rw [hAB]
