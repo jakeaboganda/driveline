@@ -72,6 +72,7 @@ theorem auto_gear (p : DT) (v : ℝ) (hn : 1 ≤ p.nGears) :
     autoGear p v ∈ Finset.Icc 1 p.nGears ∧
       (0 < p.Reff → 0 ≤ p.ifd → AntitoneOn p.ratio (Finset.Icc 1 p.nGears) →
         ∀ g g', 1 ≤ g' → g' ≤ g → g ≤ p.nGears → qualifies p v g → qualifies p v g') := by
+  classical
   refine ⟨?_, fun hR hi ha g g' h1 hle hg hq => ?_⟩
   · unfold autoGear
     simp only

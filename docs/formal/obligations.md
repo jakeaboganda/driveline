@@ -408,20 +408,20 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 
 | ID | Spec | Quote | Class | Lean module | Statement | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| P17-01 | 17:28 | "min(max(x, lo), hi)" | REAL | Driveline.Std.Controllers | lo≤hi → lo ≤ clamp x lo hi ≤ hi; clamp is idempotent | TODO |
-| P17-04 | 17:30 | "the first route node whose road_id equals from.road_id" | DECIDE | Driveline.Std.Controllers | List.find? spec, falling back to the own lane | TODO |
-| P17-20 | 17:65 | "v_ref = max(0, v_target + 0.5 s⁻¹(o_j − Δx_j))" | REAL | Driveline.Std.Controllers | v_ref ≥ 0; the closed loop ẋ = −0.5(x+o_j) converges to x = −o_j | TODO |
-| P17-21 | 17:77 | "continues from the previous output without a step when k_i ≠ 0" | REAL | Driveline.Std.Controllers | ki≠0 → first output after rebase = a_prev (field_simp) | TODO |
-| P17-22 | 17:77 | "or I = 0 if k_i = 0" | REAL | Driveline.Std.Controllers | ki=0 → output = kp·e, so a step is possible | TODO |
-| P17-23 | 17:80 | "a_k = a_{k−1} + clamp(..., ± max_jerk·dt)" | REAL | Driveline.Std.Controllers | abs(a_k−a_{k−1}) ≤ max_jerk·dt | TODO |
-| P17-24 | 17:83 | "δ = clamp(..., ±δ_max)" | REAL | Driveline.Std.Controllers | δmax≥0 → abs δ ≤ δmax | TODO |
-| P17-25 | 17:84 | "the output is arctan(Lκ_p), which is δ_KS" | REAL | Driveline.Std.Controllers | e=0 ∧ ψe=0 ∧ abs(arctan Lκ) ≤ δmax → δ = arctan Lκ | TODO |
-| P17-26 | 17:82 | "smallest index winning ties" | DECIDE | Driveline.Std.Controllers | argmin with index tiebreak is unique | TODO |
-| P17-27 | 17:87 | "the largest gear index g with ... ≥ 157.08 rad/s, or gear 1" | INT | Driveline.Std.Drivetrain | num_gears≥1 → g ∈ [1, num_gears]; if i_g decreases, the qualifying gears form a prefix | TODO |
-| P17-29 | 17:89 | "comes to rest instead of creeping" | REAL | Driveline.Std.Drivetrain | abs v < 0.01 ∧ abs F_drive ≤ F_hold → v+a·Δt ∈ [0,v] when Δt ≤ dt | TODO |
-| P17-30 | 17:89 | "(own.v_lat + l_r·yaw_rate)·yaw_rate" | REAL | Driveline.Std.Drivetrain | v̇x = F/m + v_y·r, consistent with the DST init v_y = v_lat + l_r·r | TODO |
-| P17-31 | 17:89 | "steering_wheel_norm · δ_max" | REAL | Driveline.Std.Drivetrain | abs norm ≤ 1 → abs cmd ≤ δmax | TODO |
-| P17-32 | 17:91 | "comes whole from secondary if its mode there is not NONE" | DECIDE | Driveline.Std.Controllers | per-group selection, so groups are never mixed | TODO |
+| P17-01 | 17:28 | "min(max(x, lo), hi)" | REAL | Driveline.Std.Controllers | lo≤hi → lo ≤ clamp x lo hi ≤ hi; clamp is idempotent | PROVED: Driveline.Std.clamp_bounds |
+| P17-04 | 17:30 | "the first route node whose road_id equals from.road_id" | DECIDE | Driveline.Std.Controllers | List.find? spec, falling back to the own lane | PROVED: Driveline.Std.follow_route_target |
+| P17-20 | 17:65 | "v_ref = max(0, v_target + 0.5 s⁻¹(o_j − Δx_j))" | REAL | Driveline.Std.Controllers | v_ref ≥ 0; the closed loop ẋ = −0.5(x+o_j) converges to x = −o_j | PROVED: Driveline.Std.pincer_vref |
+| P17-21 | 17:77 | "continues from the previous output without a step when k_i ≠ 0" | REAL | Driveline.Std.Controllers | ki≠0 → first output after rebase = a_prev (field_simp) | PROVED: Driveline.Std.pid_rebase_continuous |
+| P17-22 | 17:77 | "or I = 0 if k_i = 0" | REAL | Driveline.Std.Controllers | ki=0 → output = kp·e, so a step is possible | PROVED: Driveline.Std.pid_rebase_ki_zero |
+| P17-23 | 17:80 | "a_k = a_{k−1} + clamp(..., ± max_jerk·dt)" | REAL | Driveline.Std.Controllers | abs(a_k−a_{k−1}) ≤ max_jerk·dt | PROVED: Driveline.Std.jerk_bound |
+| P17-24 | 17:83 | "δ = clamp(..., ±δ_max)" | REAL | Driveline.Std.Controllers | δmax≥0 → abs δ ≤ δmax | PROVED: Driveline.Std.stanley_bound |
+| P17-25 | 17:84 | "the output is arctan(Lκ_p), which is δ_KS" | REAL | Driveline.Std.Controllers | e=0 ∧ ψe=0 ∧ abs(arctan Lκ) ≤ δmax → δ = arctan Lκ | PROVED: Driveline.Std.stanley_on_path |
+| P17-26 | 17:82 | "smallest index winning ties" | DECIDE | Driveline.Std.Controllers | argmin with index tiebreak is unique | PROVED: Driveline.Std.nearest_unique |
+| P17-27 | 17:87 | "the largest gear index g with ... ≥ 157.08 rad/s, or gear 1" | INT | Driveline.Std.Drivetrain | num_gears≥1 → g ∈ [1, num_gears]; if i_g decreases, the qualifying gears form a prefix | PROVED: Driveline.Std.auto_gear |
+| P17-29 | 17:89 | "comes to rest instead of creeping" | REAL | Driveline.Std.Drivetrain | abs v < 0.01 ∧ abs F_drive ≤ F_hold → v+a·Δt ∈ [0,v] when Δt ≤ dt | PROVED: Driveline.Std.low_speed_rest |
+| P17-30 | 17:89 | "(own.v_lat + l_r·yaw_rate)·yaw_rate" | REAL | Driveline.Std.Drivetrain | v̇x = F/m + v_y·r, consistent with the DST init v_y = v_lat + l_r·r | PROVED: Driveline.Std.drivetrain_yaw_term |
+| P17-31 | 17:89 | "steering_wheel_norm · δ_max" | REAL | Driveline.Std.Drivetrain | abs norm ≤ 1 → abs cmd ≤ δmax | PROVED: Driveline.Std.drivetrain_steer |
+| P17-32 | 17:91 | "comes whole from secondary if its mode there is not NONE" | DECIDE | Driveline.Std.Controllers | per-group selection, so groups are never mixed | PROVED: Driveline.Std.arbiter_whole_groups |
 | P17-33 | 17:100 | "Clamp v_lon ← max(0, v_lon) ... a ← max(0, a)" | REAL | Driveline.Std.KinematicBicycle | invariant v≥0; v=0 → a≥0 | TODO |
 | P17-34 | 17:101 | "roll and pitch to 0. The standard physics is planar" | MODEL | Driveline.Std.KinematicBicycle | post-state roll=pitch=0 ∧ Z = elev(X,Y), by construction | TODO |
 | P17-35 | 17:107 | "clamp(δ_cmd − δ, ±ρΔt)" | REAL | Driveline.Std.KinematicBicycle | abs(δ'−δ) ≤ ρΔt (ANGLE) or ≤ δ̇maxΔt (RATE); a later projection is nonexpansive | TODO |
@@ -439,7 +439,7 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | P17-48 | 17:122,124 | "clamp(w(ψ_d − ψ), ±max_turn_rate Δt)" | REAL | Driveline.Std.ObjectPhysics | w(c)=c on (−π,π] → abs yaw_rate ≤ max_turn_rate | TODO |
 | P17-49 | 17:120 | "square root of +INFINITY is +INFINITY" | REAL | Driveline.Std.ObjectPhysics | ENNReal sqrt lemma | TODO |
 | P17-50 | 17:126 | "v capped at v_max" | DECIDE | Driveline.Std.ObjectPhysics | init establishes the P17-47 invariant | TODO |
-| P17-51 | 17:70 | "each no-bound field +INFINITY" | MODEL | Driveline.Std.Controllers | outputs satisfy the §5.2 validity rules; fails for PID (no clamp) | TODO |
+| P17-51 | 17:70 | "each no-bound field +INFINITY" | MODEL | Driveline.Std.Controllers | outputs satisfy the §5.2 validity rules; fails for PID (no clamp) | PROVED: Driveline.Std.std_outputs_valid |
 
 ### WP14 Modules and lockfile (§19, §12)
 
