@@ -422,13 +422,13 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | P17-30 | 17:89 | "(own.v_lat + l_r·yaw_rate)·yaw_rate" | REAL | Driveline.Std.Drivetrain | v̇x = F/m + v_y·r, consistent with the DST init v_y = v_lat + l_r·r | PROVED: Driveline.Std.drivetrain_yaw_term |
 | P17-31 | 17:89 | "steering_wheel_norm · δ_max" | REAL | Driveline.Std.Drivetrain | abs norm ≤ 1 → abs cmd ≤ δmax | PROVED: Driveline.Std.drivetrain_steer |
 | P17-32 | 17:91 | "comes whole from secondary if its mode there is not NONE" | DECIDE | Driveline.Std.Controllers | per-group selection, so groups are never mixed | PROVED: Driveline.Std.arbiter_whole_groups |
-| P17-33 | 17:100 | "Clamp v_lon ← max(0, v_lon) ... a ← max(0, a)" | REAL | Driveline.Std.KinematicBicycle | invariant v≥0; v=0 → a≥0 | TODO |
-| P17-34 | 17:101 | "roll and pitch to 0. The standard physics is planar" | MODEL | Driveline.Std.KinematicBicycle | post-state roll=pitch=0 ∧ Z = elev(X,Y), by construction | TODO |
-| P17-35 | 17:107 | "clamp(δ_cmd − δ, ±ρΔt)" | REAL | Driveline.Std.KinematicBicycle | abs(δ'−δ) ≤ ρΔt (ANGLE) or ≤ δ̇maxΔt (RATE); a later projection is nonexpansive | TODO |
-| P17-36 | 17:107 | "Then abs δ ≤ δ_max" | REAL | Driveline.Std.KinematicBicycle | ANGLE: convex step keeps the bound if δ and δcmd are within it; RATE: false without an explicit clamp | TODO |
-| P17-37 | 17:108 | "reaches a_cmd at once when the bound is +INFINITY" | REAL | Driveline.Std.KinematicBicycle | jerk=+∞ → a' = a_cmd | TODO |
-| P17-38 | 17:111 | "ψ̇ = (v/L) tan δ" | MODEL | Driveline.Std.KinematicBicycle | Euler step by definition; well-defined iff abs δ < π/2 | TODO |
-| P17-39 | 17:112 | "a_lat = vψ̇" | REAL | Driveline.Std.KinematicBicycle | definitional | TODO |
+| P17-33 | 17:100 | "Clamp v_lon ← max(0, v_lon) ... a ← max(0, a)" | REAL | Driveline.Std.KinematicBicycle | invariant v≥0; v=0 → a≥0 | PROVED: Driveline.Std.ks_speed_nonneg |
+| P17-34 | 17:101 | "roll and pitch to 0. The standard physics is planar" | MODEL | Driveline.Std.KinematicBicycle | post-state roll=pitch=0 ∧ Z = elev(X,Y), by construction | PROVED: Driveline.Std.ks_planar |
+| P17-35 | 17:107 | "clamp(δ_cmd − δ, ±ρΔt)" | REAL | Driveline.Std.KinematicBicycle | abs(δ'−δ) ≤ ρΔt (ANGLE) or ≤ δ̇maxΔt (RATE); a later projection is nonexpansive | PROVED: Driveline.Std.steer_rate_bound |
+| P17-36 | 17:107 | "Then abs δ ≤ δ_max" | REAL | Driveline.Std.KinematicBicycle | ANGLE: convex step keeps the bound if δ and δcmd are within it; RATE: false without an explicit clamp | REFUTED: Driveline.Std.steer_exceeds_max |
+| P17-37 | 17:108 | "reaches a_cmd at once when the bound is +INFINITY" | REAL | Driveline.Std.KinematicBicycle | jerk=+∞ → a' = a_cmd | PROVED: Driveline.Std.accel_no_jerk_bound |
+| P17-38 | 17:111 | "ψ̇ = (v/L) tan δ" | MODEL | Driveline.Std.KinematicBicycle | Euler step by definition; well-defined iff abs δ < π/2 | PROVED: Driveline.Std.ks_euler |
+| P17-39 | 17:112 | "a_lat = vψ̇" | REAL | Driveline.Std.KinematicBicycle | definitional | PROVED: Driveline.Std.ks_alat |
 | P17-40 | 17:115 | "F_yi = clamp(C_αi α_i, ±μ_i max(0, F_zi))" | REAL | Driveline.Std.DynamicSingleTrack | μ_i≥0 → abs F_yi ≤ μ_i·max(0, F_zi) | TODO |
 | P17-41 | 17:116 | "This small-angle model matches §8" | REAL | Driveline.Std.DynamicSingleTrack | a=0 ∧ the §8 steady state → v̇y = ṙ = v̇x = 0 (see issue 3) | TODO |
 | P17-42 | 17:117 | "Δt < 2abs(Re λ)/abs(λ)²" | REAL | Driveline.Std.DynamicSingleTrack | abs(1+λh) < 1 ↔ Re λ < 0 ∧ h < −2Re λ/abs(λ)² | TODO |
