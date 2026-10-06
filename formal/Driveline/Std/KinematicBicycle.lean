@@ -99,26 +99,40 @@ theorem ks_planar (L δdotMax Δt : ℝ) (elev : ℝ → ℝ → ℝ) (s : KS) (
     q.2.roll = 0 ∧ q.2.pitch = 0 ∧ q.2.Z = elev q.1.X q.1.Y :=
   ⟨rfl, rfl, rfl⟩
 
-/-- P17-35. 17:107 'Under `ANGLE`, δ ← δ + clamp(δ_cmd − δ, ±ρΔt), where
-ρ = min(δ̇_max, `steer_rate_cmd`). Under `RATE`, δ ← δ + clamp(δ̇_cmd, ±δ̇_max)Δt'.
-Each step moves δ by at most ρΔt or δ̇_maxΔt, and a later projection onto
-[−δ_max, δ_max] is nonexpansive toward any δ within it. `steer_rate_cmd` is
-'above zero, or +INFINITY' (05:96). -/
-theorem steer_rate_bound (δdotMax Δt δ δmax : ℝ) (hm : 0 ≤ δdotMax) (hΔ : 0 ≤ Δt) :
+/-- P17-35, conditional: with δ̇_max ≥ 0, of which §3 (03:20) states no range for
+`max_steer_rate`, 17:107 'Under `ANGLE`, δ ← δ + clamp(δ_cmd − δ, ±ρΔt), where
+ρ = min(δ̇_max, `steer_rate_cmd`). Under `RATE`, δ ← δ + clamp(δ̇_cmd, ±δ̇_max)Δt'
+moves δ by at most ρΔt or δ̇_maxΔt. `steer_rate_cmd` is 'above zero, or +INFINITY'
+(05:96). -/
+theorem steer_rate_bound (δdotMax Δt δ : ℝ) (hm : 0 ≤ δdotMax) (hΔ : 0 ≤ Δt) :
     (∀ c r, 0 < r → |steerStep δdotMax Δt δ (.angle c (some r)) - δ| ≤ min δdotMax r * Δt) ∧
       (∀ c, |steerStep δdotMax Δt δ (.angle c none) - δ| ≤ δdotMax * Δt) ∧
-      (∀ w, |steerStep δdotMax Δt δ (.rate w) - δ| ≤ δdotMax * Δt) ∧
-      (∀ δ', |δ| ≤ δmax → |clampS δ' δmax - δ| ≤ |δ' - δ|) := by
-  refine ⟨fun c r hr => ?_, fun c => ?_, fun w => ?_, fun δ' h => ?_⟩
+      (∀ w, |steerStep δdotMax Δt δ (.rate w) - δ| ≤ δdotMax * Δt) := by
+  refine ⟨fun c r hr => ?_, fun c => ?_, fun w => ?_⟩
   · simp only [steerStep, add_sub_cancel_left]
     exact abs_clampS_le _ _ (mul_nonneg (le_min hm hr.le) hΔ)
   · simp only [steerStep, add_sub_cancel_left]
     exact abs_clampS_le _ _ (mul_nonneg hm hΔ)
   · simp only [steerStep, add_sub_cancel_left, abs_mul, abs_of_nonneg hΔ]
     exact mul_le_mul_of_nonneg_right (abs_clampS_le _ _ hm) hΔ
-  · rw [abs_le] at h
-    simp only [clampS, clamp, min_def, max_def]
-    split_ifs <;> rw [abs_le] <;> constructor <;> cases abs_cases (δ' - δ) <;> linarith
+
+/-- P17-35, refuted. 17:107 'Under `RATE`, δ ← δ + clamp(δ̇_cmd, ±δ̇_max)Δt'.
+§3 (03:20) states no range for `max_steer_rate`, and the vehicle spec's well-formedness
+rules (03:31) do not constrain it. With δ̇_max < 0 the clamp's bounds cross,
+clamp(δ̇_cmd, ±δ̇_max) = δ̇_max, and δ moves by |δ̇_max|Δt > δ̇_maxΔt, so the step is
+not bounded by δ̇_maxΔt. The conditional result is `steer_rate_bound`. -/
+theorem steer_rate_neg_max (δdotMax Δt δ w : ℝ) (hm : δdotMax < 0) (hΔ : 0 < Δt) :
+    steerStep δdotMax Δt δ (.rate w) = δ + δdotMax * Δt ∧
+      δdotMax * Δt < |steerStep δdotMax Δt δ (.rate w) - δ| := by
+  have hc : clampS w δdotMax = δdotMax := by
+    unfold clampS clamp
+    exact min_eq_right (le_trans (by linarith) (le_max_right _ _))
+  have he : steerStep δdotMax Δt δ (.rate w) = δ + δdotMax * Δt := by
+    simp only [steerStep, hc]
+  refine ⟨he, ?_⟩
+  rw [he, add_sub_cancel_left]
+  have : δdotMax * Δt < 0 := mul_neg_of_neg_of_pos hm hΔ
+  linarith [abs_nonneg (δdotMax * Δt)]
 
 /-- P17-36, refuted. 17:107 '... Under `RATE`, δ ← δ + clamp(δ̇_cmd, ±δ̇_max)Δt. Then
 |δ| ≤ δ_max.' No step clamps δ to δ_max (§9.1, §11 and the rest of docs/spec/ have no

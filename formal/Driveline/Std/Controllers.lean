@@ -239,14 +239,36 @@ theorem stanley_bound (L κ ψe k e kSoft vlon δmax : ℝ) (h : 0 ≤ δmax) :
     |stanley L κ ψe k e kSoft vlon δmax| ≤ δmax :=
   abs_clampS_le _ _ h
 
-/-- P17-25. 17:84 'On a path that the rear axle already follows, e = 0 and
-ψ_e = 0, so the output is arctan(Lκ_p), which is δ_KS'. Spec gap: the clamp
-keeps this only when |arctan(Lκ_p)| ≤ δ_max, which the spec does not state. -/
+/-- P17-25, conditional: with |arctan(Lκ_p)| ≤ δ_max, which the spec does not
+state, 17:84 'On a path that the rear axle already follows, e = 0 and ψ_e = 0, so
+the output is arctan(Lκ_p), which is δ_KS' holds. -/
 theorem stanley_on_path (L κ k kSoft vlon δmax : ℝ) (h : |Real.arctan (L * κ)| ≤ δmax) :
     stanley L κ 0 k 0 kSoft vlon δmax = Real.arctan (L * κ) := by
   unfold stanley
   simp only [add_zero, mul_zero, zero_div, Real.arctan_zero]
   exact clampS_of_abs_le h
+
+/-- P17-25, refuted. 17:84 'On a path that the rear axle already follows, e = 0 and
+ψ_e = 0, so the output is arctan(Lκ_p), which is δ_KS'. The clamp of 17:83 still
+applies: with e = 0, ψ_e = 0 and |arctan(Lκ_p)| > δ_max ≥ 0 the output is ±δ_max,
+not arctan(Lκ_p). The conditional result is `stanley_on_path`. -/
+theorem stanley_on_path_clamped (L κ k kSoft vlon δmax : ℝ) (h0 : 0 ≤ δmax)
+    (h : δmax < |Real.arctan (L * κ)|) :
+    |stanley L κ 0 k 0 kSoft vlon δmax| = δmax ∧
+      stanley L κ 0 k 0 kSoft vlon δmax ≠ Real.arctan (L * κ) := by
+  have hs : stanley L κ 0 k 0 kSoft vlon δmax = clampS (Real.arctan (L * κ)) δmax := by
+    unfold stanley
+    simp only [add_zero, mul_zero, zero_div, Real.arctan_zero]
+  rw [hs]
+  set x := Real.arctan (L * κ)
+  unfold clampS clamp
+  rcases le_or_gt 0 x with hx | hx
+  · rw [abs_of_nonneg hx] at h
+    rw [max_eq_left (by linarith), min_eq_right h.le, abs_of_nonneg h0]
+    exact ⟨rfl, h.ne⟩
+  · rw [abs_of_neg hx] at h
+    rw [max_eq_right (by linarith), min_eq_left (by linarith), abs_neg, abs_of_nonneg h0]
+    exact ⟨rfl, by linarith⟩
 
 /-- P17-26. 17:82 'Let p be the path point nearest to it, with the smallest
 index winning ties', and 17:84 'A reference path with no points ... is
