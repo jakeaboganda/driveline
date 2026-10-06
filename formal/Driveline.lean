@@ -22,3 +22,4 @@ import Driveline.TierChange
 import Driveline.Splice
 import Driveline.SteadyState
 import Driveline.AxleLoad
+import Driveline.Contact

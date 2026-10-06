@@ -176,7 +176,7 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | ID | Spec | Quote | Class | Lean module | Statement | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | P11-21 | 11:24 | "first tick that a pair is in contact, and on no later tick" | MODEL | Driveline.RunRecord | `∀ pair, count collisionLines pair ≤ 1`; a line exists ↔ ∃ tick in contact | PROVED: Driveline.RunRecord.collision_first_contact |
-| P11-40 | 11:24 | "On the first tick that a pair is in contact, and on no later tick, the runtime writes a `collision` line" | MODEL | Driveline.RunRecord | `Run.spawnPairs` and `TickRun.pairs` of a run equal the lines of `collisions` for its contact test, by tick | TODO |
+| P11-40 | 11:24 | "On the first tick that a pair is in contact, and on no later tick, the runtime writes a `collision` line" | MODEL | Driveline.RunRecord | `Run.spawnPairs` and `TickRun.pairs` of a run equal the lines of `collisions` for its contact test, by tick | PROVED: Driveline.Contact.run_collision_lines |
 | P14-01 | 14:12 | "negative code is an error. positive … warning" | DECIDE | Driveline.Diagnostics | `severity c = if c<0 then err else if c>0 then warn else ok` | PROVED: Driveline.Diagnostics.severity_by_sign |
 | P14-03 | 14:26 | "DL_STATUS_ERR_FMU … Components never return it" | MODEL | Driveline.Diagnostics | a component-returned -6 is invalid | PROVED: Driveline.Diagnostics.errFmu_runtime_only |
 | P14-04 | 14:30 | warnings: "The run continues" | MODEL | Driveline.Diagnostics | a warning does not change the control state | PROVED: Driveline.Diagnostics.warning_continues |
@@ -372,14 +372,14 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 
 | ID | Spec | Quote | Class | Lean module | Statement | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| P11-15 | 11:24 | "every pair a < b … except a pair of two static actors, ascending (a,b)" | DECIDE | Driveline.Contact | pair list = sorted lex filter; `Nodup`, `Sorted` | TODO |
-| P11-16 | 11:24 | "overlap or touch … height intervals overlap or touch" | REAL | Driveline.Contact | closed-interval overlap `max lo ≤ min hi` | TODO |
-| P11-17 | 11:24 | "largest projection of one rectangle is below the smallest projection of the other" | REAL | Driveline.Contact | strict `<` ⇒ touching counts; `contact a b ↔ (rect a ∩ rect b).Nonempty` (closed sets, SAT for convex polygons with edge normals) | TODO |
-| P11-18 | 11:24 | (symmetry, implied) | DECIDE | Driveline.Contact | `contact a b = contact b a`, exact even in binary64, because the axis set and the corner projections do not depend on argument order | TODO |
-| P11-19 | 11:24 | (rotation invariance, implied) | REAL | Driveline.Contact | holds over ℝ for a global rotation/translation; **false for binary64** (`cos`/`sin` rounding), so do not claim it for the Float model | TODO |
-| P11-20 | 11:24 | "p + x u + y n … evaluated left to right per component"; "q_X w_X + q_Y w_Y" | MODEL | Driveline.Contact | Float model fixes the association `(p+x*u)+y*n`; no FMA (11:31) | TODO |
-| P11-22 | 11:24 | "also on the spawn state at the end of cold init … tick 0" | MODEL | Driveline.Contact | contact test also runs at committed tick 0 | TODO |
-| P11-23 | 11:25 | "60 m/s and a 500 Hz … 0.12 m" | INT | Driveline.Contact | `60/500 = 0.12` by `norm_num` | TODO |
+| P11-15 | 11:24 | "every pair a < b … except a pair of two static actors, ascending (a,b)" | DECIDE | Driveline.Contact | pair list = sorted lex filter; `Nodup`, `Sorted` | PROVED: Driveline.Contact.pairList_spec |
+| P11-16 | 11:24 | "overlap or touch … height intervals overlap or touch" | REAL | Driveline.Contact | closed-interval overlap `max lo ≤ min hi` | PROVED: Driveline.Contact.heightContact_iff_max_le_min |
+| P11-17 | 11:24 | "largest projection of one rectangle is below the smallest projection of the other" | REAL | Driveline.Contact | strict `<` ⇒ touching counts; `contact a b ↔ (rect a ∩ rect b).Nonempty` (closed sets, SAT for convex polygons with edge normals) | PROVED: Driveline.Contact.footprintContact_iff_inter |
+| P11-18 | 11:24 | (symmetry, implied) | DECIDE | Driveline.Contact | `contact a b = contact b a`, exact even in binary64, because the axis set and the corner projections do not depend on argument order | PROVED: Driveline.Contact.contact_comm |
+| P11-19 | 11:24 | (rotation invariance, implied) | REAL | Driveline.Contact | holds over ℝ for a global rotation/translation; **false for binary64** (`cos`/`sin` rounding), so do not claim it for the Float model | PROVED: Driveline.Contact.contact_move |
+| P11-20 | 11:24 | "p + x u + y n … evaluated left to right per component"; "q_X w_X + q_Y w_Y" | MODEL | Driveline.Contact | Float model fixes the association `(p+x*u)+y*n`; no FMA (11:31) | PROVED: Driveline.Contact.corner_float_eval |
+| P11-22 | 11:24 | "also on the spawn state at the end of cold init … tick 0" | MODEL | Driveline.Contact | contact test also runs at committed tick 0 | PROVED: Driveline.Contact.contact_tick0 |
+| P11-23 | 11:25 | "60 m/s and a 500 Hz … 0.12 m" | INT | Driveline.Contact | `60/500 = 0.12` by `norm_num` | PROVED: Driveline.Contact.displacement_per_tick |
 
 ### WP12 Sensors (§17.2)
 

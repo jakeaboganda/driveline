@@ -662,7 +662,7 @@ a < b by `actor_id`, except a pair of two static actors" (`mem_pairList`), so a
 pair of two static actors gets no line, as stated. For each pair: at most one
 line, a line exactly when the pair is in contact on some tested committed state,
 and its tick is the first such state. That `Run.spawnPairs` and
-`TickRun.pairs` are these lines is P11-40, `TODO`. -/
+`TickRun.pairs` are these lines is P11-40, `Contact.run_collision_lines`. -/
 theorem collision_first_contact (ids : Finset ℕ) (static : ℕ → Bool)
     (contact : ℕ → ℕ × ℕ → Bool) (n : ℕ) (p : ℕ × ℕ) :
     ((collisions contact (pairList ids static) n).filter (·.2 == p)).length ≤ 1 ∧
