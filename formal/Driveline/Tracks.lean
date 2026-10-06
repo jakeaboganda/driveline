@@ -747,12 +747,20 @@ theorem sigma_cases (r : Rule) (l : ℤ) : (sigma r l : ℝ) = 1 ∨ (sigma r l 
   unfold sigma; split_ifs <;> simp
 
 /-- P02-15: “`road_grade` θ_road is positive when the road rises in the driving direction …
-θ_road = σ arctan(dz/ds)” (02-conventions.md:27). -/
-theorem roadGrade_sign (m : ElevMap) (q : GradeQuery) :
-    let σg := (sigma (m.rule q.roadId) q.laneId : ℝ) * deriv (m.elev q.roadId) q.s
-    (0 < roadGrade m q ↔ 0 < σg) ∧ (roadGrade m q < 0 ↔ σg < 0) ∧
+θ_road = σ arctan(dz/ds)” (02-conventions.md:27). The rise along the driving direction is
+modeled on its own: D is the rate of change of the elevation at s + σ τ, at τ = 0. -/
+theorem roadGrade_sign (m : ElevMap) (q : GradeQuery) {D : ℝ}
+    (hd : DifferentiableAt ℝ (m.elev q.roadId) q.s)
+    (hD : HasDerivAt (fun τ => m.elev q.roadId (q.s + (sigma (m.rule q.roadId) q.laneId : ℝ) * τ))
+      D 0) :
+    (0 < roadGrade m q ↔ 0 < D) ∧ (roadGrade m q < 0 ↔ D < 0) ∧
       |roadGrade m q| < Real.pi / 2 := by
-  intro σg
+  set σ := (sigma (m.rule q.roadId) q.laneId : ℝ) with hσ
+  have hin : HasDerivAt (fun τ : ℝ => q.s + σ * τ) σ 0 := by
+    simpa using ((hasDerivAt_id (0 : ℝ)).const_mul σ).const_add q.s
+  have hcomp := hd.hasDerivAt.comp_of_eq (0 : ℝ) hin (by simp)
+  have hDe : D = σ * deriv (m.elev q.roadId) q.s := by
+    rw [hD.unique hcomp, mul_comm]
   have hpos : ∀ x, 0 < Real.arctan x ↔ 0 < x := fun x => by
     have h := Real.arctan_strictMono.lt_iff_lt (a := 0) (b := x)
     rwa [Real.arctan_zero] at h
@@ -761,8 +769,8 @@ theorem roadGrade_sign (m : ElevMap) (q : GradeQuery) :
     rwa [Real.arctan_zero] at h
   have habs : ∀ x, |Real.arctan x| < Real.pi / 2 := fun x =>
     abs_lt.mpr ⟨Real.neg_pi_div_two_lt_arctan x, Real.arctan_lt_pi_div_two x⟩
-  simp only [σg, roadGrade]
-  rcases sigma_cases (m.rule q.roadId) q.laneId with h | h <;> rw [h]
+  simp only [roadGrade, ← hσ, hDe]
+  rcases sigma_cases (m.rule q.roadId) q.laneId with h | h <;> rw [← hσ] at h <;> rw [h]
   · simp [hpos, hneg, habs]
   · simp [hpos, hneg, habs, abs_neg]
 
