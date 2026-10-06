@@ -1,6 +1,10 @@
 import Mathlib.Algebra.Order.ToIntervalMod
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
 import Mathlib.Analysis.SpecialFunctions.Complex.Arg
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.Deriv
+import Mathlib.LinearAlgebra.CrossProduct
+import Mathlib.LinearAlgebra.UnitaryGroup
+import Mathlib.Analysis.Calculus.Deriv.Prod
 
 /-!
 # Angle wrapping
@@ -77,5 +81,220 @@ theorem atan2_polar (y x : ℝ) :
   refine ⟨?_, ?_⟩
   · rw [← hn]; exact Complex.norm_mul_cos_arg _
   · rw [← hn]; exact Complex.norm_mul_sin_arg _
+
+/-! ## Rotations (02-conventions.md:16-18) -/
+
+open Matrix
+
+/-- +X East in the World frame, +x forward in the body frame. -/
+def e₁ : Fin 3 → ℝ := ![1, 0, 0]
+/-- +Y North in the World frame, +y left in the body frame. -/
+def e₂ : Fin 3 → ℝ := ![0, 1, 0]
+/-- +Z Up. -/
+def e₃ : Fin 3 → ℝ := ![0, 0, 1]
+
+/-- Roll: rotation by φ about +X. -/
+def Rx (φ : ℝ) : Matrix (Fin 3) (Fin 3) ℝ := !![1, 0, 0; 0, cos φ, -sin φ; 0, sin φ, cos φ]
+/-- Pitch: rotation by θ about +Y. -/
+def Ry (θ : ℝ) : Matrix (Fin 3) (Fin 3) ℝ := !![cos θ, 0, sin θ; 0, 1, 0; -sin θ, 0, cos θ]
+/-- Yaw: rotation by ψ about +Z. -/
+def Rz (ψ : ℝ) : Matrix (Fin 3) (Fin 3) ℝ := !![cos ψ, -sin ψ, 0; sin ψ, cos ψ, 0; 0, 0, 1]
+
+/-- Body-to-World rotation. -/
+def eulerZYX (ψ θ φ : ℝ) : Matrix (Fin 3) (Fin 3) ℝ := Rz ψ * Ry θ * Rx φ
+
+/-- `skew u *ᵥ v = u ×₃ v`. -/
+def skew (u : Fin 3 → ℝ) : Matrix (Fin 3) (Fin 3) ℝ :=
+  !![0, -u 2, u 1; u 2, 0, -u 0; -u 1, u 0, 0]
+
+/-- Rodrigues: rotation by `a` about the unit axis `u`. -/
+def axisRot (u : Fin 3 → ℝ) (a : ℝ) : Matrix (Fin 3) (Fin 3) ℝ :=
+  1 + sin a • skew u + (1 - cos a) • (skew u * skew u)
+
+/-- 02-conventions.md:18: the World frame rotated by ψ about +Z. -/
+def headingFrame (ψ : ℝ) : Matrix (Fin 3) (Fin 3) ℝ := Rz ψ
+
+/-- P02-05: “Right-handed Cartesian coordinate system (X, Y, Z) … (+X East, +Y North,
++Z Up)” (02-conventions.md:16). -/
+theorem world_right_handed : e₁ ⨯₃ e₂ = e₃ := by
+  ext i; fin_cases i <;> simp [cross_apply, e₁, e₂, e₃]
+
+private theorem so3_of {A : Matrix (Fin 3) (Fin 3) ℝ} (h1 : Aᵀ * A = 1) (h2 : A.det = 1) :
+    A ∈ Matrix.specialOrthogonalGroup (Fin 3) ℝ :=
+  ⟨Matrix.mem_unitaryGroup_iff'.mpr (by
+    rw [Matrix.star_eq_conjTranspose, Matrix.conjTranspose_eq_transpose_of_trivial]; exact h1), h2⟩
+
+theorem Rx_mem (φ : ℝ) : Rx φ ∈ Matrix.specialOrthogonalGroup (Fin 3) ℝ := by
+  have hφ := sin_sq_add_cos_sq φ
+  refine so3_of ?_ ?_
+  · ext i j; fin_cases i <;> fin_cases j
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination (1) * hφ
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination (1) * hφ
+  · simp only [Rx, det_fin_three, Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; linear_combination hφ
+
+theorem Ry_mem (θ : ℝ) : Ry θ ∈ Matrix.specialOrthogonalGroup (Fin 3) ℝ := by
+  have hθ := sin_sq_add_cos_sq θ
+  refine so3_of ?_ ?_
+  · ext i j; fin_cases i <;> fin_cases j
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination (1) * hθ
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination (1) * hθ
+  · simp only [Ry, det_fin_three, Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; linear_combination hθ
+
+theorem Rz_mem (ψ : ℝ) : Rz ψ ∈ Matrix.specialOrthogonalGroup (Fin 3) ℝ := by
+  have hψ := sin_sq_add_cos_sq ψ
+  refine so3_of ?_ ?_
+  · ext i j; fin_cases i <;> fin_cases j
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination (1) * hψ
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination (1) * hψ
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination
+  · simp only [Rz, det_fin_three, Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; linear_combination hψ
+
+/-- P02-06: “ISO 8855 intrinsic Z-Y'-X'' (yaw ψ → pitch θ → roll φ) rotation sequence”
+(02-conventions.md:17). Each rotation is about the axis already moved by the earlier ones. -/
+theorem eulerZYX_intrinsic (ψ θ φ : ℝ) :
+    eulerZYX ψ θ φ ∈ Matrix.specialOrthogonalGroup (Fin 3) ℝ ∧ axisRot e₃ ψ = Rz ψ ∧
+      axisRot (Rz ψ *ᵥ e₂) θ * Rz ψ = Rz ψ * Ry θ ∧
+      axisRot ((Rz ψ * Ry θ) *ᵥ e₁) φ * (Rz ψ * Ry θ) = eulerZYX ψ θ φ := by
+  have hψ := sin_sq_add_cos_sq ψ
+  have hθ := sin_sq_add_cos_sq θ
+  have hφ := sin_sq_add_cos_sq φ
+  refine ⟨Submonoid.mul_mem _ (Submonoid.mul_mem _ (Rz_mem ψ) (Ry_mem θ)) (Rx_mem φ), ?_, ?_, ?_⟩
+  · ext i j; fin_cases i <;> fin_cases j
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination
+  · ext i j; fin_cases i <;> fin_cases j
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination ((cos ψ)*(cos θ) - (cos ψ)) * hψ
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination ((cos θ)*(sin ψ) - (sin ψ)) * hψ
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination (-(sin θ)) * hψ
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination ((cos θ) - 1) * hψ
+  · ext i j; fin_cases i <;> fin_cases j
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination (-(cos φ)*(cos θ)^2*(sin ψ) + (cos θ)^2*(sin ψ)) * hψ + (-(cos φ)*(sin ψ) + (sin ψ)) * hθ
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination ((cos φ)*(cos ψ)*(sin θ) - (cos ψ)*(sin θ) + (sin φ)*(sin ψ)) * hθ
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination ((cos φ)*(cos ψ)*(cos θ)^2 - (cos ψ)*(cos θ)^2) * hψ + ((cos φ)*(cos ψ) - (cos ψ)) * hθ
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination ((cos φ)*(sin ψ)*(sin θ) - (cos ψ)*(sin φ) - (sin ψ)*(sin θ)) * hθ
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination ((cos θ)*(sin φ)) * hψ
+    · simp only [Rx, Ry, Rz, eulerZYX, axisRot, skew, e₁, e₂, e₃, Matrix.mul_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.transpose_apply, Matrix.one_apply, mulVec, dotProduct, Fin.sum_univ_three, Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_fin_const, smul_eq_mul, Fin.isValue, Fin.reduceFinMk, Fin.zero_eta, Fin.mk_one, reduceIte, Fin.reduceEq]; 
+      all_goals linear_combination ((cos φ)*(cos θ)^3 + (cos φ)*(cos θ)*(sin θ)^2 - (cos θ)^3 - (cos θ)*(sin θ)^2) * hψ + ((cos φ)*(cos θ) - (cos θ)) * hθ
+
+private theorem hasDerivAt_vec3 {f g h : ℝ → ℝ} {a b c t : ℝ} (hf : HasDerivAt f a t)
+    (hg : HasDerivAt g b t) (hh : HasDerivAt h c t) :
+    HasDerivAt (fun s => ![f s, g s, h s]) ![a, b, c] t := by
+  rw [hasDerivAt_pi]; intro i; fin_cases i
+  · simpa using hf
+  · simpa using hg
+  · simpa using hh
+
+/-- P02-07: “All angles are counter-clockwise positive by the right-hand rule”
+(02-conventions.md:17). A small positive angle turns +x toward +y about +z, +z toward +x about
++y, and +y toward +z about +x. -/
+theorem rotations_ccw_positive :
+    HasDerivAt (fun ψ => Rz ψ *ᵥ e₁) e₂ 0 ∧ HasDerivAt (fun θ => Ry θ *ᵥ e₃) e₁ 0 ∧
+      HasDerivAt (fun φ => Rx φ *ᵥ e₂) e₃ 0 := by
+  refine ⟨?_, ?_, ?_⟩
+  · convert hasDerivAt_vec3 (hasDerivAt_cos 0) (hasDerivAt_sin 0) (hasDerivAt_const 0 (0 : ℝ))
+      using 1
+    · funext s; ext i; fin_cases i <;> simp [Rz, e₁, mulVec, dotProduct, Fin.sum_univ_three]
+    · ext i; fin_cases i <;> simp [e₂]
+  · convert hasDerivAt_vec3 (hasDerivAt_sin 0) (hasDerivAt_const 0 (0 : ℝ)) (hasDerivAt_cos 0)
+      using 1
+    · funext s; ext i; fin_cases i <;> simp [Ry, e₃, mulVec, dotProduct, Fin.sum_univ_three]
+    · ext i; fin_cases i <;> simp [e₁]
+  · convert hasDerivAt_vec3 (hasDerivAt_const 0 (0 : ℝ)) (hasDerivAt_cos 0) (hasDerivAt_sin 0)
+      using 1
+    · funext s; ext i; fin_cases i <;> simp [Rx, e₂, mulVec, dotProduct, Fin.sum_univ_three]
+    · ext i; fin_cases i <;> simp [e₃]
+
+/-- P02-08: “It equals the body frame when roll and pitch are 0” (02-conventions.md:18). -/
+theorem heading_eq_body_level (ψ : ℝ) : eulerZYX ψ 0 0 = headingFrame ψ := by
+  ext i j; fin_cases i <;> fin_cases j <;>
+    simp [eulerZYX, headingFrame, Rz, Ry, Rx, Matrix.mul_apply, Fin.sum_univ_three]
 
 end Driveline.Angles

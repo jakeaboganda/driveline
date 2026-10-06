@@ -1,6 +1,8 @@
 import Mathlib.Tactic
 import Driveline.Angles
 import Driveline.SliceBuffer
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.Arctan
+import Mathlib.Analysis.Calculus.Deriv.Basic
 
 /-!
 # Sensor slices and track lists (spec §4.1, §4.3)
@@ -567,5 +569,197 @@ theorem at_surface {b : Buffer SurfaceSlice} {q : ℤ} (hb : SliceBuffer.Valid b
   at_interp_eq _ hb h0 hl hlo hhi hn ho hko hkn
 
 end Theorems
+
+/-! ## Lane references and driving direction (02-conventions.md:25-27) -/
+
+section Lanes
+
+/-- Traffic rule of a road: right-hand or left-hand traffic. -/
+inductive Rule | rht | lht deriving DecidableEq
+
+/-- 02-conventions.md:26: does lane `l` drive toward increasing s? -/
+def drivesIncreasingS : Rule → ℤ → Bool
+  | .rht, l => decide (l < 0)
+  | .lht, l => decide (0 < l)
+
+/-- 02-conventions.md:26: σ is +1 if the lane drives toward increasing s and −1 otherwise. -/
+def sigma (r : Rule) (l : ℤ) : ℤ := if drivesIncreasingS r l then 1 else -1
+
+/-- The decimal digit character of `d < 10`. -/
+def digitChar (d : ℕ) : Char := Char.ofNat (48 + d)
+
+/-- The value of a decimal digit character. -/
+def digitVal (c : Char) : Option ℕ := if c.isDigit then some (c.toNat - 48) else none
+
+/-- Decimal digits, least significant first; `[0]` for 0. -/
+def digitsLE (n : ℕ) : List ℕ := if n = 0 then [0] else Nat.digits 10 n
+
+def encodeNat (n : ℕ) : List Char := (digitsLE n).reverse.map digitChar
+
+def decodeNat (cs : List Char) : Option ℕ :=
+  if cs = [] then none else (cs.mapM digitVal).map (fun ds => Nat.ofDigits 10 ds.reverse)
+
+/-- Decimal with an optional leading '-'. -/
+def encodeInt : ℤ → List Char
+  | .ofNat k => encodeNat k
+  | .negSucc k => '-' :: encodeNat (k + 1)
+
+def decodeInt : List Char → Option ℤ
+  | [] => none
+  | c :: cs => if c = '-' then (decodeNat cs).map (fun k => -(k : ℤ))
+      else (decodeNat (c :: cs)).map (fun k => (k : ℤ))
+
+/-- 02-conventions.md:25: "<road_id>:<lane_id>". -/
+def render (road : List Char) (lane : ℤ) : List Char := road ++ ':' :: encodeInt lane
+
+/-- Splits at the last colon (02-conventions.md:25). -/
+def parse (s : List Char) : Option (List Char × ℤ) :=
+  match s.reverse.span (· ≠ ':') with
+  | (revLane, _ :: revRoad) => (decodeInt revLane.reverse).map (revRoad.reverse, ·)
+  | _ => none
+
+/-- Elevation profile z(s) and traffic rule of each road. -/
+structure ElevMap where
+  elev : String → ℝ → ℝ
+  rule : String → Rule
+
+/-- A `road_grade` query: the actor's lane and s, and its heading and velocity. -/
+structure GradeQuery where
+  roadId : String
+  laneId : ℤ
+  s : ℝ
+  yaw : ℝ
+  vLon : ℝ
+
+/-- 02-conventions.md:27: θ_road = σ arctan(dz/ds). -/
+def roadGrade (m : ElevMap) (q : GradeQuery) : ℝ :=
+  (sigma (m.rule q.roadId) q.laneId : ℝ) * Real.arctan (deriv (m.elev q.roadId) q.s)
+
+theorem digitVal_digitChar {d : ℕ} (h : d < 10) : digitVal (digitChar d) = some d := by
+  interval_cases d <;> decide
+
+theorem digitChar_ne {d : ℕ} (h : d < 10) : digitChar d ≠ ':' ∧ digitChar d ≠ '-' := by
+  interval_cases d <;> decide
+
+theorem digitsLE_lt (n : ℕ) : ∀ d ∈ digitsLE n, d < 10 := by
+  intro d hd
+  unfold digitsLE at hd
+  split_ifs at hd
+  · simp at hd; omega
+  · exact Nat.digits_lt_base (by norm_num) hd
+
+theorem mapM_digitVal (L : List ℕ) (h : ∀ d ∈ L, d < 10) :
+    (L.map digitChar).mapM digitVal = some L := by
+  induction L with
+  | nil => rfl
+  | cons d L ih =>
+    simp only [List.map_cons, List.mapM_cons, digitVal_digitChar (h d (by simp)),
+      ih (fun x hx => h x (by simp [hx]))]
+    rfl
+
+theorem decodeNat_encodeNat (n : ℕ) : decodeNat (encodeNat n) = some n := by
+  have hl := digitsLE_lt n
+  have hne : encodeNat n ≠ [] := by
+    unfold encodeNat digitsLE; split_ifs with h0
+    · simp
+    · simpa using (Nat.digits_ne_nil_iff_ne_zero (b := 10)).mpr h0
+  simp only [decodeNat, hne, ↓reduceIte]
+  rw [encodeNat, mapM_digitVal _ (fun d hd => hl d (List.mem_reverse.mp hd))]
+  simp only [Option.map_some, List.reverse_reverse, digitsLE]
+  split_ifs with h0
+  · simp [h0]
+  · rw [Nat.ofDigits_digits]
+
+theorem encodeNat_ne (n : ℕ) : ∀ c ∈ encodeNat n, c ≠ ':' ∧ c ≠ '-' := by
+  intro c hc
+  obtain ⟨d, hd, rfl⟩ := List.mem_map.mp hc
+  exact digitChar_ne (digitsLE_lt n d (List.mem_reverse.mp hd))
+
+theorem encodeInt_ne (n : ℤ) : ∀ c ∈ encodeInt n, c ≠ ':' := by
+  intro c hc
+  cases n with
+  | ofNat k => exact (encodeNat_ne k c hc).1
+  | negSucc k =>
+    rcases List.mem_cons.mp hc with rfl | h
+    · decide
+    · exact (encodeNat_ne _ c h).1
+
+theorem decodeInt_encodeInt (n : ℤ) : decodeInt (encodeInt n) = some n := by
+  cases n with
+  | ofNat k =>
+    simp only [encodeInt]
+    obtain ⟨c, cs, hcs⟩ : ∃ c cs, encodeNat k = c :: cs := by
+      cases h : encodeNat k with
+      | nil => have := decodeNat_encodeNat k; rw [h] at this; simp [decodeNat] at this
+      | cons c cs => exact ⟨c, cs, rfl⟩
+    have hc : c ≠ '-' := (encodeNat_ne k c (by simp [hcs])).2
+    rw [hcs, decodeInt]; simp only [hc, ↓reduceIte]; rw [← hcs, decodeNat_encodeNat]
+    rfl
+  | negSucc k =>
+    simp only [encodeInt, decodeInt, ↓reduceIte, decodeNat_encodeNat]
+    rfl
+
+theorem span_append_cons (p : Char → Bool) (l₁ l₂ : List Char) (c : Char)
+    (h : ∀ x ∈ l₁, p x = true) (hc : p c = false) : (l₁ ++ c :: l₂).span p = (l₁, c :: l₂) := by
+  rw [List.span_eq_takeWhile_dropWhile]
+  induction l₁ with
+  | nil => simp [hc]
+  | cons x l ih =>
+    have hx := h x (by simp)
+    have ih := ih (fun y hy => h y (by simp [hy]))
+    simp only [Prod.mk.injEq] at ih
+    simp [hx, ih.1, ih.2]
+
+/-- P02-13: “The text after the last colon is the signed lane index” (02-conventions.md:25).
+`road` may contain ':'. -/
+theorem parse_render (road : List Char) (lane : ℤ) : parse (render road lane) = some (road, lane) := by
+  have hs : (render road lane).reverse.span (· ≠ ':') =
+      ((encodeInt lane).reverse, ':' :: road.reverse) := by
+    rw [render, List.reverse_append, List.reverse_cons, List.append_assoc, List.singleton_append]
+    exact span_append_cons _ _ _ _
+      (fun x hx => by simpa using encodeInt_ne lane x (List.mem_reverse.mp hx)) (by decide)
+  rw [parse, hs]
+  simp [decodeInt_encodeInt]
+
+/-- P02-14: “For RHT, negative lanes drive toward increasing s. For LHT, positive lanes drive
+toward increasing s” and “σ is +1 if it drives toward increasing s and −1 otherwise”
+(02-conventions.md:26). Lane 0 is excluded by 02-conventions.md:22. -/
+theorem sigma_spec (r : Rule) (l : ℤ) (hl : l ≠ 0) :
+    (sigma r l = 1 ↔ (r = .rht ∧ l < 0) ∨ (r = .lht ∧ 0 < l)) ∧
+      (sigma r l = -1 ↔ (r = .rht ∧ 0 < l) ∨ (r = .lht ∧ l < 0)) ∧
+      (sigma r l = 1 ∨ sigma r l = -1) := by
+  cases r <;> by_cases h : l < 0 <;> simp [sigma, drivesIncreasingS, h] <;> omega
+
+theorem sigma_cases (r : Rule) (l : ℤ) : (sigma r l : ℝ) = 1 ∨ (sigma r l : ℝ) = -1 := by
+  unfold sigma; split_ifs <;> simp
+
+/-- P02-15: “`road_grade` θ_road is positive when the road rises in the driving direction …
+θ_road = σ arctan(dz/ds)” (02-conventions.md:27). -/
+theorem roadGrade_sign (m : ElevMap) (q : GradeQuery) :
+    let σg := (sigma (m.rule q.roadId) q.laneId : ℝ) * deriv (m.elev q.roadId) q.s
+    (0 < roadGrade m q ↔ 0 < σg) ∧ (roadGrade m q < 0 ↔ σg < 0) ∧
+      |roadGrade m q| < Real.pi / 2 := by
+  intro σg
+  have hpos : ∀ x, 0 < Real.arctan x ↔ 0 < x := fun x => by
+    have h := Real.arctan_strictMono.lt_iff_lt (a := 0) (b := x)
+    rwa [Real.arctan_zero] at h
+  have hneg : ∀ x, Real.arctan x < 0 ↔ x < 0 := fun x => by
+    have h := Real.arctan_strictMono.lt_iff_lt (a := x) (b := 0)
+    rwa [Real.arctan_zero] at h
+  have habs : ∀ x, |Real.arctan x| < Real.pi / 2 := fun x =>
+    abs_lt.mpr ⟨Real.neg_pi_div_two_lt_arctan x, Real.arctan_lt_pi_div_two x⟩
+  simp only [σg, roadGrade]
+  rcases sigma_cases (m.rule q.roadId) q.laneId with h | h <;> rw [h]
+  · simp [hpos, hneg, habs]
+  · simp [hpos, hneg, habs, abs_neg]
+
+/-- P02-16: “An actor that drives against its lane, such as in reverse, still gets these
+lane-relative signs” (02-conventions.md:27). The yaw and vLon fields are free. -/
+theorem roadGrade_lane_relative (m : ElevMap) (q₁ q₂ : GradeQuery)
+    (hr : q₁.roadId = q₂.roadId) (hl : q₁.laneId = q₂.laneId) (hs : q₁.s = q₂.s) :
+    roadGrade m q₁ = roadGrade m q₂ := by
+  simp only [roadGrade, hr, hl, hs]
+
+end Lanes
 
 end Driveline.Tracks

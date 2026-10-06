@@ -627,4 +627,19 @@ theorem slot_uint32 (head cap k : UInt32) (hc : cap.toNat ≤ 64) (hh : head < c
 
 end Theorems
 
+/-- P04-19: “`ANGLE`: v_{k+1} + α Δ, wrapped to (−π, π], where Δ = v_k − v_{k+1} wrapped to
+(−π, π]” (04-perception.md:37). `angleInterp α vo vn` has `vo = v_{k+1}` (older) and
+`vn = v_k` (newer). -/
+theorem angleInterp_spec (α vo vn : ℝ) :
+    angleInterp α vo vn ∈ Set.Ioc (-Real.pi) Real.pi ∧ angleInterp 0 vo vn = Angles.wrap vo ∧
+      angleInterp 1 vo vn = Angles.wrap vn ∧ |Angles.wrap (vn - vo)| ≤ Real.pi := by
+  refine ⟨Angles.wrap_mem _, by simp [angleInterp], ?_, ?_⟩
+  · obtain ⟨n, hn⟩ := Angles.wrap_eq_add (vn - vo)
+    simp only [angleInterp, one_mul]
+    rw [hn, show vo + (vn - vo + n * (2 * Real.pi)) = vn + n • (2 * Real.pi) by
+      rw [zsmul_eq_mul]; ring]
+    exact toIocMod_add_zsmul _ _ _ _
+  · have h := Angles.wrap_mem (vn - vo)
+    exact abs_le.mpr ⟨h.1.le, h.2⟩
+
 end Driveline.SliceBuffer
