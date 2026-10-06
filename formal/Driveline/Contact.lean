@@ -95,7 +95,10 @@ theorem contact_comm_float (a b : Body Float) : Contact a b ↔ Contact b a := c
 /-- P11-20. "A corner with body-frame coordinates (x, y) is at p + x u + y n
 ... evaluated left to right per component"; "projected ... as
 q_X w_X + q_Y w_Y" (11-execution.md:24). In the binary64 model each `*` and `+`
-is one operation, associated as written, with no fused multiply-add. -/
+is one operation. The association is fixed by the model, which evaluates the
+terms as written. That no build contracts them into a fused multiply-add is a
+property of the compiler and hardware, P11-30 (`OUT: external`); this theorem
+does not cover it. -/
 theorem corner_float_eval (b : Body Float) (ex ey : Float) :
     corner b ex ey = ((b.x + ex * b.c) + ey * (-b.s), (b.y + ex * b.s) + ey * b.c) ∧
     ∀ w q : Float × Float, proj w q = q.1 * w.1 + q.2 * w.2 :=
@@ -114,8 +117,17 @@ structure Geom where
 /-- "In the body frame, the bounding box spans x ∈ [−o_r, L + o_f],
 y ∈ [−W_bbox/2, W_bbox/2], and z ∈ [0, H_bbox]" (03-vehicle-parameters.md:20). -/
 noncomputable def Geom.ofTier0 (p : VehicleSpec.Tier0) : Geom :=
-  ⟨-p.overhang_rear, p.wheelbase + p.overhang_front, -(p.bbox_width / 2), p.bbox_width / 2,
-    p.bbox_height⟩
+  ⟨(VehicleSpec.boxX p).1, (VehicleSpec.boxX p).2, (VehicleSpec.boxY p).1, (VehicleSpec.boxY p).2,
+    (VehicleSpec.boxZ p).2⟩
+
+/-- An object's box: "length = L + o_f + o_r" with "o_f = o_r = length/2" and
+`L = 0` (03-vehicle-parameters.md:42), so it spans x ∈ [−length/2, length/2]. -/
+theorem geom_ofTier0_object (o : VehicleSpec.OSpec) :
+    (Geom.ofTier0 (VehicleSpec.objectTier0 o)).xlo = -o.length / 2 ∧
+      (Geom.ofTier0 (VehicleSpec.objectTier0 o)).xhi = o.length / 2 := by
+  have h := congrArg Prod.fst (VehicleSpec.object_origin_centred o).1
+  have h' := congrArg Prod.snd (VehicleSpec.object_origin_centred o).1
+  exact ⟨h, h'⟩
 
 /-- An actor's state for the test: (`pos_x`, `pos_y`, `pos_z`), `yaw`, box. -/
 structure Actor where
@@ -510,13 +522,33 @@ that state. -/
 def pairsAt (contact : ℕ → ℕ × ℕ → Bool) (ps : List (ℕ × ℕ)) (t : ℕ) : List (ℕ × ℕ) :=
   RunRecord.newPairs contact ps t (RunRecord.scan contact ps t).2
 
+/-- The number of committed states that the runtime tests for contact. The
+spawn state is committed state 0, and tick k commits state k + 1 in Phase 4
+(11:20, 11:24). A failed cold init tests none. A run that fails in tick k with
+its error before Phase 4's contact test (`Run.StopsAtError` with no report after
+the test, 14:31) "finishes no further phase", so it does not test state k + 1. -/
+def committed {P : Type} (r : RunRecord.Run P) : ℕ :=
+  match r.ending with
+  | .failed .coldInit _ => 0
+  | .failed (.exec _) _ =>
+    if r.ticks.getLast?.any (·.late.isEmpty) then r.ticks.length else r.ticks.length + 1
+  | _ => r.ticks.length + 1
+
+theorem committed_le {P : Type} (r : RunRecord.Run P) : committed r ≤ r.ticks.length + 1 := by
+  unfold committed
+  split
+  · omega
+  · split <;> omega
+  · omega
+
 /-- A run whose collision lines are those of the contact test `contact` on the
-pairs `ps`: the spawn state is committed state 0, and tick k commits state
-k + 1 (11:24, 18:22). -/
+pairs `ps`: the spawn state is committed state 0, tick k commits state k + 1,
+and a state that the run does not test has no line (11:24, 18:22). -/
 def RunPairsFromContact {P : Type} (contact : ℕ → ℕ × ℕ → Bool) (ps : List (ℕ × ℕ))
     (r : RunRecord.Run P) : Prop :=
-  r.spawnPairs = pairsAt contact ps 0 ∧
-    ∀ k (t : RunRecord.TickRun P), r.ticks[k]? = some t → t.pairs = pairsAt contact ps (k + 1)
+  r.spawnPairs = (if 0 < committed r then pairsAt contact ps 0 else []) ∧
+    ∀ k (t : RunRecord.TickRun P), r.ticks[k]? = some t →
+      t.pairs = if k + 1 < committed r then pairsAt contact ps (k + 1) else []
 
 /-- The `(tick, pair)` of a collision line. -/
 def colLine {P : Type} (e : RunRecord.Event P) : Option (ℕ × (ℕ × ℕ)) :=
@@ -532,33 +564,50 @@ private lemma collisions_eq (contact : ℕ → ℕ × ℕ → Bool) (ps : List (
     rw [List.range_succ, List.flatMap_append, ← collisions_eq contact ps n]
     simp [RunRecord.collisions, RunRecord.scan, pairsAt]
 
-private lemma ticksEv_lines {P : Type} (contact : ℕ → ℕ × ℕ → Bool) (ps : List (ℕ × ℕ)) :
+private lemma ticksEv_lines {P : Type} (f : ℕ → List (ℕ × ℕ)) :
     ∀ (ts : List (RunRecord.TickRun P)) (k : ℕ),
-      (∀ i t, ts[i]? = some t → t.pairs = pairsAt contact ps (k + i + 1)) →
+      (∀ i t, ts[i]? = some t → t.pairs = f (k + i + 1)) →
       (RunRecord.ticksEv k ts).filterMap colLine =
-        (List.range' (k + 1) ts.length).flatMap fun t => (pairsAt contact ps t).map (t, ·)
+        (List.range' (k + 1) ts.length).flatMap fun t => (f t).map (t, ·)
   | [], _, _ => rfl
   | t :: ts, k, h => by
     have h0 := h 0 t rfl
-    have ih := ticksEv_lines contact ps ts (k + 1) fun i t' ht' => by
+    have ih := ticksEv_lines f ts (k + 1) fun i t' ht' => by
       rw [h (i + 1) t' ht']; congr 1; omega
     simp only [RunRecord.ticksEv, List.filterMap_append, ih, List.length_cons,
       List.range'_succ, List.flatMap_cons, RunRecord.TickRun.events, List.filterMap_map]
     simp [Function.comp_def, colLine, h0]
 
+private lemma flatMap_trunc (f : ℕ → List (ℕ × ℕ)) (n : ℕ) :
+    ∀ m, n ≤ m → ((List.range m).flatMap fun t => (if t < n then f t else []).map (t, ·)) =
+      (List.range n).flatMap fun t => (f t).map (t, ·)
+  | 0, h => by simp [Nat.le_zero.1 h]
+  | m + 1, h => by
+    rcases Nat.lt_or_ge m n with hm | hm
+    · obtain rfl : n = m + 1 := by omega
+      apply List.flatMap_congr
+      intro t ht
+      simp [List.mem_range.1 ht]
+    · rw [List.range_succ, List.flatMap_append, flatMap_trunc f n m hm]
+      simp [Nat.not_lt.2 hm]
+
 /-- P11-40. "On the first tick that a pair is in contact, and on no later tick,
 the runtime writes a `collision` line to the run record" (11-execution.md:24):
 the collision lines of a run whose `Run.spawnPairs` and `TickRun.pairs` come from
-the contact test are, by tick, the lines of `RunRecord.collisions` over its
-committed states 0, ..., (number of ticks). -/
+the contact test are, by tick, the lines of `RunRecord.collisions` over the
+committed states that it tests, 0, ..., `committed r` − 1. This covers a run
+that fails before Phase 4 of its last tick, whose last state is not tested. -/
 theorem run_collision_lines {P : Type} (contact : ℕ → ℕ × ℕ → Bool) (ps : List (ℕ × ℕ))
     (r : RunRecord.Run P) (h : RunPairsFromContact contact ps r) :
-    r.pre.filterMap colLine = RunRecord.collisions contact ps (r.ticks.length + 1) := by
-  rw [collisions_eq, List.range_eq_range', List.range'_succ, List.flatMap_cons]
-  have ht := ticksEv_lines contact ps r.ticks 0 fun i t hi => by
-    rw [h.2 i t hi]; congr 1; omega
+    r.pre.filterMap colLine = RunRecord.collisions contact ps (committed r) := by
+  set n := committed r
+  set g : ℕ → List (ℕ × ℕ) := fun t => if t < n then pairsAt contact ps t else []
+  rw [collisions_eq, ← flatMap_trunc (pairsAt contact ps) n _ (committed_le r),
+    List.range_eq_range', List.range'_succ, List.flatMap_cons]
+  have ht := ticksEv_lines g r.ticks 0 fun i t hi => by
+    rw [h.2 i t hi, Nat.zero_add]
   simp only [RunRecord.Run.pre, List.filterMap_append, List.filterMap_map, ht, h.1]
-  simp [Function.comp_def, colLine]
+  simp [Function.comp_def, colLine, g, n]
 
 /-- P11-23. "At a closing speed of 60 m/s and a 500 Hz base clock, the
 displacement per tick is 0.12 m." (11-execution.md:25) -/

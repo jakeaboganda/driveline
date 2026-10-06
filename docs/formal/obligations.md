@@ -377,7 +377,7 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | P11-17 | 11:24 | "largest projection of one rectangle is below the smallest projection of the other" | REAL | Driveline.Contact | strict `<` ⇒ touching counts; `contact a b ↔ (rect a ∩ rect b).Nonempty` (closed sets, SAT for convex polygons with edge normals) | PROVED: Driveline.Contact.footprintContact_iff_inter |
 | P11-18 | 11:24 | (symmetry, implied) | DECIDE | Driveline.Contact | `contact a b = contact b a`, exact even in binary64, because the axis set and the corner projections do not depend on argument order | PROVED: Driveline.Contact.contact_comm |
 | P11-19 | 11:24 | (rotation invariance, implied) | REAL | Driveline.Contact | holds over ℝ for a global rotation/translation; **false for binary64** (`cos`/`sin` rounding), so do not claim it for the Float model | PROVED: Driveline.Contact.contact_move |
-| P11-20 | 11:24 | "p + x u + y n … evaluated left to right per component"; "q_X w_X + q_Y w_Y" | MODEL | Driveline.Contact | Float model fixes the association `(p+x*u)+y*n`; no FMA (11:31) | PROVED: Driveline.Contact.corner_float_eval |
+| P11-20 | 11:24 | "p + x u + y n … evaluated left to right per component"; "q_X w_X + q_Y w_Y" | MODEL | Driveline.Contact | Float model fixes the association `(p+x*u)+y*n`; absence of FMA contraction is P11-30 (OUT: external) | PROVED: Driveline.Contact.corner_float_eval |
 | P11-22 | 11:24 | "also on the spawn state at the end of cold init … tick 0" | MODEL | Driveline.Contact | contact test also runs at committed tick 0 | PROVED: Driveline.Contact.contact_tick0 |
 | P11-23 | 11:25 | "60 m/s and a 500 Hz … 0.12 m" | INT | Driveline.Contact | `60/500 = 0.12` by `norm_num` | PROVED: Driveline.Contact.displacement_per_tick |
 
