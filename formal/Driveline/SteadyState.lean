@@ -430,12 +430,45 @@ theorem dst_balanced_of_exact (p : Params) (Izz v r : ℝ) (hv : 1 ≤ v) (hm : 
   refine ⟨?_, h2⟩
   rw [h1, (axle_balance p v r hL).2.mpr (Or.inr G1), aY, mul_div_cancel_left₀ _ hm, sub_self]
 
-/-- P06-23, refuted. 06:84 'With linear tires, the lateral force and yaw moment of the
-incoming model are balanced at the first step if the upstream steering command reproduces
-δ_ss'. A spec accepted under 03:31 has l_f + l_r only within tolerance of L; at a feasible
+/-- The front slip angle of `dstAlphaF` moves one for one with the steering angle. -/
+theorem dstVyDot_add (p : Params) (vx vy r δ e : ℝ) :
+    dstVyDot p vx vy r (δ + e) = dstVyDot p vx vy r δ + p.Caf * e / p.m := by
+  simp only [dstVyDot, dstAlphaF]; ring
+
+/-- P06-23, first counterexample. 06:84 'balanced at the first step if the upstream
+steering command reproduces δ_ss, that is, if the re-trim reports no
+DL_STATUS_WARN_TRIM_MISMATCH', where the check reports only 'if the steering angles differ
+by more than 10^-3 rad' (06:87). With l_f + l_r = L exactly and C_αf ≠ 0, a command
+δ = δ_ss + 10^-3 passes the check, and at a feasible ST state (v = 10 m/s,
+psi_dot = 1/100 rad/s) the §17 `DynamicSingleTrack` front lateral force is unbalanced:
+v̇_y ≠ 0. -/
+theorem dst_not_balanced_within_trim : ∃ s : VehicleSpec.VSpec, s.WF ∧ ∃ t1 ∈ s.tier1,
+    ∃ v r δ : ℝ, 1 ≤ v ∧
+    t1.cg_dist_front + t1.cg_dist_rear = s.tier0.wheelbase ∧ t1.cornering_stiffness_f ≠ 0 ∧
+    ¬ infeasible (Params.ofSpec s.tier0 t1) 1 (deltaSS (Params.ofSpec s.tier0 t1) v r) (aY v r) ∧
+    |δ - deltaSS (Params.ofSpec s.tier0 t1) v r| ≤ 1 / 1000 ∧
+    dstVyDot (Params.ofSpec s.tier0 t1) v
+      (vLatRa (Params.ofSpec s.tier0 t1) v r + (Params.ofSpec s.tier0 t1).lr * r) r δ ≠ 0 := by
+  set p := Params.ofSpec ssWitness.tier0 ssT1
+  refine ⟨ssWitness, ssWitness_wf, ssT1, rfl, 10, 1 / 100, deltaSS p 10 (1 / 100) + 1 / 1000,
+    by norm_num, by simp [ssWitness, ssT1], by simp [ssT1], ?_, ?_, ?_⟩
+  · apply feasible_of_small _ _ _ (by norm_num) <;>
+      simp [Params.ofSpec, ssWitness, ssT1, alphaR, alphaF, Fyf, Fyr, aY, abs_le] <;> norm_num
+  · rw [add_sub_cancel_left, abs_of_pos (by norm_num)]
+  · have hα : alphaR p 10 (1 / 100) = 3 / 4000 := by
+      simp [p, Params.ofSpec, ssWitness, ssT1, alphaR, Fyr, aY]; norm_num
+    obtain ⟨h0, -⟩ := dst_balanced_of_exact p 2500 10 (1 / 100) (by norm_num)
+      (by simp [p, Params.ofSpec, ssT1]) (by simp [p, Params.ofSpec, ssT1])
+      (by simp [p, Params.ofSpec, ssT1]) (by simp [p, Params.ofSpec, ssWitness])
+      (by simp [p, Params.ofSpec, ssWitness, ssT1])
+      (by rw [hα, abs_of_pos (by norm_num)]; linarith [pi_gt_three])
+    rw [dstVyDot_add, h0]
+    simp [Params.ofSpec, ssT1]
+
+/-- P06-23, second counterexample. A spec accepted under 03:31 has l_f + l_r only within tolerance of L; at a feasible
 ST state of such a spec (v = 10 m/s, psi_dot = 1/100 rad/s) the §17 `DynamicSingleTrack`
 (17:115-116) with linear tires, started at the §8 state with δ = δ_ss, has ṙ ≠ 0. -/
-theorem dst_not_balanced : ∃ s : VehicleSpec.VSpec, s.WF ∧ ∃ t1 ∈ s.tier1, ∃ v r : ℝ, 1 ≤ v ∧
+theorem dst_not_balanced_tolerance : ∃ s : VehicleSpec.VSpec, s.WF ∧ ∃ t1 ∈ s.tier1, ∃ v r : ℝ, 1 ≤ v ∧
     ¬ infeasible (Params.ofSpec s.tier0 t1) 1 (deltaSS (Params.ofSpec s.tier0 t1) v r) (aY v r) ∧
     dstRDot (Params.ofSpec s.tier0 t1) t1.inertia_zz v
       (vLatRa (Params.ofSpec s.tier0 t1) v r + (Params.ofSpec s.tier0 t1).lr * r) r
@@ -459,5 +492,26 @@ theorem dst_not_balanced : ∃ s : VehicleSpec.VSpec, s.WF ∧ ∃ t1 ∈ s.tier
       norm_num at this
     have hk : p.lf * p.Caf ≠ 0 := by simp [p, Params.ofSpec, ssWitnessG, ssT1G, ssT1, ssWitness]
     exact div_ne_zero (mul_ne_zero hk (sub_ne_zero.mpr hne)) (by norm_num)
+
+/-- P06-23, refuted. 06:84 'With linear tires, the lateral force and yaw moment of the
+incoming model are balanced at the first step if the upstream steering command reproduces
+δ_ss, that is, if the re-trim reports no DL_STATUS_WARN_TRIM_MISMATCH'. Both counterexamples:
+a command within the 10^-3 rad trim threshold with l_f + l_r = L exactly
+(`dst_not_balanced_within_trim`), and δ_ss itself with l_f + l_r within the 03:31
+tolerance of L (`dst_not_balanced_tolerance`). The conditional result is
+`dst_balanced_of_exact`. -/
+theorem dst_not_balanced :
+    (∃ s : VehicleSpec.VSpec, s.WF ∧ ∃ t1 ∈ s.tier1, ∃ v r δ : ℝ, 1 ≤ v ∧
+      t1.cg_dist_front + t1.cg_dist_rear = s.tier0.wheelbase ∧ t1.cornering_stiffness_f ≠ 0 ∧
+      ¬ infeasible (Params.ofSpec s.tier0 t1) 1 (deltaSS (Params.ofSpec s.tier0 t1) v r) (aY v r) ∧
+      |δ - deltaSS (Params.ofSpec s.tier0 t1) v r| ≤ 1 / 1000 ∧
+      dstVyDot (Params.ofSpec s.tier0 t1) v
+        (vLatRa (Params.ofSpec s.tier0 t1) v r + (Params.ofSpec s.tier0 t1).lr * r) r δ ≠ 0) ∧
+    (∃ s : VehicleSpec.VSpec, s.WF ∧ ∃ t1 ∈ s.tier1, ∃ v r : ℝ, 1 ≤ v ∧
+      ¬ infeasible (Params.ofSpec s.tier0 t1) 1 (deltaSS (Params.ofSpec s.tier0 t1) v r) (aY v r) ∧
+      dstRDot (Params.ofSpec s.tier0 t1) t1.inertia_zz v
+        (vLatRa (Params.ofSpec s.tier0 t1) v r + (Params.ofSpec s.tier0 t1).lr * r) r
+        (deltaSS (Params.ofSpec s.tier0 t1) v r) ≠ 0) :=
+  ⟨dst_not_balanced_within_trim, dst_not_balanced_tolerance⟩
 
 end Driveline.SteadyState

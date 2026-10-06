@@ -62,8 +62,9 @@ theorem fz_sum_iff (p : Params) (θ φ : ℝ) (hL : p.L ≠ 0) :
   have hg : gStd ≠ 0 := by norm_num [gStd]
   simp [mul_eq_zero, div_eq_zero_iff, sub_eq_zero, hL, hg, or_assoc]
 
-/-- P06-07 06:76 'With the §2 sign convention, an uphill road (θ_road > 0) moves load to
-the rear axle.' θ_road < π/2 holds since 02:27 'θ_road = σ arctan(dz/ds)'. -/
+/-- P06-07, conditional: with m > 0, L > 0 and h_cg > 0, of which the spec states no
+h_cg range (03:20-21), an uphill road moves load to the rear axle. θ_road < π/2 holds since
+02:27 'θ_road = σ arctan(dz/ds)'. -/
 theorem uphill_moves_load_rear (p : Params) (θ φ : ℝ) (hm : 0 < p.m) (hh : 0 < p.hcg)
     (hL : 0 < p.L) (hθ : 0 < θ) (hθ' : θ < π / 2) :
     p.m * gStd * cos θ * cos φ * p.lf / p.L < Fzr p θ φ ∧
@@ -72,6 +73,34 @@ theorem uphill_moves_load_rear (p : Params) (θ φ : ℝ) (hm : 0 < p.m) (hh : 0
   have ht : 0 < p.m * gStd * sin θ * p.hcg / p.L := by unfold gStd; positivity
   simp only [Fzf, Fzr]
   constructor <;> linarith
+
+/-- `ssWitness` with h_cg = 0, which no Tier 1 rule excludes. -/
+noncomputable def flatWitness : VehicleSpec.VSpec :=
+  { tier0 := ssWitness.tier0
+    tier1 := some { ssT1 with cg_height := 0 } }
+
+theorem flatWitness_wf : flatWitness.WF := by
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · exact VehicleSpec.approxEq_of_eq _ _ (by simp [flatWitness, ssWitness]; norm_num)
+  · rintro t1 ⟨⟩
+    exact VehicleSpec.approxEq_of_eq _ _ (by simp [flatWitness, ssWitness, ssT1])
+  · rintro t2 h; simp [flatWitness] at h
+  · rintro d h; simp [flatWitness] at h
+
+/-- P06-07, refuted. 06:76 'With the §2 sign convention, an uphill road (θ_road > 0) moves
+load to the rear axle.' The spec states no range for h_cg, and a spec accepted under 03:31
+with h_cg = 0 on an uphill road (θ_road = 1/10, inside the 02:27 range (−π/2, π/2)) has
+F_z,r and F_z,f equal to their level-road shares: no load moves. The conditional result is
+`uphill_moves_load_rear`. -/
+theorem uphill_no_transfer : ∃ s : VehicleSpec.VSpec, s.WF ∧ ∃ t1 ∈ s.tier1, ∃ θ φ : ℝ,
+    0 < θ ∧ θ < π / 2 ∧ 0 < t1.mass ∧
+    Fzr (Params.ofSpec s.tier0 t1) θ φ =
+      t1.mass * gStd * cos θ * cos φ * t1.cg_dist_front / s.tier0.wheelbase ∧
+    Fzf (Params.ofSpec s.tier0 t1) θ φ =
+      t1.mass * gStd * cos θ * cos φ * t1.cg_dist_rear / s.tier0.wheelbase := by
+  refine ⟨flatWitness, flatWitness_wf, _, rfl, 1 / 10, 0, by norm_num,
+    by linarith [pi_gt_three], by simp [ssT1], ?_, ?_⟩ <;>
+    simp [Fzf, Fzr, Params.ofSpec, flatWitness]
 
 /-- P06-08 06:74 'θ_road and φ_road are taken relative to the actor's heading: both are
 negated when the actor's yaw differs from its lane's driving direction by more than π/2':
