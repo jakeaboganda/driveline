@@ -87,12 +87,12 @@ theorem auto_gear (p : DT) (v : ℝ) (hn : 1 ≤ p.nGears) :
       _ ≤ |v| / p.Reff * p.ratio g' * p.ifd :=
         mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_left hr hc) hi
 
-/-- P17-29. 17:89 'Otherwise a = −sgn(v) min(|v| / dt, (F_hold − |F_drive|) / m),
-so the actor comes to rest instead of creeping.' Physics steps by
+/-- P17-29, conditional: with m > 0, of which §3 and 16:104 state no sign for
+the Tier 1 `mass`, 17:89 'Otherwise a = −sgn(v) min(|v| / dt, (F_hold − |F_drive|) / m),
+so the actor comes to rest instead of creeping' holds. Physics steps by
 Δt = Δt_base and the drivetrain's period is dt = k_div · Δt_base (17:14,
 11:12-13), so Δt ≤ dt and one physics step moves v toward 0 without passing
-it. Spec gap: §3 and 16:104 state no sign for the Tier 1 `mass`, so m > 0 is
-a hypothesis. -/
+it. -/
 theorem low_speed_rest (p : DT) (k base : ℕ+) (v vlat r lr Fd Fb : ℝ) (hm : 0 < p.m)
     (hv : |v| < 0.01) (hF : |Fd| ≤ Fb + p.Crr * p.m * p.g) :
     v + dtAccel p (compDt k base) v vlat r lr Fd Fb * tickDt base ∈ Set.Icc (min 0 v) (max 0 v) := by
@@ -120,6 +120,40 @@ theorem low_speed_rest (p : DT) (k base : ℕ+) (v vlat r lr Fd Fb : ℝ) (hm : 
   · rw [Real.sign_of_pos h, abs_of_pos h] at *
     rw [min_eq_left h.le, max_eq_right h.le]
     constructor <;> nlinarith
+
+/-- `SimpleDrivetrain` parameters with m = −1, C_rr = 0 and T_brake,max = R_eff = 1. -/
+def negMassDT : DT :=
+  { m := -1, g := 1, ρair := 0, Cd := 0, Af := 0, Crr := 0, Reff := 1, ifd := 1, iR := 1,
+    Tdrive := 1, Tbrake := 1, δmax := 0, ratio := fun _ => 1, nGears := 1 }
+
+/-- P17-29, refuted. 17:89 'Otherwise a = −sgn(v) min(|v| / dt, (F_hold − |F_drive|) / m),
+so the actor comes to rest instead of creeping.' §3 and 16:104 state no sign for the
+Tier 1 `mass`. With m = −1, brake = 1 (F_brake = T_brake,max / R_eff = 1), F_drive = 0
+and F_hold = 1 > 0, the min is (F_hold − |F_drive|) / m = −1, so a = sgn(v) and from
+v = 1/200 one physics step moves v away from 0: the actor does not come to rest. The
+conditional result is `low_speed_rest`. -/
+theorem low_speed_neg_mass_creeps (k base : ℕ+) :
+    let p := negMassDT
+    let Fb := 1 * p.Tbrake / p.Reff
+    p.m < 0 ∧ 0 < Fb + p.Crr * p.m * p.g ∧ |(0 : ℝ)| ≤ Fb + p.Crr * p.m * p.g ∧
+      |(1 / 200 : ℝ)| < 0.01 ∧
+      1 / 200 + dtAccel p (compDt k base) (1 / 200) 0 0 0 0 Fb * tickDt base ∉
+        Set.Icc (min 0 (1 / 200)) (max 0 (1 / 200)) := by
+  have hdt := compDt_pos k base
+  have hΔ := tickDt_pos base
+  have ha : dtAccel negMassDT (compDt k base) (1 / 200) 0 0 0 0 (1 * negMassDT.Tbrake / negMassDT.Reff) = 1 := by
+    have hq : (-1 : ℝ) ≤ 1 / 200 / compDt k base := by
+      have := div_pos (show (0 : ℝ) < 1 / 200 by norm_num) hdt; linarith
+    simp only [dtAccel, lowSpeedAccel, negMassDT]
+    rw [if_pos (by norm_num), Real.sign_of_pos (show (0 : ℝ) < 1 / 200 by norm_num)]
+    norm_num
+    rw [min_eq_right hq]
+    norm_num
+  refine ⟨by norm_num [negMassDT], by norm_num [negMassDT], by norm_num [negMassDT], by norm_num, ?_⟩
+  rw [ha, Set.mem_Icc, not_and_or]
+  right
+  rw [max_eq_right (by norm_num)]
+  linarith
 
 /-- P17-30. 17:89 '(own.v_lat + l_r own.yaw_rate) · own.yaw_rate, where the
 last term, the CG lateral velocity times the yaw rate, turns the net-force

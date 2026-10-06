@@ -229,14 +229,15 @@ theorem dst_ss_not_steady : ∃ s : VehicleSpec.VSpec, s.WF ∧ ∃ t1 ∈ s.tie
     have hk : P.lf * P.Caf ≠ 0 := by simp [P, Params.ofSpec, ssWitnessG, ssT1G, ssT1, ssWitness]
     exact div_ne_zero (mul_ne_zero hk (sub_ne_zero.mpr hne)) (by norm_num)
 
-/-- P17-42. 17:117 'Explicit Euler is stable only if |1 + λΔt| < 1 for each eigenvalue λ
-of the linearized lateral dynamics, that is Δt < 2|Re λ| / |λ|²'. The equivalence holds
-with Re λ < 0 added; without it, λ = 1 and Δt = 1 satisfy the bound but not
-|1 + λΔt| < 1 (spec gap). -/
+/-- P17-42, conditional: 17:117 'Explicit Euler is stable only if |1 + λΔt| < 1 for each
+eigenvalue λ of the linearized lateral dynamics, that is Δt < 2|Re λ| / |λ|²'. The
+direction that holds: |1 + λΔt| < 1 gives Re λ < 0 and Δt < 2|Re λ| / |λ|², and the
+converse holds once Re λ < 0 is added. -/
 theorem euler_stability (z : ℂ) (h : ℝ) (hh : 0 < h) :
-    (‖1 + z * h‖ < 1 ↔ z.re < 0 ∧ h < 2 * |z.re| / ‖z‖ ^ 2) ∧
-      ((1 : ℝ) < 2 * |(1 : ℂ).re| / ‖(1 : ℂ)‖ ^ 2 ∧ ¬ ‖1 + (1 : ℂ) * (1 : ℝ)‖ < 1) := by
-  refine ⟨?_, by norm_num, by norm_num⟩
+    (‖1 + z * h‖ < 1 → z.re < 0 ∧ h < 2 * |z.re| / ‖z‖ ^ 2) ∧
+      (z.re < 0 → h < 2 * |z.re| / ‖z‖ ^ 2 → ‖1 + z * h‖ < 1) := by
+  suffices H : ‖1 + z * h‖ < 1 ↔ z.re < 0 ∧ h < 2 * |z.re| / ‖z‖ ^ 2 from
+    ⟨H.1, fun hr hl => H.2 ⟨hr, hl⟩⟩
   have hn : ‖1 + z * h‖ ^ 2 = 1 + h * (2 * z.re + h * ‖z‖ ^ 2) := by
     rw [Complex.sq_norm, Complex.sq_norm, Complex.normSq_apply, Complex.normSq_apply]
     simp; ring
@@ -267,6 +268,14 @@ theorem euler_stability (z : ℂ) (h : ℝ) (hh : 0 < h) :
       have : z ≠ 0 := fun e => by simp [e] at hre
       positivity
     rw [abs_of_neg hre, lt_div_iff₀ hz2] at hl; linarith
+
+/-- P17-42, refuted. 17:117 'Explicit Euler is stable only if |1 + λΔt| < 1 for each
+eigenvalue λ of the linearized lateral dynamics, that is Δt < 2|Re λ| / |λ|²'. The two
+conditions are not equivalent: λ = 1 and Δt = 1 satisfy Δt < 2|Re λ| / |λ|² = 2 but not
+|1 + λΔt| < 1. The conditional result is `euler_stability`. -/
+theorem euler_bound_not_stable :
+    (1 : ℝ) < 2 * |(1 : ℂ).re| / ‖(1 : ℂ)‖ ^ 2 ∧ ¬ ‖1 + (1 : ℂ) * (1 : ℝ)‖ < 1 := by
+  norm_num
 
 /-- P17-44. 17:117 'for v_x < 1 m/s, step 2 uses the `KinematicBicycle` equations with
 v̇ = clamp(a, ±μ̄g), so the friction limit is the same in both regimes'. -/
