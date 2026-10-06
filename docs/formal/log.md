@@ -127,3 +127,11 @@ Spec defects found (queued for the spec-fix pass):
 * **P06-23** `06-lifecycle.md:84`. "Balanced at the first step if the upstream steering command reproduces `δ_ss`, that is, if the re-trim reports no `DL_STATUS_WARN_TRIM_MISMATCH`." The trim check passes within `10⁻³` rad, where the front lateral force is off by about `C_αf · 10⁻³` (`Driveline.SteadyState.dst_not_balanced`).
 * **P06-07** `06-lifecycle.md:76`. "An uphill road moves load to the rear axle" needs `h_cg > 0`, and §3 and §16 set no range for Tier 1 values (`Driveline.AxleLoad.uphill_no_transfer`). Same root cause as P03-12: vehicle parameters have no sign or positivity rules.
 * **P06-03** `06-lifecycle.md:73`. Confirms the WP08 finding P06-04: with `ψ̇₀ = v₀ κ₀` the rear axle does not follow the lane when `v_lat ≠ 0` (`Driveline.SteadyState.rear_path_not_followed`).
+
+## WP11 Contact test (§11)
+
+Module `Contact`. 9 rows proved, including P11-40 from WP05: the run model's collision lines are derived from the contact test over the committed states, so a pair gets at most one line, on its first tick in contact, and a run that fails before Phase 4 of its last tick tests no state it never committed.
+
+The central theorem is `Driveline.Contact.footprintContact_iff_inter`: the §11 separating-axis test over the four edge normals holds exactly when the two closed footprints intersect, so "touching counts" is exact. It is proved with Helly's theorem over the four slabs. The test is symmetric in the two actors, exactly, even in binary64, because the axis set and the projections do not depend on argument order. Rotation invariance holds over ℝ only; the binary64 clause is `OUT: external`.
+
+No spec defect found in WP11.
