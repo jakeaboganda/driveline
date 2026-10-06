@@ -417,9 +417,9 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | P17-24 | 17:83 | "δ = clamp(..., ±δ_max)" | REAL | Driveline.Std.Controllers | δmax≥0 → abs δ ≤ δmax | PROVED: Driveline.Std.stanley_bound |
 | P17-25 | 17:84 | "the output is arctan(Lκ_p), which is δ_KS" | REAL | Driveline.Std.Controllers | the 17:83 clamp still applies: e=0 ∧ ψe=0 ∧ abs(arctan Lκ) > δmax ≥ 0 gives δ = ±δmax ≠ arctan Lκ; with abs(arctan Lκ) ≤ δmax, δ = arctan Lκ (`stanley_on_path`) | REFUTED: Driveline.Std.stanley_on_path_clamped |
 | P17-26 | 17:82 | "smallest index winning ties" | DECIDE | Driveline.Std.Controllers | argmin with index tiebreak is unique | PROVED: Driveline.Std.nearest_unique |
-| P17-27 | 17:87 | "the largest gear index g with ... ≥ 157.08 rad/s, or gear 1" | INT | Driveline.Std.Drivetrain | num_gears≥1 → g ∈ [1, num_gears]; if i_g decreases, the qualifying gears form a prefix | PROVED: Driveline.Std.auto_gear |
+| P17-27 | 17:87 | "the largest gear index g with ... ≥ 157.08 rad/s, or gear 1" | INT | Driveline.Std.Drivetrain | num_gears≥1 → g ∈ [1, num_gears]; auxiliary `qualifies_prefix`: if i_g decreases, the qualifying gears form a prefix | PROVED: Driveline.Std.auto_gear_in_range |
 | P17-29 | 17:89 | "comes to rest instead of creeping" | REAL | Driveline.Std.Drivetrain | the spec states no sign for `mass`: m = −1, brake = 1, F_drive = 0, F_hold = 1 > 0, v = 1/200 gives a = 1, so v moves away from 0; with m > 0, abs v < 0.01 ∧ abs F_drive ≤ F_hold → v+a·Δt ∈ [0,v] when Δt ≤ dt (`low_speed_rest`) | REFUTED: Driveline.Std.low_speed_neg_mass_creeps |
-| P17-30 | 17:89 | "(own.v_lat + l_r·yaw_rate)·yaw_rate" | REAL | Driveline.Std.Drivetrain | v̇x = F/m + v_y·r, consistent with the DST init v_y = v_lat + l_r·r | PROVED: Driveline.Std.drivetrain_yaw_term |
+| P17-30 | 17:89 | "(own.v_lat + l_r·yaw_rate)·yaw_rate" | REAL | Driveline.Std.Drivetrain | above 0.01 m/s, if F_net/m = v̇x − v_y·r (body-x CG acceleration, v_y = v_lat + l_r·r), then a = v̇x | PROVED: Driveline.Std.drivetrain_yaw_term |
 | P17-31 | 17:89 | "steering_wheel_norm · δ_max" | REAL | Driveline.Std.Drivetrain | abs norm ≤ 1 → abs cmd ≤ δmax | PROVED: Driveline.Std.drivetrain_steer |
 | P17-32 | 17:91 | "comes whole from secondary if its mode there is not NONE" | DECIDE | Driveline.Std.Controllers | per-group selection, so groups are never mixed | PROVED: Driveline.Std.arbiter_whole_groups |
 | P17-33 | 17:100 | "Clamp v_lon ← max(0, v_lon) ... a ← max(0, a)" | REAL | Driveline.Std.KinematicBicycle | invariant v≥0; v=0 → a≥0 | PROVED: Driveline.Std.ks_speed_nonneg |
@@ -430,7 +430,7 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | P17-38 | 17:111 | "ψ̇ = (v/L) tan δ" | MODEL | Driveline.Std.KinematicBicycle | Euler step by definition; well-defined iff abs δ < π/2 | PROVED: Driveline.Std.ks_euler |
 | P17-39 | 17:112 | "a_lat = vψ̇" | REAL | Driveline.Std.KinematicBicycle | definitional | PROVED: Driveline.Std.ks_alat |
 | P17-40 | 17:115 | "F_yi = clamp(C_αi α_i, ±μ_i max(0, F_zi))" | REAL | Driveline.Std.DynamicSingleTrack | μ_i≥0 → abs F_yi ≤ μ_i·max(0, F_zi) | PROVED: Driveline.Std.tire_force_bound |
-| P17-41 | 17:117 | "This small-angle model matches §8" | REAL | Driveline.Std.DynamicSingleTrack | a=0 at the §8 state (v_y = v_lat,ra + l_r ψ̇, δ = δ_ss) gives v̇x = 0, but with l_f + l_r only within 03:31 tolerance of L, ṙ ≠ 0 with tire forces under the friction bound (P06-23 counterexample on clamped tires) | REFUTED: Driveline.Std.dst_ss_not_steady |
+| P17-41 | 17:117 | "This small-angle model matches §8" | REAL | Driveline.Std.DynamicSingleTrack | a=0 at the §8 state (v_y = v_lat,ra + l_r ψ̇, δ = δ_ss) gives v̇x = 0, but with l_f + l_r only within 03:31 tolerance of L, ṙ ≠ 0 with tire forces under the friction bound (P06-23 counterexample on clamped tires; cross-reference `Driveline.Std.dst_ss_not_steady`) | DUP: P06-23 |
 | P17-42 | 17:117 | "Δt < 2abs(Re λ)/abs(λ)²" | REAL | Driveline.Std.DynamicSingleTrack | the 'that is' equivalence fails: λ = 1, Δt = 1 meets Δt < 2abs(Re λ)/abs(λ)² but not abs(1+λΔt) < 1; abs(1+λh) < 1 → Re λ < 0 ∧ h < 2abs(Re λ)/abs(λ)², with the converse under Re λ < 0 (`euler_stability`) | REFUTED: Driveline.Std.euler_bound_not_stable |
 | P17-44 | 17:117 | "the friction limit is the same in both regimes" | REAL | Driveline.Std.DynamicSingleTrack | both regimes use v̇ = clamp(a, ±μ̄g) | PROVED: Driveline.Std.friction_both_regimes |
 | P17-45 | 17:117 | "the reset leaves both slip angles at 0" | REAL | Driveline.Std.DynamicSingleTrack | v_y = l_r·r ∧ r = v·tanδ/L ∧ abs δ < π/2 → α_f = α_r = 0 | REFUTED: Driveline.Std.reset_front_slip_nonzero |
@@ -439,7 +439,7 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | P17-48 | 17:122,124 | "clamp(w(ψ_d − ψ), ±max_turn_rate Δt)" | REAL | Driveline.Std.ObjectPhysics | w(c)=c on (−π,π] → abs yaw_rate ≤ max_turn_rate | PROVED: Driveline.Std.walker_yaw_rate |
 | P17-49 | 17:120 | "square root of +INFINITY is +INFINITY" | REAL | Driveline.Std.ObjectPhysics | ENNReal sqrt lemma | PROVED: Driveline.Std.stop_infinity |
 | P17-50 | 17:126 | "v capped at v_max" | DECIDE | Driveline.Std.ObjectPhysics | init establishes the P17-47 invariant | PROVED: Driveline.Std.walker_init_inv |
-| P17-51 | 17:70 | "each no-bound field +INFINITY" | MODEL | Driveline.Std.Controllers | outputs satisfy the §5.2 validity rules; fails for PID (no clamp) | PROVED: Driveline.Std.std_outputs_valid |
+| P17-51 | 17:70 | "each no-bound field +INFINITY" | MODEL | Driveline.Std.Controllers | for every real a and δ, the Lon, Lat and full outputs pass the §5.2 output check | PROVED: Driveline.Std.std_outputs_valid |
 
 ### WP14 Modules and lockfile (§19, §12)
 

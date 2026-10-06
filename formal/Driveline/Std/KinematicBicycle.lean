@@ -136,7 +136,8 @@ theorem steer_rate_neg_max (δdotMax Δt δ w : ℝ) (hm : δdotMax < 0) (hΔ : 
 
 /-- P17-36, refuted. 17:107 '... Under `RATE`, δ ← δ + clamp(δ̇_cmd, ±δ̇_max)Δt. Then
 |δ| ≤ δ_max.' No step clamps δ to δ_max (§9.1, §11 and the rest of docs/spec/ have no
-runtime steering clamp), so from δ = 0 a held `RATE` command passes any δ_max. -/
+runtime steering clamp), so from δ = 0 a held `RATE` command passes any δ_max.
+Spec gap: if saturation is intended, 17:107 should say 'then clamp δ to ±δ_max'. -/
 theorem steer_exceeds_max (δmax δdotMax Δt : ℝ) (hm : 0 < δdotMax) (hΔ : 0 < Δt) :
     ∃ k : ℕ, δmax < (fun δ => steerStep δdotMax Δt δ (.rate δdotMax))^[k] 0 := by
   have hc : clampS δdotMax δdotMax = δdotMax := clampS_of_abs_le (abs_of_pos hm).le

@@ -233,8 +233,10 @@ theorem jerk_bound (maxJerk : ℝ) (k base : ℕ+) (aPrev aIn : ℝ) (hj : 0 < m
   rw [add_sub_cancel_left]
   exact abs_clampS_le _ _ (mul_nonneg hj.le (compDt_pos k base).le)
 
-/-- P17-24. 17:83 'δ = clamp(..., ±δ_max)'. Spec gap: §3 states no sign for
-`max_steer_angle`, so δ_max ≥ 0 is the ledger's hypothesis. -/
+/-- P17-24. 17:83 'δ = clamp(..., ±δ_max)'. δ_max ≥ 0 holds for every running
+actor: 08:19 'A steady state is infeasible if |δ_ss| > δ_max ... During cold init,
+an infeasible spawn state is `DL_STATUS_ERR_NUMERIC`', so a feasible δ_ss gives
+0 ≤ |δ_ss| ≤ δ_max (`Driveline.VehicleSpec.steer_bound_of_feasible`). -/
 theorem stanley_bound (L κ ψe k e kSoft vlon δmax : ℝ) (h : 0 ≤ δmax) :
     |stanley L κ ψe k e kSoft vlon δmax| ≤ δmax :=
   abs_clampS_le _ _ h

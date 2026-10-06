@@ -131,13 +131,14 @@ theorem tan_small : 0 < Real.tan (3 / 4000) ∧ Real.tan (3 / 4000) ≤ 1 / 1000
   rw [Real.tan_eq_sin_div_cos, div_le_iff₀ hc0]
   nlinarith
 
-/-- P17-41, refuted. 17:117 'The front lateral force acts along the body y axis. This
+/-- Cross-reference for P17-41, which the ledger marks `DUP: P06-23`. 17:117 'The front lateral force acts along the body y axis. This
 small-angle model matches §8.' With l_f + l_r only within the 03:31 tolerance of L
 (`SteadyState.ssWitnessG`, l_r = 3/2 + 10^-7), at a feasible §8 ST state
 (v = 10 m/s, psi_dot = 1/100 rad/s, μ = 1 on a flat road) entered by 17:104 with
 v_y = v_lat,ra + l_r psi_dot, δ = δ_ss and a = 0, the tire forces are inside their
 friction bounds and ṙ ≠ 0. This is the counterexample of P06-23
-(`SteadyState.dst_not_balanced_tolerance`) carried over to the clamped tires of 17:115. -/
+(`SteadyState.dst_not_balanced_tolerance`) carried over to the clamped tires of 17:115;
+P06-23 (`SteadyState.dst_not_balanced`) carries the verdict. -/
 theorem dst_ss_not_steady : ∃ s : VehicleSpec.VSpec, s.WF ∧ ∃ t1 ∈ s.tier1, ∃ v r μ : ℝ,
     1 ≤ v ∧ 0 ≤ μ ∧ μ ≤ 2 ∧
     ¬ SteadyState.infeasible (SteadyState.Params.ofSpec s.tier0 t1) μ

@@ -66,26 +66,29 @@ noncomputable def dtAccel (p : DT) (dt v vlat r lr Fd Fb : ℝ) : ℝ :=
 index g with (|v| / R_eff) i_g i_fd ≥ 157.08 rad/s, or gear 1 if none
 qualifies.' With `num_gears` ≥ 1 (16:104 '`gear_ratios` is an array literal of
 1 to 10 dimensionless values, and `num_gears` is its length') the gear is in
-range. If the ratios decrease, every lower gear than a qualifying one
-qualifies too, so the qualifying gears form a prefix. -/
-theorem auto_gear (p : DT) (v : ℝ) (hn : 1 ≤ p.nGears) :
-    autoGear p v ∈ Finset.Icc 1 p.nGears ∧
-      (0 < p.Reff → 0 ≤ p.ifd → AntitoneOn p.ratio (Finset.Icc 1 p.nGears) →
-        ∀ g g', 1 ≤ g' → g' ≤ g → g ≤ p.nGears → qualifies p v g → qualifies p v g') := by
+range. -/
+theorem auto_gear_in_range (p : DT) (v : ℝ) (hn : 1 ≤ p.nGears) :
+    autoGear p v ∈ Finset.Icc 1 p.nGears := by
   classical
-  refine ⟨?_, fun hR hi ha g g' h1 hle hg hq => ?_⟩
-  · unfold autoGear
-    simp only
-    split_ifs with h
-    · exact (Finset.mem_filter.1 (Finset.max'_mem _ h)).1
-    · exact Finset.mem_Icc.2 ⟨le_rfl, hn⟩
-  · unfold qualifies at *
-    have hr : p.ratio g ≤ p.ratio g' :=
-      ha (by simp; omega) (by simp; omega) hle
-    have hc : 0 ≤ |v| / p.Reff := div_nonneg (abs_nonneg v) hR.le
-    calc (157.08 : ℝ) ≤ |v| / p.Reff * p.ratio g * p.ifd := hq
-      _ ≤ |v| / p.Reff * p.ratio g' * p.ifd :=
-        mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_left hr hc) hi
+  unfold autoGear
+  simp only
+  split_ifs with h
+  · exact (Finset.mem_filter.1 (Finset.max'_mem _ h)).1
+  · exact Finset.mem_Icc.2 ⟨le_rfl, hn⟩
+
+/-- Auxiliary to P17-27, not a spec clause: if the ratios decrease, every lower
+gear than a qualifying one qualifies too, so the qualifying gears of 17:87 form a
+prefix. -/
+theorem qualifies_prefix (p : DT) (v : ℝ) (hR : 0 < p.Reff) (hi : 0 ≤ p.ifd)
+    (ha : AntitoneOn p.ratio (Finset.Icc 1 p.nGears)) (g g' : ℕ) (h1 : 1 ≤ g')
+    (hle : g' ≤ g) (hg : g ≤ p.nGears) (hq : qualifies p v g) : qualifies p v g' := by
+  unfold qualifies at *
+  have hr : p.ratio g ≤ p.ratio g' :=
+    ha (by simp; omega) (by simp; omega) hle
+  have hc : 0 ≤ |v| / p.Reff := div_nonneg (abs_nonneg v) hR.le
+  calc (157.08 : ℝ) ≤ |v| / p.Reff * p.ratio g * p.ifd := hq
+    _ ≤ |v| / p.Reff * p.ratio g' * p.ifd :=
+      mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_left hr hc) hi
 
 /-- P17-29, conditional: with m > 0, of which §3 and 16:104 state no sign for
 the Tier 1 `mass`, 17:89 'Otherwise a = −sgn(v) min(|v| / dt, (F_hold − |F_drive|) / m),
@@ -157,16 +160,23 @@ theorem low_speed_neg_mass_creeps (k base : ℕ+) :
 
 /-- P17-30. 17:89 '(own.v_lat + l_r own.yaw_rate) · own.yaw_rate, where the
 last term, the CG lateral velocity times the yaw rate, turns the net-force
-acceleration of the CG into v̇_lon'. Above 0.01 m/s the yaw term is the DST
-init's CG lateral velocity v_y = v_lat + l_r ψ̇ (17:104) times the yaw rate. -/
-theorem drivetrain_yaw_term (p : DT) (dt v vlat r lr Fd Fb : ℝ) (hv : ¬ |v| < 0.01) :
-    dtAccel p dt v vlat r lr Fd Fb = (Fd - fRes p v - Fb * Real.sign v) / p.m + dstVy vlat lr r * r := by
-  simp only [dtAccel, hv, if_false, dstVy]
+acceleration of the CG into v̇_lon'. Above 0.01 m/s, if the net-force
+acceleration (F_drive − F_res − F_brake sgn(v)) / m is the body-x acceleration of
+the CG, v̇_x − v_y r, with v_y = v_lat + l_r ψ̇ the CG lateral velocity of the DST
+init (17:104), then the output a is v̇_x. -/
+theorem drivetrain_yaw_term (p : DT) (dt v vlat r lr Fd Fb vxDot : ℝ) (hv : ¬ |v| < 0.01)
+    (hF : (Fd - fRes p v - Fb * Real.sign v) / p.m = vxDot - dstVy vlat lr r * r) :
+    dtAccel p dt v vlat r lr Fd Fb = vxDot := by
+  simp only [dtAccel, hv, if_false]
+  rw [hF, dstVy]
+  ring
 
 /-- P17-31. 17:89 '`ANGLE` with `steer_angle_cmd` = `steering_wheel_norm` · δ_max'.
 A valid input has |`steering_wheel_norm`| ≤ 1 under `ANGLE` (05:114, see
-`Validity.actuator_ranges`). Spec gap: §3 states no sign for
-`max_steer_angle`, so δ_max ≥ 0 is the ledger's hypothesis. -/
+`Validity.actuator_ranges`). δ_max ≥ 0 holds for every running actor: 08:19 'A
+steady state is infeasible if |δ_ss| > δ_max ... During cold init, an infeasible
+spawn state is `DL_STATUS_ERR_NUMERIC`', so a feasible δ_ss gives
+0 ≤ |δ_ss| ≤ δ_max (`Driveline.VehicleSpec.steer_bound_of_feasible`). -/
 theorem drivetrain_steer (n δmax : ℝ) (hn : |n| ≤ 1) (hδ : 0 ≤ δmax) : |n * δmax| ≤ δmax := by
   rw [abs_mul, abs_of_nonneg hδ]
   nlinarith [abs_nonneg n]
