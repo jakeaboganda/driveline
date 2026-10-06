@@ -93,3 +93,16 @@ Spec defects found (queued for the spec-fix pass):
 * **P09-21** `09-abi.md:33`. A lane can contain a point at two values of `s` (a loop or a helical ramp). The tie-break key has no `s` component, so `world_to_frenet` may return either `(s, d)` (`Driveline.Abi.refute_unique_s`).
 * **P09-23** `09-abi.md:35`. `sample_lane_path` defines no result when `κ·d ≥ 1`, where the offset curvature has a pole. §6.2 makes the same case an error at spawn.
 * **P09-06** (note) `09-abi.md:23` should state `output_stride ≥ sizeof(T)`, and a multiple of 8 so `double` fields stay aligned.
+
+## WP08 Splice, init contexts, tier change (§6.2, §10.4)
+
+Modules `InitContext` (Pass 1 spawn geometry, slip and gear rules, latched frames, conversion at t > 0, contexts per actor), `TierChange` (promotion and demotion field updates, steering after a tier change, the re-trim set), and `Splice` (splice typing, conflicts, firing, the all-or-nothing committed update, ordering). 41 rows proved, including P06-40 and P06-41, which review added: at t > 0 every latched frame of a non-`Override` type is again in baseline modes in every group.
+
+Promotion and demotion write at most the five stated fields and keep `v_lon`, `ψ̇`, the course angle `χ`, and `v̇_lon` (`Driveline.TierChange.promote_fields`, `promote_chi`). The P10-16 refutation was withdrawn: `16-static-semantics.md:27` lets a `Chain` convert only to a non-partial output, so a partial target admits only an equal type.
+
+Spec defects found (queued for the spec-fix pass):
+
+* **P06-04** `06-lifecycle.md:73`. "So the rear-axle velocity is tangent to the lane and the actor follows it." With `ψ̇₀ = v₀ κ₀` and a nonzero rear-axle lateral speed, the rear axle moves at `√(v₀² + v_lat²)`, so its path curvature is `κ₀ v₀ / √(v₀² + v_lat²)`, not `κ₀`. Tangency holds at spawn; following the lane does not. With the §8 test vector the error is about 0.009 %.
+* **P06-21** `06-lifecycle.md:84`. "Five fields change." At most five change; below 1 m/s, none do.
+* **P06-19, P06-22** `06-lifecycle.md:84`. `γ` is defined as 0 at `v_lon = 0`, so demoting a state with `v_lon = 0` and `v_lat ≠ 0` drops the lateral speed without keeping the path.
+* **P06-32** `06-lifecycle.md:88`. "A component whose input and output types are equal ... gets its own last output." For `Lon<T> → Lon<T>` the latched frame is the merged frame at its `+`, which matches its own output only in the stated group.
