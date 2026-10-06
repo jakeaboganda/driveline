@@ -435,10 +435,10 @@ Spec references are `<section>:<line>` in `docs/spec/`, as the inventory recorde
 | P17-44 | 17:117 | "the friction limit is the same in both regimes" | REAL | Driveline.Std.DynamicSingleTrack | both regimes use v̇ = clamp(a, ±μ̄g) | TODO |
 | P17-45 | 17:117 | "the reset leaves both slip angles at 0" | REAL | Driveline.Std.DynamicSingleTrack | v_y = l_r·r ∧ r = v·tanδ/L ∧ abs δ < π/2 → α_f = α_r = 0 | TODO |
 | P17-46 | 17:117 | "a_lon = v̇_x − v_lat r" | REAL | Driveline.Std.DynamicSingleTrack | round trip with the init formula a = a_lon + v_lat·ψ̇ | TODO |
-| P17-47 | 17:120-121 | "v_t = min(v_ref, v_max, ...)", "v' = max(0, ...)" | REAL | Driveline.Std.ObjectPhysics | invariant 0 ≤ v ≤ v_max; abs(v'−v) ≤ a_max·Δt | TODO |
-| P17-48 | 17:122,124 | "clamp(w(ψ_d − ψ), ±max_turn_rate Δt)" | REAL | Driveline.Std.ObjectPhysics | w(c)=c on (−π,π] → abs yaw_rate ≤ max_turn_rate | TODO |
-| P17-49 | 17:120 | "square root of +INFINITY is +INFINITY" | REAL | Driveline.Std.ObjectPhysics | ENNReal sqrt lemma | TODO |
-| P17-50 | 17:126 | "v capped at v_max" | DECIDE | Driveline.Std.ObjectPhysics | init establishes the P17-47 invariant | TODO |
+| P17-47 | 17:120-121 | "v_t = min(v_ref, v_max, ...)", "v' = max(0, ...)" | REAL | Driveline.Std.ObjectPhysics | invariant 0 ≤ v ≤ v_max; abs(v'−v) ≤ a_max·Δt | PROVED: Driveline.Std.walker_speed_inv |
+| P17-48 | 17:122,124 | "clamp(w(ψ_d − ψ), ±max_turn_rate Δt)" | REAL | Driveline.Std.ObjectPhysics | w(c)=c on (−π,π] → abs yaw_rate ≤ max_turn_rate | PROVED: Driveline.Std.walker_yaw_rate |
+| P17-49 | 17:120 | "square root of +INFINITY is +INFINITY" | REAL | Driveline.Std.ObjectPhysics | ENNReal sqrt lemma | PROVED: Driveline.Std.stop_infinity |
+| P17-50 | 17:126 | "v capped at v_max" | DECIDE | Driveline.Std.ObjectPhysics | init establishes the P17-47 invariant | PROVED: Driveline.Std.walker_init_inv |
 | P17-51 | 17:70 | "each no-bound field +INFINITY" | MODEL | Driveline.Std.Controllers | outputs satisfy the §5.2 validity rules; fails for PID (no clamp) | PROVED: Driveline.Std.std_outputs_valid |
 
 ### WP14 Modules and lockfile (§19, §12)
