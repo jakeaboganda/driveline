@@ -244,10 +244,13 @@ theorem guard_denom_pos (κ d : ℝ) (h : ¬ (κ * d ≥ 1)) : 0 < 1 - κ * d :=
   linarith [not_le.mp h]
 
 /-- P06-04. 06:73 'The spawn heading is psi_0 = psi_travel − atan2(v_lat,ra, v_0), wrapped
-to (−π, π], so the rear-axle velocity is tangent to the lane and the actor follows it'. For
-v_0 > 0 the rear-axle velocity in world coordinates is a positive multiple of the travel
-direction. The spawn speed is ≥ 0 (17:21), and at v_0 = 0 the 06:73 clause 'at v_0 = 0,
-psi_0 = psi_travel' applies. -/
+to (−π, π], so the rear-axle velocity is tangent to the lane'. For v_0 > 0 the rear-axle
+velocity in world coordinates is a positive multiple of the travel direction. The spawn speed
+is ≥ 0 (17:21), and at v_0 = 0 the 06:73 clause 'at v_0 = 0, psi_0 = psi_travel' applies.
+The rest of the sentence, 'and the actor follows it', does not hold when v_lat,ra ≠ 0:
+06:73 'sets psi_dot_0 = v_0 kappa_0', so the rear-axle path curvature is
+psi_dot_0 / sqrt(v_0² + v_lat,ra²) = kappa_0 v_0 / sqrt(v_0² + v_lat,ra²) ≠ kappa_0. This is a
+spec issue; see P06-03. -/
 theorem spawn_heading_tangent (ψt vLat v0 : ℝ) (hv : 0 < v0) :
     let ψ0 := psi0 .st ψt vLat v0
     ∃ k : ℝ, 0 < k ∧ (v0 * Real.cos ψ0 - vLat * Real.sin ψ0,
@@ -328,14 +331,14 @@ theorem motor_speed_neg : ∃ s : VSpec, s.WF ∧ ∃ t2 ∈ s.tier2,
 carries the actor's actor_id and timestamp_ns = 0, and has no NONE group'. The latched
 intent is the committed-baseline rule of 06:72 at time 0, the kinematic frame has
 `a_lon_cmd = 0` and the actuator frame `DRIVE`. -/
-theorem pass1_frames_baseline {map : RoadMap} (o : OwnView map) (a : UInt64) (δ δmax : ℝ) :
-    let h : Header := ⟨a, 0⟩
+theorem pass1_frames_baseline {map : RoadMap} (o : OwnView map) (δ δmax : ℝ) :
+    let h : Header := ⟨o.actorId, 0⟩
     let I := IntentFrame.committedBaseline o 0
     let K := baseKcf h 0 δ
     let A := baseAcf h δ δmax .drive
     I.lon.isBaseline ∧ I.lat.isBaseline ∧ I.signal.isBaseline ∧ K.accel.isBaseline ∧
       K.steer.isBaseline ∧ A.pedal.isBaseline ∧ A.wheel.isBaseline ∧ A.gear.isBaseline ∧
-      I.header = ⟨o.actorId, 0⟩ ∧ K.header = h ∧ A.header = h := by
+      I.header = h ∧ K.header = h ∧ A.header = h := by
   intro h I K A
   exact ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
 
@@ -619,7 +622,9 @@ its input' ... 'In these rules a Lon<T> or Lat<T> output counts as the merged fr
 +' ... 'A component whose input and output types are equal, such as JerkLimiter, therefore
 gets its own last output'. A component's own last output `f` is its latched frame; for a
 `Lon<T>` output `a` merged with `b` at its `+`, the latched frame agrees with `a` on the
-`LON` group and its fields. -/
+`LON` group and its fields. So a `Lon<T>` → `Lon<T>` component gets its own last output only
+in the groups it states: its latched frame is the merged frame at its `+`, whose other groups
+come from the other branch. -/
 theorem latched_own_output {F : Type} (o i : Option F) (f : F) (ho : o = some f)
     (h : Header) (a b : KinematicControlFrame) :
     latched o i = some f ∧ (KinematicControlFrame.merge h a b).accel = a.accel ∧

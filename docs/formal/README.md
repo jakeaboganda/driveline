@@ -22,6 +22,8 @@ The orchestrator then runs `tools/check_formal.py`, updates the ledger and the l
 
 Agents have a cumulative token budget: every turn re-reads the agent's whole context, so an agent gets about a dozen turns. Implementers keep build output short (`lake build <Module> 2>&1 | grep -E -A8 '^error' | head -60`), read only the line ranges they need, and batch edits. Agents commit a building state after each part of their task. When an agent runs out, the orchestrator commits what it left and starts a fresh agent on the rest; the new agent reads the commits to see what is done. A fresh context is cheaper per turn than resuming the old one.
 
+Each finished agent keeps a process alive for resumption, about 50 MB each. The orchestrator destroys every agent once its result is recorded; sixty idle agents pushed Lean into swap and slowed the build of the root module from seconds to four minutes.
+
 Read-only agents can run in parallel, at most four at a time. Agents that edit files run one at a time, because each takes the repository lock and needs a clean checkout.
 
 ## Limits

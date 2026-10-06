@@ -90,11 +90,12 @@ theorem port_converts_whole_lon (r : Base) : converts (.whole r) (.lon r) :=
 
 /-- P10-16 10:30 'The replacement must have ... an output type equal to the target's or
 converting to it by the chain conversion of §16.1, so a partial target needs a partial
-replacement'. True: the chain conversion of 16:27 never yields a partial type. -/
+replacement'. True, and stronger: the chain conversion of 16:27 never yields a partial type,
+so a partial target needs a replacement of the same output type. -/
 theorem partial_target_partial_replacement (tgt rep : FrameType)
-    (h : spliceTypeOK tgt rep) (ht : isPartial tgt) : isPartial rep := by
+    (h : spliceTypeOK tgt rep) (ht : isPartial tgt) : rep = tgt ∧ isPartial rep := by
   rcases h with h | ⟨-, hn⟩
-  · exact h ▸ ht
+  · exact ⟨h, h ▸ ht⟩
   · exact absurd ht hn
 
 structure SpliceStmt (T : Type) where
@@ -103,13 +104,24 @@ structure SpliceStmt (T : Type) where
 
 /-- 10:30 'two splice statements on the same actor where one target contains the other'. -/
 def conflicts {T : Type} (contains : T → T → Prop) (s u : SpliceStmt T) : Prop :=
-  s.actor = u.actor ∧ s.target ≠ u.target ∧ (contains s.target u.target ∨ contains u.target s.target)
+  s.actor = u.actor ∧ (contains s.target u.target ∨ contains u.target s.target)
+
+/-- 10:30 the compile-time error: a conflicting pair, except that 'Two splices of the same
+target are allowed'. -/
+def rejected {T : Type} (contains : T → T → Prop) (s u : SpliceStmt T) : Prop :=
+  conflicts contains s u ∧ s.target ≠ u.target
 
 /-- P10-17 10:30 'So are two splice statements on the same actor where one target contains
-the other ... Two splices of the same target are allowed'. -/
-theorem same_target_allowed {T : Type} (contains : T → T → Prop) (s u : SpliceStmt T)
-    (h : s.target = u.target) : ¬ conflicts contains s u :=
-  fun ⟨_, hne, _⟩ => hne h
+the other ... Two splices of the same target are allowed'. A same-target pair is never
+rejected, and the exemption is needed: when containment is reflexive (a target's components
+include its own), such a pair on one actor conflicts by containment. Every other conflicting
+pair is rejected. -/
+theorem same_target_allowed {T : Type} (contains : T → T → Prop) (s u : SpliceStmt T) :
+    (s.target = u.target → ¬ rejected contains s u) ∧
+      ((∀ x, contains x x) → s.actor = u.actor → s.target = u.target →
+        conflicts contains s u) ∧
+      (conflicts contains s u → s.target ≠ u.target → rejected contains s u) :=
+  ⟨fun h ⟨_, hne⟩ => hne h, fun hr ha ht => ⟨ha, Or.inl (ht ▸ hr _)⟩, fun hc hne => ⟨hc, hne⟩⟩
 
 /-! ## Trigger (10:31) -/
 

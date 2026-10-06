@@ -119,7 +119,9 @@ theorem worldVel_chi (c : Chassis) (hv : c.vLon ≠ 0) :
   constructor <;> field_simp
 
 /-- P06-19. 06:84 'A tier change keeps the sign of v_lon, so keeping chi keeps the path in
-reverse too'. -/
+reverse too'. The theorem needs `v_lon ≠ 0`. At `v_lon = 0` the spec has a gap: 06:84 sets
+'gamma = 0 otherwise', so `chi = psi`, but the rear-axle velocity is then `v_lat,ra` along the
+lateral axis and has no sign of `v_lon` to keep; the spec does not say what path is kept. -/
 theorem path_kept (c c' : Chassis) (hv : c.vLon ≠ 0) (hs : 0 < c'.vLon * c.vLon)
     (hχ : Angles.wrap (chi c') = Angles.wrap (chi c)) :
     ∃ k : ℝ, 0 < k ∧ worldVel c' = k • worldVel c := by
@@ -165,14 +167,26 @@ theorem promote_vdot (s : STSol) (c : Chassis) (h0 : c.vLat = 0) :
   simp only [vdot, promote, h0]; ring
 
 /-- P06-21. 06:84 'Five fields change: v_lat,ra ..., a_lon ..., front_wheel_angle ..., β_cg
-..., and the yaw'. Every other field is kept. -/
+..., and the yaw'. At most these five change: every other field is kept. Fewer may change:
+below 1 m/s the §8 solve keeps `v_lat,ra = 0` (06:94 'slip_angle_alpha ... is 0 when
+v_lon < 1 m/s ..., as in §8'), and when it also keeps `front_wheel_angle` and `β_cg` and the
+yaw is already wrapped, no field changes. -/
 theorem promote_fields (s : STSol) (c : Chassis) :
     { promote s c with
-        vLat := c.vLat, aLon := c.aLon, fwa := c.fwa, beta := c.beta, psi := c.psi } = c := by
-  cases c; rfl
+        vLat := c.vLat, aLon := c.aLon, fwa := c.fwa, beta := c.beta, psi := c.psi } = c ∧
+      (c.vLon < 1 → c.vLat = 0 → s.vLat = 0 → s.δ = c.fwa → s.β = c.beta →
+        c.psi ∈ Set.Ioc (-π) π → promote s c = c) := by
+  refine ⟨by cases c; rfl, fun _ h0 hs hδ hβ hψ => ?_⟩
+  cases c
+  simp only at h0 hδ hβ hψ
+  simp only [promote, chi, gamma, h0, hs, hδ, hβ, zero_div, Real.arctan_zero, ite_self,
+    add_zero, sub_zero, zero_mul, Angles.wrap_of_mem hψ]
 
 /-- P06-22. 06:84 'the yaw becomes psi = chi − gamma with gamma from the solved v_lat,ra
-..., wrapped to (−π, π], so the actor keeps its path, as at spawn'. -/
+..., wrapped to (−π, π], so the actor keeps its path, as at spawn'. The path part needs
+`v_lon ≠ 0`: at `v_lon = 0`, 06:84 'gamma = 0 otherwise' makes `chi = psi`, and the rear-axle
+velocity is `v_lat,ra` along the lateral axis, so 'keeps its path' is undefined there (spec
+gap at 06:84). -/
 theorem promote_chi (s : STSol) (c : Chassis) :
     Angles.wrap (chi (promote s c)) = Angles.wrap (chi c) ∧
       (c.vLon ≠ 0 → ∃ k : ℝ, 0 < k ∧ worldVel (promote s c) = k • worldVel c) := by
